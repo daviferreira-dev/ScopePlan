@@ -1,0 +1,4 @@
+pra funcionar esse typescript de primeira categoria rode:
+npm install
+npm run dev
+(ah, mas não foi. Então instale o node.js no seu computador)

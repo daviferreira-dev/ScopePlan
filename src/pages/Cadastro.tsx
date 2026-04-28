@@ -340,18 +340,25 @@ const styles = `
 }
 `;
 
-type Role = "analista" | "cliente";
-
-export default function LoginPage() {
+export default function CadastroPage() {
   const navigate = useNavigate();
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [role, setRole] = useState<Role>("cliente");
+  const [error, setError] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    alert(`Entrando como ${role}: ${email}`);
+
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem");
+      return;
+    }
+
+    setError("");
+    alert(`Conta criada para: ${email}`);
   };
 
   return (
@@ -370,10 +377,33 @@ export default function LoginPage() {
         </div>
 
         <div className="card">
-          <h1 className="card-title">Acessar a plataforma</h1>
-          <p className="card-subtitle">Insira as suas credenciais para continuar.</p>
+          <h1 className="card-title">Criar uma conta</h1>
+          <p className="card-subtitle">Preencha os dados abaixo para começar a utilizar a plataforma.</p>
 
           <form onSubmit={handleSubmit}>
+
+            {/* Nome Completo */}
+            <div className="field">
+              <label className="field-label">Nome Completo</label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <circle cx="12" cy="8" r="4" />
+                    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                  </svg>
+                </span>
+                <input
+                  type="text"
+                  placeholder="Seu nome completo"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  autoComplete="name"
+                  required
+                />
+              </div>
+            </div>
+
+            {/* E-mail */}
             <div className="field">
               <label className="field-label">E-mail</label>
               <div className="input-wrapper">
@@ -394,6 +424,7 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Senha */}
             <div className="field">
               <label className="field-label">Senha</label>
               <div className="input-wrapper">
@@ -408,7 +439,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
+                  autoComplete="new-password"
                   required
                 />
                 <button
@@ -431,36 +462,63 @@ export default function LoginPage() {
               </div>
             </div>
 
+            {/* Confirmar Senha */}
+            <div className="field">
+              <label className="field-label">Confirmar Senha</label>
+              <div className="input-wrapper">
+                <span className="input-icon">
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <rect x="3" y="11" width="18" height="11" rx="2" />
+                    <path d="M7 11V7a5 5 0 0110 0v4" />
+                  </svg>
+                </span>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="input-eye"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPassword ? (
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path d="M17.94 17.94A10.94 10.94 0 0112 20C7 20 2.73 16.39 1 12a11.06 11.06 0 012.94-4.94M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.61 11 8a10.93 10.93 0 01-1.29 2.59M3 3l18 18" />
+                    </svg>
+                  ) : (
+                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                      <path d="M1 12C2.73 7.61 7 4 12 4s9.27 3.61 11 8c-1.73 4.39-6 8-11 8S2.73 16.39 1 12z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {error && (
+                <span style={{ color: "#ff6b6b", fontSize: "12px", marginTop: "4px" }}>
+                  {error}
+                </span>
+              )}
+            </div>
+
             <button type="submit" className="btn-primary">
-              Entrar na Plataforma
+              Criar conta
             </button>
           </form>
 
-          <div className="divider">
-            <div className="divider-line" />
-            <span className="divider-label">Acesso Rápido</span>
-            <div className="divider-line" />
-          </div>
-
-          <div className="quick-access">
-            <button
-              type="button"
-              className={`btn-quick ${role === "analista" ? "active" : ""}`}
-              onClick={() => setRole("analista")}
+          <p className="footer" style={{ marginTop: "20px" }}>
+            Já possui uma conta?{" "}
+            <span
+              style={{ textDecoration: "underline", cursor: "pointer" }}
+              onClick={() => navigate("/")}
             >
-              Analista
-            </button>
-            <button
-              type="button"
-              className={`btn-quick ${role === "cliente" ? "active" : ""}`}
-              onClick={() => setRole("cliente")}
-            >
-              Cliente
-            </button>
-          </div>
-  <p className="footer">
-  Não possui uma conta? <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => navigate('/cadastro')}>Crie</span>
-  </p>
+              Acesse
+            </span>
+          </p>
         </div>
 
         <p className="footer">© 2026 ScopePlan Inc. · Todos os direitos reservados.</p>

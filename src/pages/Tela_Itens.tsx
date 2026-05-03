@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import DownloadERS from "./DownloadERS";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -581,14 +582,14 @@ interface Project {
 
 // Tópicos padrão — igual à imagem
 const DEFAULT_TOPICS: Omit<Topic, "files">[] = [
-  { id: 1, name: "Requisitos Funcionais",    count: 0 },
-  { id: 2, name: "Regras de Negócio",        count: 0 },
-  { id: 3, name: "Requisitos Não-Funcionais",count: 0 },
-  { id: 4, name: "Modelagem de Dados",       count: 0 },
-  { id: 5, name: "Integrações de Sistema",   count: 0 },
-  { id: 6, name: "Glossário Técnico",        count: 0 },
-  { id: 7, name: "Gestão de Erros",          count: 0 },
-  { id: 8, name: "UI/UX e Protótipos",       count: 0 },
+  { id: 1, name: "Requisitos Funcionais", count: 0 },
+  { id: 2, name: "Regras de Negócio", count: 0 },
+  { id: 3, name: "Requisitos Não-Funcionais", count: 0 },
+  { id: 4, name: "Modelagem de Dados", count: 0 },
+  { id: 5, name: "Integrações de Sistema", count: 0 },
+  { id: 6, name: "Glossário Técnico", count: 0 },
+  { id: 7, name: "Gestão de Erros", count: 0 },
+  { id: 8, name: "UI/UX e Protótipos", count: 0 },
 ];
 
 const mockUser = { name: "Ana Silva", role: "Analista de Sistemas", initials: "AS" };
@@ -602,13 +603,12 @@ interface Props {
 export default function Tela_Itens({ project, onBack }: Props) {
   const navigate = useNavigate();
 
-  const [topics, setTopics] = useState<Topic[]>(
-    DEFAULT_TOPICS.map((t) => ({ ...t, files: [] }))
-  );
+  const [topics, setTopics] = useState<Topic[]>(DEFAULT_TOPICS.map((t) => ({ ...t, files: [] })));
   const [activeTopic, setActiveTopic] = useState<Topic | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTopicName, setNewTopicName] = useState("");
   const [activePage, setActivePage] = useState<"projetos" | "auditoria">("projetos");
+  const [showDownload, setShowDownload] = useState(false);
 
   // Adicionar tópico novo
   const handleAddTopic = () => {
@@ -634,35 +634,15 @@ export default function Tela_Itens({ project, onBack }: Props) {
         size: (f.size / 1024).toFixed(0) + " KB",
         addedAt: "agora mesmo",
       };
-      setTopics((prev) =>
-        prev.map((t) =>
-          t.id === topicId
-            ? { ...t, files: [...t.files, fileItem], count: t.files.length + 1 }
-            : t
-        )
-      );
-      setActiveTopic((prev) =>
-        prev && prev.id === topicId
-          ? { ...prev, files: [...prev.files, fileItem], count: prev.files.length + 1 }
-          : prev
-      );
+      setTopics((prev) => prev.map((t) => (t.id === topicId ? { ...t, files: [...t.files, fileItem], count: t.files.length + 1 } : t)));
+      setActiveTopic((prev) => (prev && prev.id === topicId ? { ...prev, files: [...prev.files, fileItem], count: prev.files.length + 1 } : prev));
     });
     e.target.value = "";
   };
 
   const removeFile = (topicId: number, fileId: number) => {
-    setTopics((prev) =>
-      prev.map((t) =>
-        t.id === topicId
-          ? { ...t, files: t.files.filter((f) => f.id !== fileId), count: Math.max(0, t.count - 1) }
-          : t
-      )
-    );
-    setActiveTopic((prev) =>
-      prev && prev.id === topicId
-        ? { ...prev, files: prev.files.filter((f) => f.id !== fileId), count: Math.max(0, prev.count - 1) }
-        : prev
-    );
+    setTopics((prev) => prev.map((t) => (t.id === topicId ? { ...t, files: t.files.filter((f) => f.id !== fileId), count: Math.max(0, t.count - 1) } : t)));
+    setActiveTopic((prev) => (prev && prev.id === topicId ? { ...prev, files: prev.files.filter((f) => f.id !== fileId), count: Math.max(0, prev.count - 1) } : prev));
   };
 
   const openTopic = (t: Topic) => {
@@ -670,6 +650,10 @@ export default function Tela_Itens({ project, onBack }: Props) {
     const fresh = topics.find((x) => x.id === t.id) || t;
     setActiveTopic(fresh);
   };
+
+  if (showDownload) {
+    return <DownloadERS project={project} topics={topics} onBack={() => setShowDownload(false)} />;
+  }
 
   return (
     <>
@@ -687,21 +671,25 @@ export default function Tela_Itens({ project, onBack }: Props) {
 
             <button
               className={`nav-item ${activePage === "projetos" ? "active" : ""}`}
-              onClick={() => { setActivePage("projetos"); setActiveTopic(null); onBack(); }}
+              onClick={() => {
+                setActivePage("projetos");
+                setActiveTopic(null);
+                onBack();
+              }}
             >
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <rect x="2" y="3" width="8" height="8" rx="2" /><rect x="14" y="3" width="8" height="8" rx="2" />
-                <rect x="2" y="13" width="8" height="8" rx="2" /><rect x="14" y="13" width="8" height="8" rx="2" />
+                <rect x="2" y="3" width="8" height="8" rx="2" />
+                <rect x="14" y="3" width="8" height="8" rx="2" />
+                <rect x="2" y="13" width="8" height="8" rx="2" />
+                <rect x="14" y="13" width="8" height="8" rx="2" />
               </svg>
               Projetos
             </button>
 
-            <button
-              className={`nav-item ${activePage === "auditoria" ? "active" : ""}`}
-              onClick={() => setActivePage("auditoria")}
-            >
+            <button className={`nav-item ${activePage === "auditoria" ? "active" : ""}`} onClick={() => setActivePage("auditoria")}>
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path d="M9 12l2 2 4-4" /><path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+                <path d="M9 12l2 2 4-4" />
+                <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
               </svg>
               Auditoria
             </button>
@@ -723,7 +711,6 @@ export default function Tela_Itens({ project, onBack }: Props) {
 
         {/* ── MAIN ── */}
         <div className="main">
-
           {/* TOPBAR */}
           <header className="topbar">
             <button className="topbar-back" onClick={activeTopic ? () => setActiveTopic(null) : onBack}>
@@ -735,9 +722,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
 
             <div className="topbar-bottom">
               <div>
-                <div className="topbar-index-label">
-                  {activeTopic ? activeTopic.name : "Índice de Especificação"}
-                </div>
+                <div className="topbar-index-label">{activeTopic ? activeTopic.name : "Índice de Especificação"}</div>
                 <div className="topbar-project-name">{project.name}</div>
                 <div className="topbar-client">
                   <strong>Cliente:</strong> {project.client}
@@ -746,7 +731,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
 
               {!activeTopic && (
                 <div className="topbar-actions">
-                  <button className="btn-download">
+                  <button className="btn-download" onClick={() => setShowDownload(true)}>
                     <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
                     </svg>
@@ -772,12 +757,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
                       <path d="M12 5v14M5 12h14" />
                     </svg>
                     Adicionar Arquivo
-                    <input
-                      type="file"
-                      multiple
-                      style={{ display: "none" }}
-                      onChange={(e) => handleFileUpload(activeTopic.id, e)}
-                    />
+                    <input type="file" multiple style={{ display: "none" }} onChange={(e) => handleFileUpload(activeTopic.id, e)} />
                   </label>
                 </div>
               )}
@@ -786,7 +766,6 @@ export default function Tela_Itens({ project, onBack }: Props) {
 
           {/* CONTENT */}
           <div className="content">
-
             {/* ── ÍNDICE DE TÓPICOS ── */}
             {!activeTopic && (
               <div className="topics-grid">
@@ -804,13 +783,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
                       </div>
                       <div className="topic-name">{t.name}</div>
                     </div>
-                    <div className="topic-count">
-                      {t.count === 0
-                        ? "0 requisitos"
-                        : t.count === 1
-                        ? "1 requisito"
-                        : `${t.count} requisitos`}
-                    </div>
+                    <div className="topic-count">{t.count === 0 ? "0 requisitos" : t.count === 1 ? "1 requisito" : `${t.count} requisitos`}</div>
                   </div>
                 ))}
               </div>
@@ -828,12 +801,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
                   </div>
                   <div className="upload-title">Arraste arquivos ou clique para enviar</div>
                   <div className="upload-subtitle">PDF, DOCX, XLSX, PNG — até 20 MB por arquivo</div>
-                  <input
-                    type="file"
-                    multiple
-                    style={{ display: "none" }}
-                    onChange={(e) => handleFileUpload(activeTopic.id, e)}
-                  />
+                  <input type="file" multiple style={{ display: "none" }} onChange={(e) => handleFileUpload(activeTopic.id, e)} />
                 </label>
 
                 {/* Lista de arquivos */}
@@ -851,13 +819,11 @@ export default function Tela_Itens({ project, onBack }: Props) {
                           </div>
                           <div className="file-info">
                             <div className="file-name">{f.name}</div>
-                            <div className="file-meta">{f.size} · Adicionado {f.addedAt}</div>
+                            <div className="file-meta">
+                              {f.size} · Adicionado {f.addedAt}
+                            </div>
                           </div>
-                          <button
-                            className="file-remove"
-                            onClick={() => removeFile(activeTopic.id, f.id)}
-                            title="Remover"
-                          >
+                          <button className="file-remove" onClick={() => removeFile(activeTopic.id, f.id)} title="Remover">
                             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                               <path d="M18 6L6 18M6 6l12 12" />
                             </svg>
@@ -867,11 +833,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
                   </div>
                 )}
 
-                {activeTopic.files.length === 0 && (
-                  <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: "13px" }}>
-                    Nenhum arquivo adicionado ainda.
-                  </div>
-                )}
+                {activeTopic.files.length === 0 && <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: "13px" }}>Nenhum arquivo adicionado ainda.</div>}
               </div>
             )}
           </div>
@@ -897,7 +859,9 @@ export default function Tela_Itens({ project, onBack }: Props) {
               />
             </div>
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowAddModal(false)}>Cancelar</button>
+              <button className="btn-cancel" onClick={() => setShowAddModal(false)}>
+                Cancelar
+              </button>
               <button className="btn-confirm" onClick={handleAddTopic} disabled={!newTopicName.trim()}>
                 Criar Tópico
               </button>

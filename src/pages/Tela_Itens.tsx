@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DownloadERS from "./DownloadERS";
+import ValidacaoRequisitos from "./ValidacaoRequisitos";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -40,7 +41,6 @@ const styles = `
     top: 0; left: 0;
   }
 
-  /* ── SIDEBAR ── */
   .sidebar {
     width: 130px;
     min-width: 130px;
@@ -140,7 +140,6 @@ const styles = `
 
   .btn-logout:hover { color: #ff8080; background: rgba(255,100,100,0.1); }
 
-  /* ── MAIN ── */
   .main {
     flex: 1;
     display: flex;
@@ -150,7 +149,6 @@ const styles = `
     min-width: 0;
   }
 
-  /* ── TOPBAR ── */
   .topbar {
     background: #fff;
     border-bottom: 1px solid var(--card-border);
@@ -159,7 +157,6 @@ const styles = `
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 0;
   }
 
   .topbar-back {
@@ -272,14 +269,12 @@ const styles = `
 
   .btn-add-topic .chevron { opacity: 0.8; }
 
-  /* ── CONTENT ── */
   .content {
     flex: 1;
     overflow-y: auto;
     padding: 24px 28px;
   }
 
-  /* ── TOPICS GRID ── */
   .topics-grid {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -343,7 +338,6 @@ const styles = `
     font-weight: 400;
   }
 
-  /* ── TOPIC MODAL (adicionar tópico) ── */
   .modal-overlay {
     position: fixed;
     inset: 0;
@@ -450,121 +444,17 @@ const styles = `
 
   .btn-confirm:hover { background: var(--green-bright); transform: translateY(-1px); }
   .btn-confirm:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
-
-  /* ── TOPIC DETAIL VIEW ── */
-  .topic-detail {
-    animation: fadeUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
-  }
-
-  .topic-detail-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-  }
-
-  .topic-detail-back {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--text-muted);
-    cursor: pointer; background: none; border: none;
-    font-family: 'DM Sans', sans-serif;
-    transition: color 0.18s; padding: 0;
-  }
-
-  .topic-detail-back:hover { color: var(--green-mid); }
-
-  .topic-detail-title {
-    font-family: 'Fraunces', serif;
-    font-size: 20px; font-weight: 700;
-    color: var(--text-primary);
-  }
-
-  .upload-area {
-    border: 2px dashed #c4dbc9;
-    border-radius: 14px;
-    padding: 48px 32px;
-    text-align: center;
-    cursor: pointer;
-    transition: border-color 0.2s, background 0.2s;
-    background: #fafcfa;
-    margin-bottom: 20px;
-  }
-
-  .upload-area:hover {
-    border-color: var(--green-mid);
-    background: #f0f7f2;
-  }
-
-  .upload-icon {
-    width: 48px; height: 48px;
-    border-radius: 12px;
-    background: var(--progress-bg);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--green-mid);
-    margin: 0 auto 14px;
-  }
-
-  .upload-title {
-    font-size: 15px; font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 4px;
-  }
-
-  .upload-subtitle {
-    font-size: 12px; color: var(--text-muted);
-  }
-
-  .files-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .file-item {
-    display: flex; align-items: center; gap: 12px;
-    background: #fff;
-    border: 1px solid var(--card-border);
-    border-radius: 10px;
-    padding: 12px 14px;
-  }
-
-  .file-icon {
-    width: 36px; height: 36px;
-    border-radius: 8px;
-    background: var(--progress-bg);
-    display: flex; align-items: center; justify-content: center;
-    color: var(--green-mid);
-    flex-shrink: 0;
-  }
-
-  .file-info { flex: 1; }
-
-  .file-name {
-    font-size: 13px; font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .file-meta {
-    font-size: 11px; color: var(--text-muted);
-    margin-top: 1px;
-  }
-
-  .file-remove {
-    background: none; border: none;
-    color: #c4d4c8; cursor: pointer;
-    padding: 4px; border-radius: 6px;
-    transition: color 0.2s; display: flex;
-  }
-
-  .file-remove:hover { color: #e05555; }
 `;
 
-// ── TIPOS ──
-interface Topic {
-  id: number;
-  name: string;
-  count: number;
-  files: FileItem[];
+interface Requirement {
+  id: string;
+  status: string;
+  title: string;
+  description: string;
+  commentsCount: number;
+  modifiedBy: string;
+  modifiedDate: string;
+  modifiedTime: string;
 }
 
 interface FileItem {
@@ -574,15 +464,22 @@ interface FileItem {
   addedAt: string;
 }
 
+interface Topic {
+  id: number;
+  name: string;
+  count: number;
+  files: FileItem[];
+  requirements: Requirement[];
+}
+
 interface Project {
   id: number;
   name: string;
   client: string;
 }
 
-// Tópicos padrão — igual à imagem
-const DEFAULT_TOPICS: Omit<Topic, "files">[] = [
-  { id: 1, name: "Requisitos Funcionais", count: 0 },
+const DEFAULT_TOPICS: Omit<Topic, "files" | "requirements">[] = [
+  { id: 1, name: "Requisitos Funcionais", count: 3 },
   { id: 2, name: "Regras de Negócio", count: 0 },
   { id: 3, name: "Requisitos Não-Funcionais", count: 0 },
   { id: 4, name: "Modelagem de Dados", count: 0 },
@@ -592,9 +489,44 @@ const DEFAULT_TOPICS: Omit<Topic, "files">[] = [
   { id: 8, name: "UI/UX e Protótipos", count: 0 },
 ];
 
-const mockUser = { name: "Ana Silva", role: "Analista de Sistemas", initials: "AS" };
+const MOCK_REQUIREMENTS: Requirement[] = [
+  {
+    id: "RF-001",
+    status: "Aprovado",
+    title: "Autenticação Múltipla",
+    description: "O sistema deve permitir que os utilizadores iniciem sessão através de credenciais locais ou integração com Active Directory corporativo via SAML 2.0.",
+    commentsCount: 3,
+    modifiedBy: "ANA SILVA",
+    modifiedDate: "12/10/2023",
+    modifiedTime: "16:30",
+  },
+  {
+    id: "RF-002",
+    status: "Em Revisão",
+    title: "Exportação de Relatórios",
+    description: "Todos os grids de dados devem possuir uma opção para exportar a visualização atual para formatos PDF e XLSX, mantendo a ordenação e os filtros aplicados.",
+    commentsCount: 5,
+    modifiedBy: "CARLOS MELO",
+    modifiedDate: "13/10/2023",
+    modifiedTime: "08:15",
+  },
+  {
+    id: "RF-003",
+    status: "Pendente",
+    title: "Dashboard Executivo",
+    description: "A plataforma deve disponibilizar um painel executivo com KPIs configuráveis, gráficos interativos e a possibilidade de exportação para apresentações.",
+    commentsCount: 16,
+    modifiedBy: "ANA SILVA",
+    modifiedDate: "14/10/2023",
+    modifiedTime: "11:00",
+  },
+];
 
-// Props que o Dashboard vai passar
+//aqui por enquanto é onde alteramos qual tipo de usuário está aparecendo as telas, para ver de cada um
+//é só alternar entre qual está comentado
+const mockUser = { name: "Ana Silva", role: "Analista de Sistemas", initials: "AS" };
+// const mockUser = { name: "Bruno Costa", role: "Cliente / Validador", initials: "BC" };
+
 interface Props {
   project: Project;
   onBack: () => void;
@@ -603,14 +535,19 @@ interface Props {
 export default function Tela_Itens({ project, onBack }: Props) {
   const navigate = useNavigate();
 
-  const [topics, setTopics] = useState<Topic[]>(DEFAULT_TOPICS.map((t) => ({ ...t, files: [] })));
+  const [topics, setTopics] = useState<Topic[]>(
+    DEFAULT_TOPICS.map((t) => ({
+      ...t,
+      files: [],
+      requirements: t.id === 1 ? MOCK_REQUIREMENTS : [],
+    })),
+  );
   const [activeTopic, setActiveTopic] = useState<Topic | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newTopicName, setNewTopicName] = useState("");
   const [activePage, setActivePage] = useState<"projetos" | "auditoria">("projetos");
   const [showDownload, setShowDownload] = useState(false);
 
-  // Adicionar tópico novo
   const handleAddTopic = () => {
     if (!newTopicName.trim()) return;
     const t: Topic = {
@@ -618,15 +555,15 @@ export default function Tela_Itens({ project, onBack }: Props) {
       name: newTopicName.trim(),
       count: 0,
       files: [],
+      requirements: [],
     };
     setTopics((prev) => [...prev, t]);
     setNewTopicName("");
     setShowAddModal(false);
   };
 
-  // Simular upload de arquivo
-  const handleFileUpload = (topicId: number, e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const uploadFiles = (topicId: number, fileList: FileList) => {
+    const files = Array.from(fileList);
     files.forEach((f) => {
       const fileItem: FileItem = {
         id: Date.now() + Math.random(),
@@ -637,7 +574,6 @@ export default function Tela_Itens({ project, onBack }: Props) {
       setTopics((prev) => prev.map((t) => (t.id === topicId ? { ...t, files: [...t.files, fileItem], count: t.files.length + 1 } : t)));
       setActiveTopic((prev) => (prev && prev.id === topicId ? { ...prev, files: [...prev.files, fileItem], count: prev.files.length + 1 } : prev));
     });
-    e.target.value = "";
   };
 
   const removeFile = (topicId: number, fileId: number) => {
@@ -646,13 +582,30 @@ export default function Tela_Itens({ project, onBack }: Props) {
   };
 
   const openTopic = (t: Topic) => {
-    // sincroniza com estado atual
     const fresh = topics.find((x) => x.id === t.id) || t;
     setActiveTopic(fresh);
   };
 
+  const handleBackFromTopic = () => {
+    setActiveTopic(null);
+  };
+
   if (showDownload) {
     return <DownloadERS project={project} topics={topics} onBack={() => setShowDownload(false)} />;
+  }
+
+  if (activeTopic) {
+    return (
+      <ValidacaoRequisitos
+        project={project}
+        topic={activeTopic}
+        userRole={mockUser.role as "Analista de Sistemas" | "Cliente / Validador" | "Equipa Técnica"}
+        userName={mockUser.name}
+        onBack={handleBackFromTopic}
+        onUploadFiles={mockUser.role === "Analista de Sistemas" ? uploadFiles : undefined}
+        onRemoveFile={removeFile}
+      />
+    );
   }
 
   return (
@@ -660,7 +613,6 @@ export default function Tela_Itens({ project, onBack }: Props) {
       <style>{styles}</style>
 
       <div className="layout">
-        {/* ── SIDEBAR ── */}
         <aside className="sidebar">
           <div className="sidebar-logo">
             <img src="./src/assets/scopeplan.png" alt="ScopePlan" />
@@ -709,11 +661,9 @@ export default function Tela_Itens({ project, onBack }: Props) {
           </div>
         </aside>
 
-        {/* ── MAIN ── */}
         <div className="main">
-          {/* TOPBAR */}
           <header className="topbar">
-            <button className="topbar-back" onClick={activeTopic ? () => setActiveTopic(null) : onBack}>
+            <button className="topbar-back" onClick={activeTopic ? handleBackFromTopic : onBack}>
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path d="M19 12H5M12 5l-7 7 7 7" />
               </svg>
@@ -749,24 +699,10 @@ export default function Tela_Itens({ project, onBack }: Props) {
                   </button>
                 </div>
               )}
-
-              {activeTopic && (
-                <div className="topbar-actions">
-                  <label className="btn-add-topic" style={{ cursor: "pointer" }}>
-                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    Adicionar Arquivo
-                    <input type="file" multiple style={{ display: "none" }} onChange={(e) => handleFileUpload(activeTopic.id, e)} />
-                  </label>
-                </div>
-              )}
             </div>
           </header>
 
-          {/* CONTENT */}
           <div className="content">
-            {/* ── ÍNDICE DE TÓPICOS ── */}
             {!activeTopic && (
               <div className="topics-grid">
                 {topics.map((t) => (
@@ -788,59 +724,10 @@ export default function Tela_Itens({ project, onBack }: Props) {
                 ))}
               </div>
             )}
-
-            {/* ── DETALHE DO TÓPICO ── */}
-            {activeTopic && (
-              <div className="topic-detail">
-                {/* Upload area */}
-                <label className="upload-area" style={{ display: "block" }}>
-                  <div className="upload-icon">
-                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12" />
-                    </svg>
-                  </div>
-                  <div className="upload-title">Arraste arquivos ou clique para enviar</div>
-                  <div className="upload-subtitle">PDF, DOCX, XLSX, PNG — até 20 MB por arquivo</div>
-                  <input type="file" multiple style={{ display: "none" }} onChange={(e) => handleFileUpload(activeTopic.id, e)} />
-                </label>
-
-                {/* Lista de arquivos */}
-                {activeTopic.files.length > 0 && (
-                  <div className="files-list">
-                    {topics
-                      .find((t) => t.id === activeTopic.id)
-                      ?.files.map((f) => (
-                        <div className="file-item" key={f.id}>
-                          <div className="file-icon">
-                            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                              <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
-                              <polyline points="14 2 14 8 20 8" />
-                            </svg>
-                          </div>
-                          <div className="file-info">
-                            <div className="file-name">{f.name}</div>
-                            <div className="file-meta">
-                              {f.size} · Adicionado {f.addedAt}
-                            </div>
-                          </div>
-                          <button className="file-remove" onClick={() => removeFile(activeTopic.id, f.id)} title="Remover">
-                            <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path d="M18 6L6 18M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                  </div>
-                )}
-
-                {activeTopic.files.length === 0 && <div style={{ textAlign: "center", padding: "24px 0", color: "var(--text-muted)", fontSize: "13px" }}>Nenhum arquivo adicionado ainda.</div>}
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* ── MODAL ADICIONAR TÓPICO ── */}
       {showAddModal && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowAddModal(false)}>
           <div className="modal">

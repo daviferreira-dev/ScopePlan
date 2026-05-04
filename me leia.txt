@@ -2,3 +2,12 @@ pra funcionar esse typescript de primeira categoria rode:
 npm install
 npm run dev
 (ah, mas não foi. Então instale o node.js no seu computador)
+
+PARA ALTERNAR O PERFIL DE USUÁRIO (TESTE)
+
+No arquivo src/pages/Tela_Itens.tsx, procure pelo bloco:
+
+  const mockUser = { name: "Ana Silva", role: "Analista de Sistemas", initials: "AS" };
+  // const mockUser = { name: "Bruno Costa", role: "Cliente / Validador", initials: "BC" };
+
+para alterar o perfil, alterar qual está comentado

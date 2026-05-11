@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import ProjectDetail from "./Tela_Itens"; // ← importa a tela de itens
- 
+import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import ProjectDetail from "./Tela_Itens";
+
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
  
@@ -68,7 +68,7 @@ const styles = `
     border-bottom: 1px solid rgba(255,255,255,0.08);
   }
  
-  .sidebar-logo img {
+    .sidebar-logo img {
     width: 150px;
     filter: brightness(0) invert(1);
     opacity: 0.95;
@@ -502,9 +502,9 @@ const styles = `
  
   .placeholder-page p { font-size: 13px; opacity: 0.5; }
 `;
- 
+
 type Page = "projetos" | "auditoria";
- 
+
 interface Project {
   id: number;
   name: string;
@@ -512,26 +512,32 @@ interface Project {
   progress: number;
   updatedAt: string;
 }
- 
+
 const mockUser = {
   name: "Ana Silva",
   role: "Analista de Sistemas",
   initials: "AS",
 };
- 
+
 export default function Tela_Projetos() {
   const navigate = useNavigate();
-  const [activePage, setActivePage] = useState<Page>("projetos");
+  const location = useLocation();
+  const state = location.state as { activePage?: Page } | null;
+  const [activePage, setActivePage] = useState<Page>(state?.activePage || "projetos");
+  useEffect(() => {
+    if (state?.activePage) {
+      setActivePage(state.activePage);
+      setSelectedProject(null);
+    }
+  }, [state]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectClient, setNewProjectClient] = useState("");
- 
-  // ── NOVO: projeto selecionado — null = mostra o painel
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
- 
+
   const handleLogout = () => navigate("/");
- 
+
   const handleCreateProject = () => {
     if (!newProjectName.trim() || !newProjectClient.trim()) return;
     const project: Project = {
@@ -546,41 +552,32 @@ export default function Tela_Projetos() {
     setNewProjectClient("");
     setShowModal(false);
   };
- 
+
   const openModal = () => {
     setNewProjectName("");
     setNewProjectClient("");
     setShowModal(true);
   };
- 
-  // ── Se projeto selecionado, renderiza ProjectDetail no lugar do Dashboard
+
   if (selectedProject) {
-    return (
-      <ProjectDetail
-        project={selectedProject}
-        onBack={() => setSelectedProject(null)}
-      />
-    );
+    return <ProjectDetail project={selectedProject} onBack={() => setSelectedProject(null)} />;
   }
- 
+
   return (
     <>
       <style>{styles}</style>
- 
+
       <div className="layout">
         {/* SIDEBAR */}
         <aside className="sidebar">
           <div className="sidebar-logo">
-            <img src="./src/assets/scopeplan.png" alt="ScopePlan" />
+            <img src="./src/assets/logo_scope_plan.svg" alt="ScopePlan" />
           </div>
- 
+
           <nav className="sidebar-nav">
             <span className="nav-label">Menu</span>
- 
-            <button
-              className={`nav-item ${activePage === "projetos" ? "active" : ""}`}
-              onClick={() => setActivePage("projetos")}
-            >
+
+            <button className={`nav-item ${activePage === "projetos" ? "active" : ""}`} onClick={() => setActivePage("projetos")}>
               <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <rect x="2" y="3" width="8" height="8" rx="2" />
                 <rect x="14" y="3" width="8" height="8" rx="2" />
@@ -589,11 +586,8 @@ export default function Tela_Projetos() {
               </svg>
               Projetos
             </button>
- 
-            <button
-              className={`nav-item ${activePage === "auditoria" ? "active" : ""}`}
-              onClick={() => setActivePage("auditoria")}
-            >
+
+            <button className={`nav-item ${activePage === "auditoria" ? "active" : ""}`} onClick={() => setActivePage("auditoria")}>
               <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path d="M9 12l2 2 4-4" />
                 <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
@@ -601,7 +595,7 @@ export default function Tela_Projetos() {
               Auditoria
             </button>
           </nav>
- 
+
           <div className="sidebar-user">
             <div className="user-avatar">{mockUser.initials}</div>
             <div className="user-info">
@@ -615,7 +609,7 @@ export default function Tela_Projetos() {
             </button>
           </div>
         </aside>
- 
+
         {/* MAIN */}
         <div className="main">
           {activePage === "projetos" && (
@@ -632,7 +626,7 @@ export default function Tela_Projetos() {
                   Novo Projeto
                 </button>
               </header>
- 
+
               <div className="content">
                 {projects.length === 0 ? (
                   <div className="empty-state">
@@ -645,9 +639,7 @@ export default function Tela_Projetos() {
                       </svg>
                     </div>
                     <div className="empty-title">Nenhum projeto ainda</div>
-                    <div className="empty-subtitle">
-                      Crie seu primeiro projeto para começar a gerenciar documentos e acompanhar o progresso da ERS.
-                    </div>
+                    <div className="empty-subtitle">Crie seu primeiro projeto para começar a gerenciar documentos e acompanhar o progresso da ERS.</div>
                     <button className="btn-empty-create" onClick={openModal}>
                       <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
                         <path d="M12 5v14M5 12h14" />
@@ -658,12 +650,7 @@ export default function Tela_Projetos() {
                 ) : (
                   <div className="projects-grid">
                     {projects.map((p) => (
-                      // ── onClick abre o ProjectDetail
-                      <div
-                        className="project-card"
-                        key={p.id}
-                        onClick={() => setSelectedProject(p)}
-                      >
+                      <div className="project-card" key={p.id} onClick={() => setSelectedProject(p)}>
                         <div className="card-header">
                           <div className="card-icon">
                             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
@@ -702,7 +689,7 @@ export default function Tela_Projetos() {
               </div>
             </>
           )}
- 
+
           {activePage === "auditoria" && (
             <>
               <header className="topbar">
@@ -724,26 +711,19 @@ export default function Tela_Projetos() {
           )}
         </div>
       </div>
- 
+
       {/* MODAL NOVO PROJETO */}
       {showModal && (
         <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowModal(false)}>
           <div className="modal">
             <div className="modal-title">Novo Projeto</div>
             <div className="modal-subtitle">Preencha as informações do projeto para criá-lo.</div>
- 
+
             <div className="modal-field">
               <label className="modal-label">Nome do Projeto</label>
-              <input
-                className="modal-input"
-                type="text"
-                placeholder="Ex: Sistema ERP Integrado"
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                autoFocus
-              />
+              <input className="modal-input" type="text" placeholder="Ex: Sistema ERP Integrado" value={newProjectName} onChange={(e) => setNewProjectName(e.target.value)} autoFocus />
             </div>
- 
+
             <div className="modal-field">
               <label className="modal-label">Cliente</label>
               <input
@@ -755,14 +735,12 @@ export default function Tela_Projetos() {
                 onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
               />
             </div>
- 
+
             <div className="modal-actions">
-              <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>
-              <button
-                className="btn-confirm"
-                onClick={handleCreateProject}
-                disabled={!newProjectName.trim() || !newProjectClient.trim()}
-              >
+              <button className="btn-cancel" onClick={() => setShowModal(false)}>
+                Cancelar
+              </button>
+              <button className="btn-confirm" onClick={handleCreateProject} disabled={!newProjectName.trim() || !newProjectClient.trim()}>
                 Criar Projeto
               </button>
             </div>
@@ -772,4 +750,3 @@ export default function Tela_Projetos() {
     </>
   );
 }
- 

@@ -92,21 +92,20 @@ const styles = `
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  .logo-block {
+    .logo-block {
     display: flex;
     flex-direction: column;
     align-items: center;
     animation: fadeUp 0.7s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
- .logo-img {
-  width: clamp(200px, 50vw, 380px);
+  .logo-img {
+  width: 180px;
   max-width: 100%;
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 4px 16px rgba(0,0,0,0.2));
-  margin-bottom: -120px;
-  margin-top: -130px;
+  margin-bottom: 16px;
 }
 
   .card {
@@ -332,12 +331,6 @@ const styles = `
     }
   }
 
-  @media (min-width: 768px) {
-  .logo-img {
-    width: 380px;
-    padding-top: -100px;
-  }
-}
 `;
 
 export default function CadastroPage() {
@@ -369,11 +362,7 @@ export default function CadastroPage() {
 
       <div className="page">
         <div className="logo-block">
-          <img
-            src="./src/assets/scopeplan.png"
-            alt="ScopePlan"
-            className="logo-img"
-          />
+          <img src="./src/assets/logo_scope_plan.svg" alt="ScopePlan" className="logo-img" />
         </div>
 
         <div className="card">
@@ -381,7 +370,6 @@ export default function CadastroPage() {
           <p className="card-subtitle">Preencha os dados abaixo para começar a utilizar a plataforma.</p>
 
           <form onSubmit={handleSubmit}>
-
             {/* Nome Completo */}
             <div className="field">
               <label className="field-label">Nome Completo</label>
@@ -392,14 +380,7 @@ export default function CadastroPage() {
                     <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
                   </svg>
                 </span>
-                <input
-                  type="text"
-                  placeholder="Seu nome completo"
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  autoComplete="name"
-                  required
-                />
+                <input type="text" placeholder="Seu nome completo" value={nome} onChange={(e) => setNome(e.target.value)} autoComplete="name" required />
               </div>
             </div>
 
@@ -413,14 +394,7 @@ export default function CadastroPage() {
                     <path d="M2 8l10 6 10-6" />
                   </svg>
                 </span>
-                <input
-                  type="email"
-                  placeholder="email@gmail.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  required
-                />
+                <input type="email" placeholder="email@gmail.com" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
               </div>
             </div>
 
@@ -434,20 +408,8 @@ export default function CadastroPage() {
                     <path d="M7 11V7a5 5 0 0110 0v4" />
                   </svg>
                 </span>
-                <input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="new-password"
-                  required
-                />
-                <button
-                  type="button"
-                  className="input-eye"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                >
+                <input type={showPassword ? "text" : "password"} placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" required />
+                <button type="button" className="input-eye" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>
                   {showPassword ? (
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path d="M17.94 17.94A10.94 10.94 0 0112 20C7 20 2.73 16.39 1 12a11.06 11.06 0 012.94-4.94M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.61 11 8a10.93 10.93 0 01-1.29 2.59M3 3l18 18" />
@@ -480,12 +442,7 @@ export default function CadastroPage() {
                   autoComplete="new-password"
                   required
                 />
-                <button
-                  type="button"
-                  className="input-eye"
-                  onClick={() => setShowPassword((v) => !v)}
-                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                >
+                <button type="button" className="input-eye" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>
                   {showPassword ? (
                     <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                       <path d="M17.94 17.94A10.94 10.94 0 0112 20C7 20 2.73 16.39 1 12a11.06 11.06 0 012.94-4.94M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.61 11 8a10.93 10.93 0 01-1.29 2.59M3 3l18 18" />
@@ -498,11 +455,7 @@ export default function CadastroPage() {
                   )}
                 </button>
               </div>
-              {error && (
-                <span style={{ color: "#ff6b6b", fontSize: "12px", marginTop: "4px" }}>
-                  {error}
-                </span>
-              )}
+              {error && <span style={{ color: "#ff6b6b", fontSize: "12px", marginTop: "4px" }}>{error}</span>}
             </div>
 
             <button type="submit" className="btn-primary">
@@ -512,10 +465,7 @@ export default function CadastroPage() {
 
           <p className="footer" style={{ marginTop: "20px" }}>
             Já possui uma conta?{" "}
-            <span
-              style={{ textDecoration: "underline", cursor: "pointer" }}
-              onClick={() => navigate("/")}
-            >
+            <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => navigate("/")}>
               Acesse
             </span>
           </p>

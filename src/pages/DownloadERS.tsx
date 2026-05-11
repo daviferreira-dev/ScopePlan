@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -39,22 +40,23 @@ const styles = `
   }
 
   .sidebar {
-    width: 130px;
-    min-width: 130px;
-    background: var(--sidebar-bg);
+    width: 220px;
+    min-width: 220px;
+    background: #2e7d32;
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
+    position: relative;
     z-index: 20;
   }
 
   .sidebar-logo {
-    padding: 20px 14px 18px;
+    padding: 24px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
   }
 
   .sidebar-logo img {
-    width: 90px;
+    width: 150px;
     filter: brightness(0) invert(1);
     opacity: 0.95;
   }
@@ -75,6 +77,7 @@ const styles = `
     text-transform: uppercase;
     color: rgba(255,255,255,0.3);
     padding: 10px 8px 6px;
+    margin-top: 4px;
   }
 
   .nav-item {
@@ -92,17 +95,30 @@ const styles = `
     background: none;
     width: 100%;
     text-align: left;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-  .nav-item.active { background: rgba(255,255,255,0.14); color: #fff; font-weight: 600; }
+
+  .nav-item.active {
+    background: rgba(255,255,255,0.2);
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .nav-item svg { flex-shrink: 0; opacity: 0.8; }
+  .nav-item.active svg { opacity: 1; }
 
   .sidebar-user {
-    padding: 12px 10px;
+    padding: 12px;
+    margin: 12px;
     border-top: 1px solid rgba(255,255,255,0.08);
     display: flex;
     align-items: center;
     gap: 8px;
+    background: rgba(0,0,0,0.15);
+    border-radius: 12px;
   }
 
   .user-avatar {
@@ -142,30 +158,26 @@ const styles = `
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: #f4f7f5;
+    background: #f1f3f2;
     min-width: 0;
   }
 
   .topbar {
-    background: #fff;
-    border-bottom: 1px solid var(--card-border);
-    padding: 0 28px;
-    flex-shrink: 0;
+    background: transparent;
+    border-bottom: none;
+    padding: 32px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    gap: 8px;
   }
 
   .topbar-back {
-    display: flex;
-    align-items: center;
-    gap: 6px;
     font-size: 12px;
     color: var(--text-muted);
     cursor: pointer;
     background: none;
     border: none;
-    padding: 14px 0 8px;
+    padding: 0 0 8px;
     font-family: 'DM Sans', sans-serif;
     transition: color 0.18s;
     width: fit-content;
@@ -175,10 +187,9 @@ const styles = `
 
   .topbar-bottom {
     display: flex;
-    align-items: flex-end;
     justify-content: space-between;
-    padding-bottom: 16px;
-    gap: 16px;
+    align-items: flex-start;
+    width: 100%;
   }
 
   .topbar-index-label {
@@ -211,8 +222,8 @@ const styles = `
 
   .content {
     flex: 1;
-    overflow: hidden;
-    padding: 0;
+    overflow: auto;
+    padding: 0 28px 28px;
   }
 
   .download-layout {
@@ -617,6 +628,7 @@ export default function DownloadERS({ project, topics, onBack }: Props) {
   const [format, setFormat] = useState<Format>("pdf");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const toggleTopic = (id: number) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -656,12 +668,12 @@ export default function DownloadERS({ project, topics, onBack }: Props) {
       <div className="layout">
         <aside className="sidebar">
           <div className="sidebar-logo">
-            <img src="./src/assets/scopeplan.png" alt="ScopePlan" />
+            <img src="./src/assets/logo_scope_plan.svg" alt="ScopePlan" />
           </div>
           <nav className="sidebar-nav">
             <span className="nav-label">Menu</span>
-            <button className="nav-item active" onClick={onBack}>
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <button className="nav-item active" onClick={() => navigate("/Tela_Projetos", { state: { activePage: "projetos" } })}>
+              <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <rect x="2" y="3" width="8" height="8" rx="2" />
                 <rect x="14" y="3" width="8" height="8" rx="2" />
                 <rect x="2" y="13" width="8" height="8" rx="2" />
@@ -669,8 +681,8 @@ export default function DownloadERS({ project, topics, onBack }: Props) {
               </svg>
               Projetos
             </button>
-            <button className="nav-item" onClick={() => {}}>
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+            <button className="nav-item" onClick={() => navigate("/Tela_Projetos", { state: { activePage: "auditoria" } })}>
+              <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path d="M9 12l2 2 4-4" />
                 <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
               </svg>
@@ -684,7 +696,7 @@ export default function DownloadERS({ project, topics, onBack }: Props) {
               <div className="user-role">{mockUser.role}</div>
             </div>
             <button className="btn-logout" onClick={() => (window.location.href = "/")}>
-              <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
               </svg>
             </button>

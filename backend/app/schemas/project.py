@@ -2,29 +2,33 @@ from marshmallow import Schema, fields, validate
 
 
 class ProjectCreateSchema(Schema):
-    name = fields.String(required=True, validate=validate.Length(min=1, max=200))
-    description = fields.String(allow_none=True)
-    version = fields.String(validate=validate.Length(max=20), load_default='1.0')
-    status = fields.String(validate=validate.OneOf(['draft', 'active', 'completed', 'archived']),
-                          load_default='draft')
+    nome = fields.String(required=True, validate=validate.Length(min=1, max=200))
+    descricao = fields.String(allow_none=True)
+    status = fields.String(validate=validate.OneOf(['planejamento', 'em_andamento', 'em_revisao', 'concluido', 'cancelado']),
+        load_default='planejamento')
+    custo_estimado = fields.Decimal(places=2, allow_none=True)
+    nome_cliente = fields.String(validate=validate.Length(max=200), allow_none=True)
 
 
 class ProjectUpdateSchema(Schema):
-    name = fields.String(validate=validate.Length(min=1, max=200))
-    description = fields.String(allow_none=True)
-    version = fields.String(validate=validate.Length(max=20))
-    status = fields.String(validate=validate.OneOf(['draft', 'active', 'completed', 'archived']))
+    nome = fields.String(validate=validate.Length(min=1, max=200))
+    descricao = fields.String(allow_none=True)
+    status = fields.String(validate=validate.OneOf(['planejamento', 'em_andamento', 'em_revisao', 'concluido', 'cancelado']))
+    custo_estimado = fields.Decimal(places=2, allow_none=True)
+    nome_cliente = fields.String(validate=validate.Length(max=200), allow_none=True)
 
 
 class ProjectSchema(Schema):
     id = fields.Integer(dump_only=True)
-    name = fields.String()
-    description = fields.String()
-    owner_id = fields.Integer()
-    owner = fields.Dict()
-    version = fields.String()
+    nome = fields.String()
+    descricao = fields.String()
     status = fields.String()
-    requirements_count = fields.Integer()
-    validated_count = fields.Integer()
-    created_at = fields.DateTime()
-    updated_at = fields.DateTime()
+    custo_estimado = fields.Decimal()
+    gestor_id = fields.Integer()
+    gestor = fields.Dict()
+    nome_cliente = fields.String(allow_none=True)
+    ativo = fields.Boolean()
+    requisitos_count = fields.Integer()
+    aprovados_count = fields.Integer()
+    criado_em = fields.DateTime()
+    atualizado_em = fields.DateTime()

@@ -1,29 +1,30 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import bcrypt
 from app import db
 
 
 class User(db.Model):
-    __tablename__ = 'users'
+    __tablename__ = 'usuarios'
 
-    id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(120), unique=True, nullable=False, index=True)
-    password_hash = db.Column(db.String(255), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    role = db.Column(db.String(20), nullable=False)  # 'analista' or 'cliente'
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nome = db.Column(db.String(120), nullable=False)
+    email = db.Column(db.String(180), unique=True, nullable=False, index=True)
+    senha_hash = db.Column(db.String(255), nullable=False)
+    perfil = db.Column(db.String(20), nullable=False, default='analista')  # analista, desenvolvedor, cliente, gestor
+    ativo = db.Column(db.Boolean, nullable=False, default=True)
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    projects = db.relationship('Project', backref='owner', lazy='dynamic', foreign_keys='Project.owner_id')
-    requirements_created = db.relationship('Requirement', backref='author', lazy='dynamic',
-                                         foreign_keys='Requirement.author_id')
-    requirements_validated = db.relationship('Requirement', backref='validator', lazy='dynamic',
-                                             foreign_keys='Requirement.validator_id')
+    projetos = db.relationship('Project', backref='gestor', lazy='dynamic', foreign_keys='Project.gestor_id')
+    requisitos_criados = db.relationship('Requirement', backref='autor', lazy='dynamic',
+        foreign_keys='Requirement.autor_id')
+    validacoes = db.relationship('Validacao', backref='validador', lazy='dynamic',
+        foreign_keys='Validacao.validador_id')
 
     def set_password(self, password):
         """Hash and set the user's password"""
-        self.password_hash = bcrypt.hashpw(
+        self.senha_hash = bcrypt.hashpw(
             password.encode('utf-8'),
             bcrypt.gensalt()
         ).decode('utf-8')
@@ -32,19 +33,17 @@ class User(db.Model):
         """Verify the password"""
         return bcrypt.checkpw(
             password.encode('utf-8'),
-            self.password_hash.encode('utf-8')
+            self.senha_hash.encode('utf-8')
         )
 
     def to_dict(self):
         """Convert user to dictionary"""
         return {
             'id': self.id,
+            'nome': self.nome,
             'email': self.email,
-            'name': self.name,
-            'role': self.role,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'perfil': self.perfil,
+            'ativo': self.ativo,
+            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
+            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None
         }
-
-    def __repr__(self):
-        return f'<User {self.email}>'

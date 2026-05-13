@@ -1,179 +1,125 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import (
-    create_access_token,
-    create_refresh_token,
-    jwt_required,
-    get_jwt_identity,
-    get_jwt
+    create_access_token, create_refresh_token,
+    jwt_required, get_jwt_identity, get_jwt
 )
 from marshmallow import ValidationError
-from app import db
 from app.models import User
-from app.schemas import UserRegistrationSchema, UserLoginSchema, UserSchema
+from app.schemas import UserRegistrationSchema, UserLoginSchema, UserUpdateSchema, UserSchema
+from app.utils.decorators import validate_json
 
-auth_bp = Blueprint('auth', __name__)
+auth_bp = Blueprint('auth', __name__, url_prefix='/api/auth')
 
-# Token blocklist for logout
-token_blocklist = set()
-
-
-def user_identity_lookup(user_id):
-    """Convert user ID to string for JWT identity"""
-    return str(user_id)
-
-
-def parse_user_id(identity):
-    """Convert JWT identity back to user ID"""
-    return int(identity)
+# Token blocklist (in-memory, for logout)
+_token_blocklist = set()
 
 
 @auth_bp.route('/register', methods=['POST'])
+@validate_json(UserRegistrationSchema)
 def register():
-    """
-    Register a new user
-    ---
-    Body:
-        - email: string (required)
-        - password: string (required, min 6 characters)
-        - name: string (required)
-        - role: 'analista' or 'cliente' (required)
-    """
-    try:
-        schema = UserRegistrationSchema()
-        data = schema.load(request.get_json() or {})
-    except ValidationError as err:
-        return jsonify({'message': 'Erro de validação', 'errors': err.messages}), 400
+    data = request.validated_data
+    data['senha'] = str(data['senha'])
 
-    # Check if user already exists
     if User.query.filter_by(email=data['email']).first():
-        return jsonify({'message': 'Email já cadastrado'}), 409
+        return {'message': 'Email já cadastrado'}, 409
 
-    # Create new user
     user = User(
+        nome=data['nome'],
         email=data['email'],
-        name=data['name'],
-        role=data['role']
+        perfil=data['perfil'],
+        ativo=True
     )
-    user.set_password(data['password'])
-
+    user.set_password(data['senha'])
+    from app import db
     db.session.add(user)
     db.session.commit()
 
-    # Generate tokens with string identity
-    access_token = create_access_token(identity=str(user.id))
-    refresh_token = create_refresh_token(identity=str(user.id))
+    access_token = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
 
-    return jsonify({
+    return {
         'message': 'Usuário registrado com sucesso',
         'user': user.to_dict(),
         'access_token': access_token,
         'refresh_token': refresh_token
-    }), 201
+    }, 201
 
 
 @auth_bp.route('/login', methods=['POST'])
+@validate_json(UserLoginSchema)
 def login():
-    """
-    Login user
-    ---
-    Body:
-        - email: string (required)
-        - password: string (required)
-    """
-    try:
-        schema = UserLoginSchema()
-        data = schema.load(request.get_json() or {})
-    except ValidationError as err:
-        return jsonify({'message': 'Erro de validação', 'errors': err.messages}), 400
+    data = request.validated_data
+    data['senha'] = str(data['senha'])
 
-    # Find user
     user = User.query.filter_by(email=data['email']).first()
 
-    if not user or not user.check_password(data['password']):
-        return jsonify({'message': 'Email ou senha incorretos'}), 401
+    if not user or not user.check_password(data['senha']):
+        return {'message': 'Email ou senha inválidos'}, 401
 
-    # Generate tokens with string identity
-    access_token = create_access_token(identity=str(user.id))
-    refresh_token = create_refresh_token(identity=str(user.id))
+    if not user.ativo:
+        return {'message': 'Conta desativada. Contate o administrador.'}, 403
 
-    return jsonify({
+    access_token = create_access_token(identity=user.id)
+    refresh_token = create_refresh_token(identity=user.id)
+
+    return {
         'message': 'Login realizado com sucesso',
         'user': user.to_dict(),
         'access_token': access_token,
         'refresh_token': refresh_token
-    }), 200
+    }, 200
 
 
 @auth_bp.route('/logout', methods=['POST'])
 @jwt_required()
 def logout():
-    """
-    Logout user (invalidate token)
-    """
     jti = get_jwt()['jti']
-    token_blocklist.add(jti)
-
-    return jsonify({'message': 'Logout realizado com sucesso'}), 200
+    _token_blocklist.add(jti)
+    return {'message': 'Logout realizado com sucesso'}, 200
 
 
 @auth_bp.route('/refresh', methods=['POST'])
 @jwt_required(refresh=True)
 def refresh():
-    """
-    Refresh access token
-    """
     current_user_id = get_jwt_identity()
     access_token = create_access_token(identity=current_user_id)
-
-    return jsonify({
-        'access_token': access_token
-    }), 200
+    return {'access_token': access_token}, 200
 
 
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
-def get_current_user():
-    """
-    Get current user profile
-    """
-    current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+def get_me():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
 
     if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+        return {'message': 'Usuário não encontrado'}, 404
 
-    return jsonify({'user': user.to_dict()}), 200
+    return {'user': user.to_dict()}, 200
 
 
 @auth_bp.route('/me', methods=['PUT'])
 @jwt_required()
-def update_current_user():
-    """
-    Update current user profile
-    ---
-    Body (all optional):
-        - name: string
-        - password: string (min 6 characters)
-    """
-    current_user_id = int(get_jwt_identity())
-    user = User.query.get(current_user_id)
+@validate_json(UserUpdateSchema)
+def update_me():
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
 
     if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+        return {'message': 'Usuário não encontrado'}, 404
 
-    data = request.get_json() or {}
+    data = request.validated_data
 
-    if 'name' in data:
-        user.name = data['name']
+    if 'nome' in data:
+        user.nome = data['nome']
 
-    if 'password' in data:
-        if len(data['password']) < 6:
-            return jsonify({'message': 'Senha deve ter no mínimo 6 caracteres'}), 400
-        user.set_password(data['password'])
+    if 'senha' in data:
+        user.set_password(str(data['senha']))
 
+    if 'ativo' in data:
+        user.ativo = data['ativo']
+
+    from app import db
     db.session.commit()
 
-    return jsonify({
-        'message': 'Perfil atualizado com sucesso',
-        'user': user.to_dict()
-    }), 200
+    return {'message': 'Perfil atualizado com sucesso', 'user': user.to_dict()}, 200

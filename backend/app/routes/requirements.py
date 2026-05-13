@@ -1,354 +1,292 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from marshmallow import ValidationError
+from app.models import Requirement, Project, User, Validacao
+from app.schemas import RequirementCreateSchema, RequirementUpdateSchema, ValidacaoCreateSchema, RequirementSchema
+from app.utils.decorators import validate_json, role_required
 from app import db
-from app.models import Requirement, Project, User
-from app.schemas import (
-    RequirementCreateSchema,
-    RequirementUpdateSchema,
-    RequirementValidationSchema,
-    RequirementSchema
-)
-from app.utils import validate_json
 
-requirements_bp = Blueprint('requirements', __name__)
+requirements_bp = Blueprint('requirements', __name__, url_prefix='/api/requirements')
 
 
 @requirements_bp.route('', methods=['POST'])
 @jwt_required()
 @validate_json(RequirementCreateSchema)
 def create_requirement():
-    """
-    Create a new requirement
-    ---
-    Body:
-        - title: string (required)
-        - description: string (optional)
-        - project_id: int (required)
-        - type: string (optional)
-        - priority: string (optional)
-        - complexity: string (optional)
-        - status: string (optional, default: 'draft')
-    """
-    current_user_id = int(get_jwt_identity())
     data = request.validated_data
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
 
-    # Verify user exists
-    user = User.query.get(current_user_id)
     if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+        return {'message': 'Usuário não encontrado'}, 404
 
-    # Only analysts can create requirements
-    if user.role != 'analista':
-        return jsonify({'message': 'Apenas analistas podem criar requisitos'}), 403
+    if user.perfil not in ('analista', 'desenvolvedor'):
+        return {'message': 'Apenas analistas ou desenvolvedores podem criar requisitos'}, 403
 
-    # Verify project exists
-    project = Project.query.get(data['project_id'])
+    project = Project.query.get(data['projeto_id'])
     if not project:
-        return jsonify({'message': 'Projeto não encontrado'}), 404
+        return {'message': 'Projeto não encontrado'}, 404
 
-    # Create requirement
+    # Auto-generate codigo if not provided
+    codigo = data.get('codigo')
+    if not codigo:
+        # Count existing requirements in project to generate sequential code
+        existing_count = Requirement.query.filter_by(projeto_id=data['projeto_id']).count()
+        tipo_prefix = {
+            'funcional': 'RF',
+            'nao_funcional': 'RNF',
+            'negocio': 'RN',
+            'restricao': 'RT'
+        }.get(data.get('tipo', 'funcional'), 'RF')
+        codigo = f"{tipo_prefix}-{str(existing_count + 1).zfill(3)}"
+
     requirement = Requirement(
-        title=data['title'],
-        description=data.get('description'),
-        project_id=data['project_id'],
-        author_id=current_user_id,
-        type=data.get('type'),
-        priority=data.get('priority'),
-        complexity=data.get('complexity'),
-        status=data.get('status', 'draft'),
-        version='1.0'
+        titulo=data['titulo'],
+        descricao=data.get('descricao'),
+        projeto_id=data['projeto_id'],
+        autor_id=user_id,
+        codigo=codigo,
+        tipo=data.get('tipo'),
+        categoria=data.get('categoria'),
+        prioridade=data.get('prioridade'),
+        status=data.get('status', 'rascunho')
     )
-
     db.session.add(requirement)
     db.session.commit()
 
-    return jsonify({
-        'message': 'Requisito criado com sucesso',
-        'requirement': requirement.to_dict()
-    }), 201
+    return {'message': 'Requisito criado com sucesso', 'requirement': requirement.to_dict()}, 201
 
 
 @requirements_bp.route('', methods=['GET'])
 @jwt_required()
 def list_requirements():
-    """
-    List all requirements (with pagination and filters)
-    ---
-    Query params:
-        - page: int (default: 1)
-        - per_page: int (default: 20, max: 100)
-        - project_id: filter by project
-        - status: filter by status
-        - validated: filter by validation status
-        - type: filter by type
-        - priority: filter by priority
-        - author_id: filter by author
-        - search: search in title/description
-    """
     page = request.args.get('page', 1, type=int)
-    per_page = min(request.args.get('per_page', 20, type=int), 100)
-    project_id = request.args.get('project_id', type=int)
-    status = request.args.get('status')
-    validated = request.args.get('validated')
-    req_type = request.args.get('type')
-    priority = request.args.get('priority')
-    author_id = request.args.get('author_id', type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    projeto_id = request.args.get('projeto_id', type=int)
+    status_filter = request.args.get('status')
+    tipo_filter = request.args.get('tipo')
+    prioridade_filter = request.args.get('prioridade')
     search = request.args.get('search')
 
-    # Base query
-    query = Requirement.query
+    query = Requirement.query.filter_by(ativo=True)
 
-    # Apply filters
-    if project_id:
-        query = query.filter_by(project_id=project_id)
+    if projeto_id:
+        query = query.filter_by(projeto_id=projeto_id)
 
-    if status:
-        query = query.filter_by(status=status)
+    if status_filter:
+        query = query.filter_by(status=status_filter)
 
-    if validated is not None:
-        validated_bool = validated.lower() == 'true'
-        query = query.filter_by(validated=validated_bool)
+    if tipo_filter:
+        query = query.filter_by(tipo=tipo_filter)
 
-    if req_type:
-        query = query.filter_by(type=req_type)
-
-    if priority:
-        query = query.filter_by(priority=priority)
-
-    if author_id:
-        query = query.filter_by(author_id=author_id)
+    if prioridade_filter:
+        query = query.filter_by(prioridade=prioridade_filter)
 
     if search:
-        search_term = f'%{search}%'
         query = query.filter(
             db.or_(
-                Requirement.title.ilike(search_term),
-                Requirement.description.ilike(search_term)
+                Requirement.titulo.ilike(f'%{search}%'),
+                Requirement.descricao.ilike(f'%{search}%'),
+                Requirement.codigo.ilike(f'%{search}%')
             )
         )
 
-    # Order by most recent
-    query = query.order_by(Requirement.updated_at.desc())
-
-    # Paginate
+    query = query.order_by(Requirement.criado_em.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    requirements = pagination.items
 
-    return jsonify({
-        'requirements': [r.to_dict() for r in pagination.items],
-        'pagination': {
-            'page': pagination.page,
-            'per_page': pagination.per_page,
-            'total': pagination.total,
-            'pages': pagination.pages,
-            'has_next': pagination.has_next,
-            'has_prev': pagination.has_prev
-        }
-    }), 200
+    return {
+        'requisitos': [req.to_dict() for req in requirements],
+        'total': pagination.total,
+        'page': pagination.page,
+        'per_page': pagination.per_page,
+        'pages': pagination.pages
+    }
 
 
 @requirements_bp.route('/<int:requirement_id>', methods=['GET'])
 @jwt_required()
 def get_requirement(requirement_id):
-    """
-    Get requirement details
-    ---
-    Path params:
-        - requirement_id: int (required)
-    Query params:
-        - include_project: boolean (default: false)
-    """
-    requirement = Requirement.query.get(requirement_id)
+    requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
 
     if not requirement:
-        return jsonify({'message': 'Requisito não encontrado'}), 404
+        return {'message': 'Requisito não encontrado'}, 404
 
-    include_project = request.args.get('include_project', 'false').lower() == 'true'
-
-    return jsonify({
-        'requirement': requirement.to_dict(include_project=include_project)
-    }), 200
+    return {'requirement': requirement.to_dict(include_validacoes=True)}
 
 
 @requirements_bp.route('/<int:requirement_id>', methods=['PUT'])
 @jwt_required()
 @validate_json(RequirementUpdateSchema)
 def update_requirement(requirement_id):
-    """
-    Update requirement
-    ---
-    Path params:
-        - requirement_id: int (required)
-    Body (all optional):
-        - title: string
-        - description: string
-        - type: string
-        - priority: string
-        - complexity: string
-        - status: string
-    """
-    current_user_id = int(get_jwt_identity())
-    requirement = Requirement.query.get(requirement_id)
+    data = request.validated_data
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return {'message': 'Usuário não encontrado'}, 404
+
+    if user.perfil not in ('analista', 'desenvolvedor'):
+        return {'message': 'Apenas analistas ou desenvolvedores podem editar requisitos'}, 403
+
+    requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
 
     if not requirement:
-        return jsonify({'message': 'Requisito não encontrado'}), 404
+        return {'message': 'Requisito não encontrado'}, 404
 
-    # Only author can update
-    if requirement.author_id != current_user_id:
-        return jsonify({'message': 'Apenas o autor do requisito pode editá-lo'}), 403
+    # RN003: If requirement is approved and titulo/descricao changed, reset status
+    was_approved = requirement.status == 'aprovado'
+    titulo_changed = 'titulo' in data and data['titulo'] != requirement.titulo
+    descricao_changed = 'descricao' in data and data.get('descricao') != requirement.descricao
 
-    data = request.validated_data
+    # Update fields
+    for field in ['titulo', 'descricao', 'codigo', 'tipo', 'categoria', 'prioridade', 'status']:
+        if field in data:
+            setattr(requirement, field, data[field])
 
-    # Track version changes
-    old_version = requirement.version
-
-    if 'title' in data and data['title']:
-        requirement.title = data['title']
-    if 'description' in data:
-        requirement.description = data['description']
-    if 'type' in data:
-        requirement.type = data['type']
-    if 'priority' in data:
-        requirement.priority = data['priority']
-    if 'complexity' in data:
-        requirement.complexity = data['complexity']
-    if 'status' in data and data['status']:
-        requirement.status = data['status']
-
-    # Increment version if content changed
-    if any(key in data for key in ['title', 'description']):
-        requirement.increment_version()
-        requirement.add_version_history_entry(
-            old_version,
-            requirement.version,
-            current_user_id,
-            {k: v for k, v in data.items() if k in ['title', 'description']}
-        )
+    # RN003: Reset status to em_revisao when editing an approved requirement
+    if was_approved and (titulo_changed or descricao_changed):
+        requirement.status = 'em_revisao'
+        requirement.incrementar_versao()
 
     db.session.commit()
 
-    return jsonify({
-        'message': 'Requisito atualizado com sucesso',
-        'requirement': requirement.to_dict()
-    }), 200
+    return {'message': 'Requisito atualizado com sucesso', 'requirement': requirement.to_dict()}
 
 
 @requirements_bp.route('/<int:requirement_id>', methods=['DELETE'])
 @jwt_required()
 def delete_requirement(requirement_id):
-    """
-    Delete requirement
-    ---
-    Path params:
-        - requirement_id: int (required)
-    """
-    current_user_id = int(get_jwt_identity())
-    requirement = Requirement.query.get(requirement_id)
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
 
-    if not requirement:
-        return jsonify({'message': 'Requisito não encontrado'}), 404
-
-    # Only author can delete
-    if requirement.author_id != current_user_id:
-        return jsonify({'message': 'Apenas o autor do requisito pode excluí-lo'}), 403
-
-    db.session.delete(requirement)
-    db.session.commit()
-
-    return jsonify({'message': 'Requisito excluído com sucesso'}), 200
-
-
-@requirements_bp.route('/<int:requirement_id>/validate', methods=['POST'])
-@jwt_required()
-@validate_json(RequirementValidationSchema)
-def validate_requirement(requirement_id):
-    """
-    Validate or reject a requirement (client only)
-    ---
-    Path params:
-        - requirement_id: int (required)
-    Body:
-        - approved: boolean (required) - true to approve, false to reject
-        - comments: string (optional)
-    """
-    current_user_id = int(get_jwt_identity())
-    requirement = Requirement.query.get(requirement_id)
-
-    if not requirement:
-        return jsonify({'message': 'Requisito não encontrado'}), 404
-
-    # Verify user is a client
-    user = User.query.get(current_user_id)
     if not user:
-        return jsonify({'message': 'Usuário não encontrado'}), 404
+        return {'message': 'Usuário não encontrado'}, 404
 
-    if user.role != 'cliente':
-        return jsonify({'message': 'Apenas clientes podem validar requisitos'}), 403
+    if user.perfil not in ('analista', 'gestor'):
+        return {'message': 'Apenas analistas ou gestores podem excluir requisitos'}, 403
 
-    data = request.validated_data
+    requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
 
-    if data['approved']:
-        requirement.validate_requirement(current_user_id, data.get('comments'))
-        message = 'Requisito aprovado com sucesso'
-    else:
-        requirement.reject_requirement(current_user_id, data.get('comments'))
-        message = 'Requisito rejeitado'
+    if not requirement:
+        return {'message': 'Requisito não encontrado'}, 404
 
+    # RN004: Logical deletion instead of physical deletion
+    requirement.ativo = False
     db.session.commit()
 
-    return jsonify({
-        'message': message,
-        'requirement': requirement.to_dict()
-    }), 200
+    return {'message': 'Requisito removido com sucesso'}
 
 
 @requirements_bp.route('/<int:requirement_id>/submit-review', methods=['POST'])
 @jwt_required()
-def submit_for_review(requirement_id):
-    """
-    Submit requirement for client review
-    ---
-    Path params:
-        - requirement_id: int (required)
-    """
-    current_user_id = int(get_jwt_identity())
-    requirement = Requirement.query.get(requirement_id)
+def submit_review(requirement_id):
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return {'message': 'Usuário não encontrado'}, 404
+
+    if user.perfil not in ('analista', 'desenvolvedor'):
+        return {'message': 'Apenas analistas ou desenvolvedores podem submeter para revisão'}, 403
+
+    requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
 
     if not requirement:
-        return jsonify({'message': 'Requisito não encontrado'}), 404
+        return {'message': 'Requisito não encontrado'}, 404
 
-    # Only author can submit for review
-    if requirement.author_id != current_user_id:
-        return jsonify({'message': 'Apenas o autor pode submeter para revisão'}), 403
+    if requirement.status != 'rascunho':
+        return {'message': 'Apenas requisitos em rascunho podem ser submetidos para revisão'}, 400
 
-    if requirement.status != 'draft':
-        return jsonify({'message': 'Apenas requisitos em rascunho podem ser submetidos'}), 400
-
-    requirement.status = 'in_review'
+    requirement.status = 'em_revisao'
     db.session.commit()
 
-    return jsonify({
-        'message': 'Requisito submetido para revisão',
-        'requirement': requirement.to_dict()
-    }), 200
+    return {'message': 'Requisito submetido para revisão', 'requirement': requirement.to_dict()}
+
+
+@requirements_bp.route('/<int:requirement_id>/validacoes', methods=['POST'])
+@jwt_required()
+@validate_json(ValidacaoCreateSchema)
+def create_validacao(requirement_id):
+    data = request.validated_data
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+
+    if not user:
+        return {'message': 'Usuário não encontrado'}, 404
+
+    if user.perfil not in ('cliente', 'analista', 'gestor'):
+        return {'message': 'Apenas clientes, analistas ou gestores podem validar requisitos'}, 403
+
+    requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
+
+    if not requirement:
+        return {'message': 'Requisito não encontrado'}, 404
+
+    if requirement.status != 'em_revisao':
+        return {'message': 'Apenas requisitos em revisão podem ser validados'}, 400
+
+    validacao = Validacao(
+        requisito_id=requirement_id,
+        validador_id=user_id,
+        resultado=data['resultado'],
+        comentario=data.get('comentario')
+    )
+    db.session.add(validacao)
+
+    # Update requirement status based on validation result
+    if data['resultado'] == 'aprovado':
+        requirement.status = 'aprovado'
+    elif data['resultado'] == 'rejeitado':
+        requirement.status = 'rejeitado'
+    elif data['resultado'] == 'aprovado_com_ressalvas':
+        requirement.status = 'aprovado'
+
+    db.session.commit()
+
+    return {'message': 'Validação registrada com sucesso', 'validacao': validacao.to_dict()}, 201
+
+
+@requirements_bp.route('/<int:requirement_id>/validacoes', methods=['GET'])
+@jwt_required()
+def list_validacoes(requirement_id):
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+
+    requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
+
+    if not requirement:
+        return {'message': 'Requisito não encontrado'}, 404
+
+    query = Validacao.query.filter_by(requisito_id=requirement_id).order_by(Validacao.validado_em.desc())
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    validacoes = pagination.items
+
+    return {
+        'validacoes': [v.to_dict() for v in validacoes],
+        'total': pagination.total,
+        'page': pagination.page,
+        'per_page': pagination.per_page,
+        'pages': pagination.pages
+    }
 
 
 @requirements_bp.route('/<int:requirement_id>/version-history', methods=['GET'])
 @jwt_required()
-def get_version_history(requirement_id):
-    """
-    Get requirement version history
-    ---
-    Path params:
-        - requirement_id: int (required)
-    """
-    requirement = Requirement.query.get(requirement_id)
+def version_history(requirement_id):
+    requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
 
     if not requirement:
-        return jsonify({'message': 'Requisito não encontrado'}), 404
+        return {'message': 'Requisito não encontrado'}, 404
 
-    return jsonify({
-        'requirement_id': requirement.id,
-        'current_version': requirement.version,
-        'version_history': requirement._parse_version_history()
-    }), 200
+    validacoes = Validacao.query.filter_by(requisito_id=requirement_id).order_by(Validacao.validado_em.desc()).all()
+
+    return {
+        'requirement': requirement.to_dict(),
+        'validacoes': [v.to_dict() for v in validacoes],
+        'versions': [{
+            'numero_versao': requirement.numero_versao,
+            'status': requirement.status,
+            'criado_em': requirement.criado_em.isoformat() if requirement.criado_em else None,
+            'atualizado_em': requirement.atualizado_em.isoformat() if requirement.atualizado_em else None
+        }]
+    }

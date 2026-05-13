@@ -1,51 +1,43 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app import db
 
 
 class Project(db.Model):
-    __tablename__ = 'projects'
+    __tablename__ = 'projetos'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200), nullable=False)
-    description = db.Column(db.Text)
-    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    version = db.Column(db.String(20), default='1.0')
-    status = db.Column(db.String(20), default='draft')  # draft, active, completed, archived
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    nome = db.Column(db.String(200), nullable=False)
+    descricao = db.Column(db.Text)
+    status = db.Column(db.String(20), nullable=False, default='planejamento')  # planejamento, em_andamento, em_revisao, concluido, cancelado
+    custo_estimado = db.Column(db.Numeric(12, 2))
+    gestor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    nome_cliente = db.Column(db.String(200))  # client name for the project
+    ativo = db.Column(db.Boolean, nullable=False, default=True)  # RN004: deleção lógica
+    criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    requirements = db.relationship('Requirement', backref='project', lazy='dynamic', cascade='all, delete-orphan')
+    requisitos = db.relationship('Requirement', backref='projeto', lazy='dynamic', cascade='all, delete-orphan')
 
-    def to_dict(self, include_requirements=False):
+    def to_dict(self, include_requisitos=False):
         """Convert project to dictionary"""
         data = {
             'id': self.id,
-            'name': self.name,
-            'description': self.description,
-            'owner_id': self.owner_id,
-            'owner': self.owner.to_dict() if self.owner else None,
-            'version': self.version,
+            'nome': self.nome,
+            'descricao': self.descricao,
             'status': self.status,
-            'requirements_count': self.requirements.count(),
-            'validated_count': self.requirements.filter_by(validated=True).count(),
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+            'custo_estimado': float(self.custo_estimado) if self.custo_estimado else None,
+            'gestor_id': self.gestor_id,
+            'gestor': self.gestor.to_dict() if self.gestor else None,
+            'nome_cliente': self.nome_cliente,
+            'ativo': self.ativo,
+            'requisitos_count': self.requisitos.filter_by(ativo=True).count(),
+            'aprovados_count': self.requisitos.filter_by(status='aprovado', ativo=True).count(),
+            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
+            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None
         }
 
-        if include_requirements:
-            data['requirements'] = [req.to_dict() for req in self.requirements.all()]
+        if include_requisitos:
+            data['requisitos'] = [req.to_dict() for req in self.requisitos.filter_by(ativo=True).all()]
 
         return data
-
-    def increment_version(self):
-        """Increment project version"""
-        parts = self.version.split('.')
-        if len(parts) == 2:
-            major, minor = parts
-            self.version = f"{major}.{int(minor) + 1}"
-        else:
-            self.version = f"{self.version}.1"
-
-    def __repr__(self):
-        return f'<Project {self.name}>'

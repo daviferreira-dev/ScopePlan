@@ -5,8 +5,8 @@ from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 
 def role_required(*roles):
     """
-    Decorator to restrict access to users with specific roles.
-    Usage: @role_required('admin', 'manager')
+    Decorator to restrict access to users with specific roles (perfil).
+    Usage: @role_required('analista', 'gestor')
     """
     def decorator(fn):
         @wraps(fn)
@@ -19,7 +19,7 @@ def role_required(*roles):
             if not user:
                 return {'message': 'Usuário não encontrado'}, 404
 
-            if user.role not in roles:
+            if user.perfil not in roles:
                 return {'message': 'Acesso não autorizado para este tipo de usuário'}, 403
 
             return fn(*args, **kwargs)
@@ -39,7 +39,7 @@ def analyst_required(fn):
         if not user:
             return {'message': 'Usuário não encontrado'}, 404
 
-        if user.role != 'analista':
+        if user.perfil != 'analista':
             return {'message': 'Apenas analistas podem realizar esta ação'}, 403
 
         return fn(*args, **kwargs)
@@ -58,7 +58,7 @@ def client_required(fn):
         if not user:
             return {'message': 'Usuário não encontrado'}, 404
 
-        if user.role != 'cliente':
+        if user.perfil != 'cliente':
             return {'message': 'Apenas clientes podem realizar esta ação'}, 403
 
         return fn(*args, **kwargs)
@@ -79,7 +79,6 @@ def validate_json(schema_class):
             schema = schema_class()
             try:
                 data = schema.load(request.get_json() or {})
-                # Store validated data in request context
                 request.validated_data = data
             except ValidationError as err:
                 return {'message': 'Erro de validação', 'errors': err.messages}, 400

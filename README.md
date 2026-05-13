@@ -1,73 +1,130 @@
-# React + TypeScript + Vite
+# ScopePlan
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Sistema de gerenciamento de requisitos de projeto com geração de ERS (Especificação de Requisitos de Software).
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Frontend:** React 19 + TypeScript + Vite
+- **Backend:** Flask (Python) + SQLAlchemy + JWT
+- **Banco de dados:** SQLite (desenvolvimento) / PostgreSQL (produção)
 
-## React Compiler
+## Pré-requisitos
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Node.js** 18+ e npm
+- **Python** 3.11+ (recomendado: 3.12)
 
-## Expanding the ESLint configuration
+## Como rodar
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 1. Backend
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+```bash
+# Entre na pasta do backend
+cd backend
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+# Crie um ambiente virtual
+python -m venv venv
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+# Ative o ambiente virtual
+# Windows:
+venv\Scripts\activate
+# Linux/Mac:
+source venv/bin/activate
+
+# Instale as dependências
+pip install -r requirements.txt
+
+# Configure as variáveis de ambiente (o .env já vem pre-configurado para dev)
+# Se necessário, copie o .env de exemplo:
+# cp .env.example .env
+
+# Rode o servidor                                                                                                           
+python run.py
+``` 
+
+O backend roda em `http://localhost:5000`.
+
+### 2. Frontend
+
+```bash
+# Na raiz do projeto, instale as dependências
+npm install
+
+# Rode o servidor de desenvolvimento
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+O frontend roda em `http://localhost:5173` e já possui proxy configurado para `/api` apontando para o backend na porta 5000.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 3. Acesse
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Abra `http://localhost:5173` no navegador.
+
+## Rotas da aplicação
+
+| Rota | Página |
+|------|--------|
+| `/` | Login |
+| `/cadastro` | Cadastro de usuário |
+| `/projetos` | Lista de projetos (protegida) |
+
+## Variáveis de ambiente (Backend)
+
+Arquivo `backend/.env`:
+
+| Variável | Padrão | Descrição |
+|----------|--------|-----------|
+| `FLASK_ENV` | `development` | Ambiente (development/production) |
+| `FLASK_APP` | `run.py` | Entry point do Flask |
+| `PORT` | `5000` | Porta do backend |
+| `SECRET_KEY` | - | Chave secreta do Flask |
+| `JWT_SECRET_KEY` | - | Chave secreta do JWT |
+| `DATABASE_URL` | `sqlite:///scopepan.db` | URL do banco de dados |
+
+## Notas para Windows
+
+- **WeasyPrint** (geração de PDF da ERS) requer bibliotecas GTK. Se não tiver instalado, o formato PDF não estará disponível, mas o formato DOCX funciona normalmente. Para instalar o GTK, use o MSYS2 ou o instalador do WeasyPrint para Windows.
+- Se tiver problemas com o `bcrypt`, certifique-se de ter o Visual Studio Build Tools instalado para compilar extensões C, ou use wheels pré-compilados.
+
+## Scripts úteis
+
+```bash
+# Frontend - build de produção
+npm run build
+
+# Frontend - preview do build
+npm run preview
+
+# Frontend - lint
+npm run lint
+
+# Backend - shell interativo Flask
+cd backend && flask shell
+```
+
+## Estrutura do projeto
+
+```
+ScopePlan/
+├── backend/
+│   ├── app/
+│   │   ├── __init__.py        # Factory do Flask (create_app)
+│   │   ├── config.py          # Configurações (dev/prod)
+│   │   ├── models/            # Modelos SQLAlchemy
+│   │   ├── routes/            # Blueprints da API
+│   │   ├── schemas/           # Schemas Marshmallow
+│   │   └── utils/             # Decorators e utilitários
+│   ├── instance/              # Banco SQLite
+│   ├── requirements.txt
+│   ├── run.py                 # Entry point do servidor
+│   └── .env                   # Variáveis de ambiente
+├── src/
+│   ├── pages/                 # Páginas React
+│   ├── components/            # Componentes reutilizáveis
+│   ├── contexts/              # Contextos (AuthContext)
+│   ├── services/              # Cliente API (api.ts)
+│   ├── App.tsx                # Rotas da aplicação
+│   └── main.tsx               # Entry point React
+├── package.json
+├── vite.config.ts
+└── tsconfig.json
 ```

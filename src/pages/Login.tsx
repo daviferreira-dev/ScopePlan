@@ -338,6 +338,61 @@ const styles = `
     padding-top: -100px;
   }
 }
+
+  @media (max-width: 480px) {
+    .card {
+      width: 92vw;
+      min-width: auto;
+      padding: 28px 18px;
+    }
+
+    .card-title {
+      font-size: 22px;
+    }
+
+    .card-subtitle {
+      font-size: 13px;
+    }
+
+    input {
+      font-size: 14px;
+      padding: 12px 14px 12px 40px;
+    }
+
+    .btn-primary {
+      font-size: 14px;
+      padding: 12px 0;
+    }
+
+    .footer {
+      font-size: 12px;
+    }
+
+ .logo-img {
+ width: clamp(160px, 45vw, 260px);
+ height: auto;
+    }
+
+    .page {
+      gap: 16px;
+      padding: 20px 12px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .card {
+      padding: 22px 14px;
+    }
+
+    .card-title {
+      font-size: 20px;
+    }
+
+    .page {
+      gap: 12px;
+      padding: 16px 10px;
+    }
+  }
 `;
 
 type Role = "analista" | "cliente";

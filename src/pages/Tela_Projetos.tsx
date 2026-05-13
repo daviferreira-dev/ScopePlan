@@ -501,6 +501,70 @@ const styles = `
   }
  
   .placeholder-page p { font-size: 13px; opacity: 0.5; }
+
+ /* ── Responsive ── */
+ .hamburger-btn {
+   display: none;
+   background: none;
+   border: none;
+   color: var(--text-primary);
+   cursor: pointer;
+   padding: 8px;
+   border-radius: 8px;
+   -webkit-tap-highlight-color: transparent;
+ }
+ .hamburger-btn:hover { background: rgba(0,0,0,0.05); }
+ .sidebar-overlay {
+   display: none;
+   position: fixed;
+   inset: 0;
+   background: rgba(0,0,0,0.4);
+   z-index: 15;
+ }
+
+ @media (max-width: 768px) {
+   .hamburger-btn { display: flex; align-items: center; }
+   .sidebar-overlay.active { display: block; }
+   .sidebar {
+     position: fixed;
+     top: 0;
+     left: -260px;
+     height: 100vh;
+     z-index: 20;
+     transition: left 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+     box-shadow: none;
+   }
+   .sidebar.open {
+     left: 0;
+     box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+   }
+   .main { width: 100vw; }
+   .topbar {
+     padding: 20px 16px;
+     flex-wrap: wrap;
+     gap: 8px;
+   }
+   .topbar-title { font-size: 22px; }
+   .topbar-subtitle { font-size: 12px; }
+   .btn-new-project { padding: 8px 14px; font-size: 12.5px; }
+   .content { padding: 0 16px 16px; }
+   .projects-grid {
+     grid-template-columns: 1fr;
+     gap: 14px;
+   }
+   .empty-state { padding: 40px 16px; }
+   .modal { padding: 24px 18px 20px; margin: 12px; }
+ }
+
+ @media (max-width: 480px) {
+   .topbar-title { font-size: 18px; }
+   .topbar-subtitle { font-size: 11px; }
+   .btn-new-project svg { display: none; }
+   .project-card { padding: 16px 14px 14px; }
+   .card-name { font-size: 14px; }
+   .modal { border-radius: 14px; }
+   .modal-title { font-size: 18px; }
+ }
 `;
  
 type Page = "projetos" | "auditoria";
@@ -526,6 +590,7 @@ export default function Tela_Projetos() {
   const [showModal, setShowModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectClient, setNewProjectClient] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
  
   // ── NOVO: projeto selecionado — null = mostra o painel
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -569,7 +634,9 @@ export default function Tela_Projetos() {
  
       <div className="layout">
         {/* SIDEBAR */}
-        <aside className="sidebar">
+      {/* Mobile sidebar overlay */}
+      <div className={`sidebar-overlay ${sidebarOpen ? "active" : ""}`} onClick={() => setSidebarOpen(false)} />
+        <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sidebar-logo">
             <img src="./src/assets/scopeplan.png" alt="ScopePlan" />
           </div>
@@ -579,7 +646,7 @@ export default function Tela_Projetos() {
  
             <button
               className={`nav-item ${activePage === "projetos" ? "active" : ""}`}
-              onClick={() => setActivePage("projetos")}
+              onClick={() => { setActivePage("projetos"); setSidebarOpen(false); }}
             >
               <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <rect x="2" y="3" width="8" height="8" rx="2" />
@@ -592,7 +659,7 @@ export default function Tela_Projetos() {
  
             <button
               className={`nav-item ${activePage === "auditoria" ? "active" : ""}`}
-              onClick={() => setActivePage("auditoria")}
+              onClick={() => { setActivePage("auditoria"); setSidebarOpen(false); }}
             >
               <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path d="M9 12l2 2 4-4" />
@@ -608,7 +675,7 @@ export default function Tela_Projetos() {
               <div className="user-name">{mockUser.name}</div>
               <div className="user-role">{mockUser.role}</div>
             </div>
-            <button className="btn-logout" onClick={handleLogout} title="Encerrar sessão">
+            <button className="btn-logout" onClick={() => { setSidebarOpen(false); handleLogout(); }} title="Encerrar sessão">
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1" />
               </svg>
@@ -621,6 +688,9 @@ export default function Tela_Projetos() {
           {activePage === "projetos" && (
             <>
               <header className="topbar">
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
                 <div className="topbar-left">
                   <div className="topbar-title">Painel de Projetos</div>
                   <div className="topbar-subtitle">Visão geral dos documentos ativos.</div>
@@ -706,6 +776,9 @@ export default function Tela_Projetos() {
           {activePage === "auditoria" && (
             <>
               <header className="topbar">
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
                 <div className="topbar-left">
                   <div className="topbar-title">Auditoria</div>
                   <div className="topbar-subtitle">Histórico de ações e alterações.</div>

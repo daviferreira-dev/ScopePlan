@@ -39,22 +39,22 @@ const styles = `
   }
 
   .sidebar {
-    width: 130px;
-    min-width: 130px;
-    background: var(--sidebar-bg);
+    width: 220px;
+    min-width: 220px;
+    background: #2e7d32;
     display: flex;
     flex-direction: column;
-    flex-shrink: 0;
+    flex-shrink: 0; position: relative;
     z-index: 20;
   }
 
   .sidebar-logo {
-    padding: 20px 14px 18px;
+    padding: 24px 20px;
     border-bottom: 1px solid rgba(255,255,255,0.08);
   }
 
   .sidebar-logo img {
-    width: 90px;
+    width: 150px;
     filter: brightness(0) invert(1);
     opacity: 0.95;
   }
@@ -95,11 +95,11 @@ const styles = `
   }
 
   .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-  .nav-item.active { background: rgba(255,255,255,0.14); color: #fff; font-weight: 600; }
+  .nav-item.active { background: rgba(255,255,255,0.2); border-radius: 10px; color: #fff; font-weight: 600; }
 
   .sidebar-user {
-    padding: 12px 10px;
-    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 12px;
+    border-top: 1px solid rgba(255,255,255,0.08); margin: 12px; background: rgba(0,0,0,0.15); border-radius: 12px;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -565,6 +565,96 @@ const styles = `
     font-size: 12pt;
     margin-left: 20px;
   }
+
+ /* ── Responsive ── */
+ .hamburger-btn {
+   display: none;
+   background: none;
+   border: none;
+   color: var(--text-primary);
+   cursor: pointer;
+   padding: 8px;
+   border-radius: 8px;
+   -webkit-tap-highlight-color: transparent;
+ }
+ .hamburger-btn:hover { background: rgba(0,0,0,0.05); }
+ .sidebar-overlay {
+   display: none;
+   position: fixed;
+   inset: 0;
+   background: rgba(0,0,0,0.4);
+   z-index: 15;
+ }
+
+ @media (max-width: 1200px) {
+   .download-layout {
+     flex-direction: column !important;
+     height: auto !important;
+     overflow-y: auto !important;
+   }
+   .download-left {
+     width: 100% !important;
+     min-width: 0 !important;
+     max-height: none !important;
+     border-right: none !important;
+     border-bottom: 1px solid var(--card-border);
+     padding: 24px 20px !important;
+   }
+   .download-left-inner { max-width: 100%; }
+   .download-right {
+     width: 100% !important;
+     min-height: 0 !important;
+     padding: 24px 20px !important;
+     display: flex;
+     justify-content: center;
+   }
+   .preview-panel {
+     width: 100% !important;
+     max-width: 680px !important;
+     min-height: auto !important;
+     padding: 24px 20px !important;
+     margin: 0 auto;
+   }
+ }
+
+ @media (max-width: 768px) {
+   .hamburger-btn { display: flex; align-items: center; }
+   .sidebar-overlay.active { display: block; }
+   .sidebar {
+     position: fixed;
+     top: 0;
+     left: -260px;
+     height: 100vh;
+     z-index: 20;
+     transition: left 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+     box-shadow: none;
+   }
+   .sidebar.open {
+     left: 0;
+     box-shadow: 4px 0 24px rgba(0,0,0,0.18);
+   }
+   .main { width: 100vw; }
+   .topbar { padding: 20px 16px; flex-wrap: wrap; gap: 8px; }
+   .topbar-title { font-size: 22px; }
+   .topbar-subtitle { font-size: 12px; }
+   .content { padding: 0 16px 16px; overflow-y: auto !important; }
+   .format-options { flex-wrap: wrap; }
+   .format-card { flex: 1 1 140px; }
+   .actions { flex-direction: column; gap: 10px; }
+   .actions .btn-cancel, .actions .btn-download { width: 100%; }
+   .modal { padding: 24px 18px 20px; margin: 12px; }
+ }
+
+ @media (max-width: 480px) {
+   .topbar-title { font-size: 18px; }
+   .download-left { padding: 18px 14px !important; }
+   .download-right { padding: 18px 14px !important; }
+   .preview-panel { padding: 16px 12px !important; }
+   .topic-checkbox { padding: 8px 6px; }
+   .modal { border-radius: 14px; }
+   .modal-title { font-size: 18px; }
+ }
+
 `;
 
 interface Topic {
@@ -617,6 +707,7 @@ export default function DownloadERS({ project, topics, onBack }: Props) {
   const [format, setFormat] = useState<Format>("pdf");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const toggleTopic = (id: number) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -654,13 +745,16 @@ export default function DownloadERS({ project, topics, onBack }: Props) {
     <>
       <style>{styles}</style>
       <div className="layout">
-        <aside className="sidebar">
+        {/* Mobile sidebar overlay */}
+      <div className={`sidebar-overlay ${sidebarOpen ? "active" : ""}`} onClick={() => setSidebarOpen(false)} />
+
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
           <div className="sidebar-logo">
             <img src="./src/assets/scopeplan.png" alt="ScopePlan" />
           </div>
           <nav className="sidebar-nav">
             <span className="nav-label">Menu</span>
-            <button className="nav-item active" onClick={onBack}>
+            <button className="nav-item active" onClick={() => { setSidebarOpen(false); onBack(); }}>
               <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <rect x="2" y="3" width="8" height="8" rx="2" />
                 <rect x="14" y="3" width="8" height="8" rx="2" />
@@ -693,6 +787,9 @@ export default function DownloadERS({ project, topics, onBack }: Props) {
 
         <div className="main">
           <header className="topbar">
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
             <button className="topbar-back" onClick={onBack}>
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path d="M19 12H5M12 5l-7 7 7 7" />

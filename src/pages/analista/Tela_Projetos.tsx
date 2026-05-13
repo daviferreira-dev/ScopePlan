@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ProjectDetail from "./Tela_Itens"; // ← importa a tela de itens
+import Auditoria from "./Auditoria";
  
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -773,28 +774,22 @@ export default function Tela_Projetos() {
             </>
           )}
  
-          {activePage === "auditoria" && (
-            <>
-              <header className="topbar">
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-          </button>
-                <div className="topbar-left">
-                  <div className="topbar-title">Auditoria</div>
-                  <div className="topbar-subtitle">Histórico de ações e alterações.</div>
-                </div>
-              </header>
-              <div className="content">
-                <div className="placeholder-page">
-                  <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.2}>
-                    <path d="M9 12l2 2 4-4M12 2a10 10 0 100 20A10 10 0 0012 2z" />
-                  </svg>
-                  <h2>Auditoria</h2>
-                  <p>Em breve disponível.</p>
-                </div>
-              </div>
-            </>
-          )}
+      {activePage === "auditoria" && (
+        <>
+          <header className="topbar">
+            <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div className="topbar-left">
+              <div className="topbar-title">Trilha de Auditoria</div>
+              <div className="topbar-subtitle">Registro cronológico de todas as ações realizadas nos projetos da plataforma.</div>
+            </div>
+          </header>
+          <div className="content">
+            <Auditoria />
+          </div>
+        </>
+      )}
         </div>
       </div>
  

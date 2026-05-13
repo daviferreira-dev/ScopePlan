@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import DownloadERS from "./DownloadERS";
 import ValidacaoRequisitos from "./ValidacaoRequisitos";
+import Auditoria from "./Auditoria";
 
 const styles = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
@@ -761,7 +762,31 @@ export default function Tela_Itens({ project, onBack }: Props) {
           </div>
         </aside>
 
-        <div className="main">
+        {activePage === "auditoria" ? (
+      <div className="main">
+        <header className="topbar">
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+          </button>
+          <button className="topbar-back" onClick={() => setActivePage("projetos")}>
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path d="M19 12H5M12 5l-7 7 7 7" />
+            </svg>
+            Voltar ao Projeto
+          </button>
+          <div className="topbar-bottom">
+            <div>
+              <div className="topbar-index-label">Trilha de Auditoria</div>
+              <div className="topbar-project-name">{project.name}</div>
+            </div>
+          </div>
+        </header>
+        <div className="content">
+          <Auditoria />
+        </div>
+      </div>
+    ) : (
+      <div className="main">
           <header className="topbar">
         <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -829,6 +854,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
             )}
           </div>
         </div>
+    )}
       </div>
 
       {showAddModal && (

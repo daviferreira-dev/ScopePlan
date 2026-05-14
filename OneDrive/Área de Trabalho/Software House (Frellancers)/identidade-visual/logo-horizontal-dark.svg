@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 56" width="800" height="224">
+  <rect width="200" height="56" rx="8" fill="#0C1C3E"/>
+  <rect width="48" height="48" x="4" y="4" rx="6" fill="rgba(255,255,255,.12)"/>
+  <rect x="18" y="16" width="5" height="24" fill="#E85D20"/>
+  <rect x="18" y="16" width="20" height="5" fill="#E85D20"/>
+  <rect x="18" y="26" width="15" height="5" fill="#E85D20"/>
+  <text x="64" y="38" font-family="system-ui, -apple-system, sans-serif" font-weight="800" font-size="26" fill="#fff" letter-spacing="5">FORJA</text>
+</svg>

@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Forja — Pitch Deck</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#0C1C3E;--orange:#E85D20;--cream:#F5F0EA;--gray:#6B7280;--light:#FAFAF7}
+body{background:var(--navy);font-family:'DM Sans',sans-serif;overflow:hidden}
+.slide{width:100vw;height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4rem;position:relative;color:#fff}
+.slide h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(32px,5vw,64px);letter-spacing:.04em;margin-bottom:1rem}
+.slide h2{font-family:'Syne',sans-serif;font-weight:700;font-size:clamp(24px,3.5vw,42px);margin-bottom:1.5rem}
+.slide p{font-size:clamp(16px,2vw,22px);max-width:700px;text-align:center;line-height:1.6;color:rgba(255,255,255,.7)}
+.slide .accent{color:var(--orange)}
+.slide-number{position:absolute;bottom:2rem;right:3rem;font-size:14px;color:rgba(255,255,255,.3);letter-spacing:.1em}
+.slide-nav{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);display:flex;gap:8px;z-index:100}
+.slide-nav button{width:10px;height:10px;border-radius:50%;border:none;background:rgba(255,255,255,.3);cursor:pointer;transition:all .3s}
+.slide-nav button.active{background:var(--orange);transform:scale(1.3)}
+/* Slide 1 - Cover */
+.slide-cover{background:var(--navy)}
+.slide-cover .logo-wrap{display:flex;align-items:center;gap:20px;margin-bottom:2rem}
+.slide-cover .logo-wrap svg{width:64px;height:64px}
+.slide-cover .logo-wrap h1{margin:0;font-size:clamp(48px,7vw,80px);letter-spacing:.08em}
+.slide-cover .tagline{font-size:clamp(18px,2.5vw,28px);font-weight:300;font-style:italic;color:rgba(255,255,255,.6);margin-top:1rem;border-top:0.5px solid rgba(255,255,255,.15);padding-top:1.5rem}
+/* Slide 2 - Problema */
+.slide-problem{background:linear-gradient(135deg,var(--navy) 0%,#152a54 100%)}
+.problem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:2rem;max-width:900px}
+.problem-card{background:rgba(255,255,255,.06);border-radius:12px;padding:2rem;text-align:center;border:0.5px solid rgba(255,255,255,.08)}
+.problem-card .emoji{font-size:40px;margin-bottom:1rem}
+.problem-card h3{font-size:18px;margin-bottom:.5rem}
+.problem-card p{font-size:14px;color:rgba(255,255,255,.5);text-align:center}
+/* Slide 3 - Solução */
+.slide-solution{background:var(--navy)}
+.solution-list{list-style:none;margin-top:2rem;max-width:700px}
+.solution-list li{display:flex;align-items:center;gap:12px;padding:1rem 0;border-bottom:0.5px solid rgba(255,255,255,.08);font-size:clamp(16px,2vw,20px)}
+.solution-list li .check{color:var(--orange);font-size:24px}
+/* Slide 4 - Serviços */
+.slide-services{background:linear-gradient(135deg,var(--navy) 0%,#152a54 100%)}
+.services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-top:2rem;max-width:900px}
+.service-card{background:rgba(232,93,32,.08);border:1px solid rgba(232,93,32,.2);border-radius:16px;padding:2rem;text-align:center}
+.service-card h3{font-size:20px;margin-bottom:.5rem;color:var(--orange)}
+.service-card .price{font-size:28px;font-weight:800;font-family:'Syne',sans-serif;margin:.5rem 0}
+.service-card p{font-size:13px;color:rgba(255,255,255,.5)}
+/* Slide 5 - Processo */
+.slide-process{background:var(--navy)}
+.process-steps{display:flex;gap:1.5rem;margin-top:2rem;max-width:800px}
+.process-step{flex:1;text-align:center}
+.process-step .num{width:48px;height:48px;border-radius:50%;background:var(--orange);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:20px;margin:0 auto 1rem}
+.process-step h3{font-size:16px;margin-bottom:.3rem}
+.process-step p{font-size:13px;color:rgba(255,255,255,.5)}
+/* Slide 6 - CTA */
+.slide-cta{background:var(--orange)}
+.slide-cta h1{color:#fff}
+.slide-cta p{color:rgba(255,255,255,.85)}
+.slide-cta .contact{margin-top:2rem;font-size:clamp(18px,2.5vw,28px);font-weight:500;color:#fff}
+.hidden{display:none}
+</style>
+</head>
+<body>
+
+<!-- SLIDE 1: Capa -->
+<div class="slide slide-cover" id="slide-1">
+  <div class="logo-wrap">
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <rect width="48" height="48" rx="8" fill="rgba(255,255,255,.1)"/>
+      <rect x="14" y="12" width="5" height="24" fill="#E85D20"/>
+      <rect x="14" y="12" width="20" height="5" fill="#E85D20"/>
+      <rect x="14" y="22" width="15" height="5" fill="#E85D20"/>
+    </svg>
+    <h1>FORJA</h1>
+  </div>
+  <div class="tagline">Presença digital que vende.</div>
+  <span class="slide-number">01 / 06</span>
+</div>
+
+<!-- SLIDE 2: Problema -->
+<div class="slide slide-problem hidden" id="slide-2">
+  <h2>O problema que vemos</h2>
+  <p>Negócios excelentes estão <span class="accent">invisíveis online</span>. Eles perdem clientes todo dia porque não têm onde ser encontrados.</p>
+  <div class="problem-grid">
+    <div class="problem-card">
+      <div class="emoji">📱</div>
+      <h3>Só WhatsApp</h3>
+      <p>Manda endereço do Zap em vez de um site profissional</p>
+    </div>
+    <div class="problem-card">
+      <div class="emoji">👀</div>
+      <h3>Invisível no Google</h3>
+      <p>Cliente pesquisa e não encontra, ou encontra o concorrente</p>
+    </div>
+    <div class="problem-card">
+      <div class="emoji">🤝</div>
+      <h3>100% Indicação</h3>
+      <p>Depende exclusivamente de boca a boca para conseguir cliente</p>
+    </div>
+  </div>
+  <span class="slide-number">02 / 06</span>
+</div>
+
+<!-- SLIDE 3: Solução -->
+<div class="slide slide-solution hidden" id="slide-3">
+  <h2>A Forja resolve isso</h2>
+  <ul class="solution-list">
+    <li><span class="check">✓</span> Preço fixo — sem surpresa na fatura</li>
+    <li><span class="check">✓</span> Prazo combinado — você sabe quando recebe</li>
+    <li><span class="check">✓</span> Processo transparente — acompanha em tempo real</li>
+    <li><span class="check">✓</span> Entrega completa — site no ar, funcionando</li>
+    <li><span class="check">✓</span> Suporte pós-entrega — não abandona depois de entregar</li>
+  </ul>
+  <span class="slide-number">03 / 06</span>
+</div>
+
+<!-- SLIDE 4: Serviços -->
+<div class="slide slide-services hidden" id="slide-4">
+  <h2>Nossos serviços</h2>
+  <div class="services-grid">
+    <div class="service-card">
+      <h3>Landing Page</h3>
+      <div class="price">R$ 1.497</div>
+      <p>1 página · Formulário · SEO básico · 7 dias úteis</p>
+    </div>
+    <div class="service-card">
+      <h3>Site Institucional</h3>
+      <div class="price">R$ 2.997</div>
+      <p>Até 5 páginas · Painel admin · SEO otimizado · 14 dias úteis</p>
+    </div>
+    <div class="service-card">
+      <h3>E-commerce</h3>
+      <div class="price">R$ 4.997</div>
+      <p>Até 30 produtos · Checkout · Painel admin · 21 dias úteis</p>
+    </div>
+  </div>
+  <span class="slide-number">04 / 06</span>
+</div>
+
+<!-- SLIDE 5: Processo -->
+<div class="slide slide-process hidden" id="slide-5">
+  <h2>Como funciona</h2>
+  <div class="process-steps">
+    <div class="process-step">
+      <div class="num">1</div>
+      <h3>Briefing</h3>
+      <p>Entendemos seu negócio, público e objetivos</p>
+    </div>
+    <div class="process-step">
+      <div class="num">2</div>
+      <h3>Desenvolvimento</h3>
+      <p>Você acompanha cada etapa em tempo real</p>
+    </div>
+    <div class="process-step">
+      <div class="num">3</div>
+      <h3>Entrega</h3>
+      <p>Site no ar, funcionando, bonito — no prazo combinado</p>
+    </div>
+  </div>
+  <span class="slide-number">05 / 06</span>
+</div>
+
+<!-- SLIDE 6: CTA -->
+<div class="slide slide-cta hidden" id="slide-6">
+  <h1>Vamos forjar sua<br>presença digital?</h1>
+  <p>Seu negócio merece ser encontrado. Fala com a Forja.</p>
+  <div class="contact">contato@forja.dev · forja.dev</div>
+  <span class="slide-number">06 / 06</span>
+</div>
+
+<!-- Navigation -->
+<div class="slide-nav" id="nav"></div>
+
+<script>
+const slides=document.querySelectorAll('.slide');
+const nav=document.getElementById('nav');
+let current=0;
+
+slides.forEach((_,i)=>{
+  const b=document.createElement('button');
+  if(i===0)b.classList.add('active');
+  b.onclick=()=>goTo(i);
+  nav.appendChild(b);
+});
+
+function goTo(n){
+  slides[current].classList.add('hidden');
+  nav.children[current].classList.remove('active');
+  current=n;
+  slides[current].classList.remove('hidden');
+  nav.children[current].classList.add('active');
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' ')goTo(Math.min(current+1,slides.length-1));
+  if(e.key==='ArrowLeft')goTo(Math.max(current-1,0));
+});
+</script>
+</body>
+</html>

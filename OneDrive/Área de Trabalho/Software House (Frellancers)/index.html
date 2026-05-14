@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Forja — Brand Kit 2025</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#0C1C3E;--orange:#E85D20;--cream:#F5F0EA;--gray:#6B7280;--light:#FAFAF7}
+body{background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--navy)}
+.page{max-width:900px;margin:0 auto;padding:2rem}
+
+/* COVER */
+.cover{background:var(--navy);border-radius:16px;padding:5rem 4rem;margin-bottom:3rem;display:flex;align-items:center;gap:3rem}
+.cover-logo{display:flex;align-items:center;gap:20px}
+.cover-text h1{font-family:'Syne',sans-serif;font-size:64px;font-weight:800;color:#fff;letter-spacing:.08em;line-height:1}
+.cover-text p{font-size:15px;color:rgba(255,255,255,.5);margin-top:8px;letter-spacing:.04em}
+.cover-tagline{margin-top:2rem;padding-top:2rem;border-top:0.5px solid rgba(255,255,255,.15);font-size:22px;font-weight:300;color:rgba(255,255,255,.8);font-style:italic}
+
+/* SECTIONS */
+.section{background:#fff;border-radius:16px;padding:2.5rem;margin-bottom:1.5rem}
+.section-label{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--gray);margin-bottom:1.5rem;display:flex;align-items:center;gap:8px}
+.section-label::after{content:'';flex:1;height:0.5px;background:#e5e7eb}
+.section-title{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;margin-bottom:.5rem}
+
+/* LOGO VERSIONS */
+.logo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:1.5rem}
+.logo-box{border-radius:12px;padding:2rem;display:flex;flex-direction:column;align-items:center;gap:12px}
+.logo-box.light{background:#f9f9f7;border:0.5px solid #e5e7eb}
+.logo-box.dark{background:var(--navy)}
+.logo-box.orange{background:var(--orange)}
+.logo-box-label{font-size:11px;color:var(--gray);text-align:center}
+
+/* COLORS */
+.color-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:1.5rem}
+.color-swatch{border-radius:12px;overflow:hidden;border:0.5px solid rgba(0,0,0,.06)}
+.color-block{height:100px}
+.color-info{padding:12px 14px;background:#fff}
+.color-name{font-size:13px;font-weight:500;margin-bottom:2px}
+.color-hex{font-size:12px;color:var(--gray);font-family:monospace}
+.color-use{font-size:11px;color:#9ca3af;margin-top:4px}
+
+/* TYPOGRAPHY */
+.type-showcase{margin-top:1.5rem}
+.type-item{padding:1.25rem 0;border-bottom:0.5px solid #f0ede8}
+.type-item:last-child{border-bottom:none}
+.type-meta{font-size:11px;color:var(--gray);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.07em}
+.t-display{font-family:'Syne',sans-serif;font-size:52px;font-weight:800;line-height:1.1;letter-spacing:.03em}
+.t-h1{font-family:'Syne',sans-serif;font-size:32px;font-weight:700;line-height:1.2}
+.t-h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:700}
+.t-body{font-size:16px;font-weight:400;line-height:1.7;color:#374151;max-width:600px}
+.t-small{font-size:13px;font-weight:400;color:var(--gray);line-height:1.6}
+.t-label{font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--gray)}
+
+/* BUSINESS CARD */
+.card-preview{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:1.5rem}
+.bcard{border-radius:12px;padding:1.5rem;min-height:170px;display:flex;flex-direction:column;justify-content:space-between;box-shadow:0 2px 20px rgba(0,0,0,.08)}
+.bcard-front{background:var(--navy)}
+.bcard-back{background:var(--orange)}
+.bcard-name{font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#fff;margin-bottom:2px}
+.bcard-role{font-size:12px;color:rgba(255,255,255,.55)}
+.bcard-contact{font-size:11px;color:rgba(255,255,255,.7);line-height:1.8;margin-top:6px}
+.bcard-back-title{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;letter-spacing:.08em;color:#fff}
+.bcard-services{font-size:13px;color:rgba(255,255,255,.9);line-height:2;margin:12px 0}
+.bcard-tagline{font-size:11px;color:rgba(255,255,255,.65);font-style:italic}
+.card-side-label{font-size:11px;color:var(--gray);margin-bottom:6px;text-align:center}
+
+/* INSTAGRAM */
+.ig-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;border-radius:8px;overflow:hidden;margin-top:1.5rem}
+.ig-post{aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:1rem;font-size:11px;line-height:1.4}
+.ig-post.anchor{background:var(--navy);color:rgba(255,255,255,.9)}
+.ig-post.edu{background:var(--cream);color:var(--navy);border:0.5px solid #e5e0d8}
+.ig-post.social{background:var(--orange);color:#fff}
+
+/* USAGE RULES */
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:1.5rem}
+.rule-box{border-radius:12px;padding:1.25rem}
+.rule-do{background:#f0faf4;border:0.5px solid #bbf7d0}
+.rule-dont{background:#fef2f2;border:0.5px solid #fecaca}
+.rule-header{font-size:12px;font-weight:600;margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.07em}
+.rule-do .rule-header{color:#16a34a}
+.rule-dont .rule-header{color:#dc2626}
+.rule-list{list-style:none;font-size:13px;line-height:2;color:#374151}
+
+/* FOOTER */
+.footer{text-align:center;padding:2rem;font-size:12px;color:var(--gray)}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- COVER -->
+<div class="cover">
+  <div>
+    <div class="cover-logo">
+      <svg viewBox="0 0 48 48" width="72" height="72" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="8" fill="#fff" fill-opacity=".1"/>
+        <rect x="14" y="12" width="5" height="24" fill="#E85D20"/>
+        <rect x="14" y="12" width="20" height="5" fill="#E85D20"/>
+        <rect x="14" y="22" width="15" height="5" fill="#E85D20"/>
+      </svg>
+      <div class="cover-text">
+        <h1>FORJA</h1>
+        <p>Brand Identity Kit · 2025</p>
+      </div>
+    </div>
+    <div class="cover-tagline">"Presença digital que vende."</div>
+  </div>
+</div>
+
+<!-- LOGO -->
+<div class="section">
+  <div class="section-label">01 — Logotipo</div>
+  <div class="logo-grid">
+    <div>
+      <div class="card-side-label">Versão principal (fundo claro)</div>
+      <div class="logo-box light">
+        <svg viewBox="0 0 200 56" width="180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" x="0" y="4" rx="8" fill="#0C1C3E"/>
+          <rect x="14" y="16" width="5" height="24" fill="#E85D20"/>
+          <rect x="14" y="16" width="20" height="5" fill="#E85D20"/>
+          <rect x="14" y="26" width="15" height="5" fill="#E85D20"/>
+          <text x="60" y="38" font-family="system-ui" font-weight="800" font-size="26" fill="#0C1C3E" letter-spacing="5">FORJA</text>
+        </svg>
+        <span class="logo-box-label">Fundo branco / creme</span>
+      </div>
+    </div>
+    <div>
+      <div class="card-side-label">Versão invertida (fundo escuro)</div>
+      <div class="logo-box dark">
+        <svg viewBox="0 0 200 56" width="180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" x="0" y="4" rx="8" fill="rgba(255,255,255,.12)"/>
+          <rect x="14" y="16" width="5" height="24" fill="#E85D20"/>
+          <rect x="14" y="16" width="20" height="5" fill="#E85D20"/>
+          <rect x="14" y="26" width="15" height="5" fill="#E85D20"/>
+          <text x="60" y="38" font-family="system-ui" font-weight="800" font-size="26" fill="#fff" letter-spacing="5">FORJA</text>
+        </svg>
+        <span style="color:rgba(255,255,255,.45);font-size:11px">Fundo azul / escuro</span>
+      </div>
+    </div>
+    <div>
+      <div class="card-side-label">Ícone isolado (avatar / favicon)</div>
+      <div class="logo-box light" style="justify-content:center;min-height:120px">
+        <svg viewBox="0 0 48 48" width="64" xmlns="http://www.w3.org/2000/svg">
+          <rect width="48" height="48" rx="8" fill="#0C1C3E"/>
+          <rect x="14" y="12" width="5" height="24" fill="#E85D20"/>
+          <rect x="14" y="12" width="20" height="5" fill="#E85D20"/>
+          <rect x="14" y="22" width="15" height="5" fill="#E85D20"/>
+        </svg>
+        <span class="logo-box-label">Perfil do Instagram / favicon</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COLORS -->
+<div class="section">
+  <div class="section-label">02 — Paleta de cores</div>
+  <div class="color-grid">
+    <div class="color-swatch">
+      <div class="color-block" style="background:#0C1C3E"></div>
+      <div class="color-info">
+        <div class="color-name">Azul Forja</div>
+        <div class="color-hex">#0C1C3E</div>
+        <div class="color-use">Primária · fundos escuros · headlines</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-block" style="background:#E85D20"></div>
+      <div class="color-info">
+        <div class="color-name">Laranja Brasa</div>
+        <div class="color-hex">#E85D20</div>
+        <div class="color-use">Acento · CTAs · destaques</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-block" style="background:#F5F0EA;border-bottom:0.5px solid #e5e7eb"></div>
+      <div class="color-info">
+        <div class="color-name">Creme Quente</div>
+        <div class="color-hex">#F5F0EA</div>
+        <div class="color-use">Fundo · backgrounds suaves</div>
+      </div>
+    </div>
+    <div class="color-swatch">
+      <div class="color-block" style="background:#6B7280"></div>
+      <div class="color-info">
+        <div class="color-name">Cinza Neutro</div>
+        <div class="color-hex">#6B7280</div>
+        <div class="color-use">Textos secundários · legendas</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TYPOGRAPHY -->
+<div class="section">
+  <div class="section-label">03 — Tipografia</div>
+  <div class="type-showcase">
+    <div class="type-item">
+      <div class="type-meta">Display — Syne ExtraBold 800</div>
+      <div class="t-display">FORJA</div>
+    </div>
+    <div class="type-item">
+      <div class="type-meta">Título H1 — Syne Bold 700</div>
+      <div class="t-h1">Presença digital que vende.</div>
+    </div>
+    <div class="type-item">
+      <div class="type-meta">Subtítulo H2 — Syne Bold 700</div>
+      <div class="t-h2">Landing pages, sites e e-commerce para PMEs.</div>
+    </div>
+    <div class="type-item">
+      <div class="type-meta">Corpo — DM Sans Regular 400</div>
+      <div class="t-body">Desenvolvemos soluções digitais para pequenas e médias empresas regionais. Sites que geram resultado, entregues com prazo e preço fixo — sem surpresas.</div>
+    </div>
+    <div class="type-item">
+      <div class="type-meta">Legenda — DM Sans Light 300</div>
+      <div class="t-small">*Projetos entregues em até 8 semanas com suporte pós-lançamento incluído.</div>
+    </div>
+    <div class="type-item">
+      <div class="type-meta">Label / Tag — DM Sans Medium 500 caps</div>
+      <div class="t-label">Landing Page · Site Institucional · E-commerce</div>
+    </div>
+  </div>
+</div>
+
+<!-- BUSINESS CARD -->
+<div class="section">
+  <div class="section-label">04 — Cartão de visita (85 × 54 mm)</div>
+  <div class="card-preview">
+    <div>
+      <div class="card-side-label">Frente</div>
+      <div class="bcard bcard-front">
+        <svg viewBox="0 0 180 40" width="160" xmlns="http://www.w3.org/2000/svg">
+          <rect width="40" height="40" rx="6" fill="rgba(255,255,255,.15)"/>
+          <rect x="12" y="10" width="4" height="20" fill="#E85D20"/>
+          <rect x="12" y="10" width="17" height="4" fill="#E85D20"/>
+          <rect x="12" y="19" width="13" height="4" fill="#E85D20"/>
+          <text x="50" y="28" font-family="system-ui" font-weight="800" font-size="22" fill="#fff" letter-spacing="4">FORJA</text>
+        </svg>
+        <div>
+          <div class="bcard-name">Seu Nome Aqui</div>
+          <div class="bcard-role">Desenvolvedor · Fundador</div>
+          <div class="bcard-contact">
+            contato@forja.com.br<br>
+            (11) 99999-9999<br>
+            @forja.digital
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="card-side-label">Verso</div>
+      <div class="bcard bcard-back">
+        <div>
+          <div class="bcard-back-title">O QUE FAZEMOS</div>
+          <div class="bcard-services">
+            → Landing pages<br>
+            → Sites institucionais<br>
+            → E-commerce
+          </div>
+        </div>
+        <div class="bcard-tagline">"Presença digital que vende."</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- INSTAGRAM GRID -->
+<div class="section">
+  <div class="section-label">05 — Presença no Instagram</div>
+  <p style="font-size:13px;color:var(--gray);margin-bottom:1rem">Prévia do grid de lançamento — primeiros 9 posts (lidos da direita para esquerda, de cima para baixo)</p>
+  <div class="ig-grid">
+    <div class="ig-post anchor">Quem é<br>a Forja?</div>
+    <div class="ig-post edu">Por que<br>ter site?</div>
+    <div class="ig-post social">Nosso<br>processo</div>
+    <div class="ig-post edu">LP vs<br>Site</div>
+    <div class="ig-post anchor">Serviços:<br>LP • Site • E-com</div>
+    <div class="ig-post edu">3 sinais<br>de site ruim</div>
+    <div class="ig-post social">Bastidores:<br>equipe</div>
+    <div class="ig-post edu">E-com:<br>venda 24h</div>
+    <div class="ig-post anchor">CTA:<br>WhatsApp</div>
+  </div>
+  <div style="display:flex;gap:8px;margin-top:.75rem;flex-wrap:wrap">
+    <span style="font-size:11px;padding:2px 10px;border-radius:99px;background:#0C1C3E;color:#fff;font-weight:500">Ancoragem</span>
+    <span style="font-size:11px;padding:2px 10px;border-radius:99px;background:#F5F0EA;color:#0C1C3E;border:0.5px solid #c8c0b4;font-weight:500">Educacional</span>
+    <span style="font-size:11px;padding:2px 10px;border-radius:99px;background:#E85D20;color:#fff;font-weight:500">Social / Bastidores</span>
+  </div>
+</div>
+
+<!-- USAGE RULES -->
+<div class="section">
+  <div class="section-label">06 — Regras de uso</div>
+  <div class="rules-grid">
+    <div class="rule-box rule-do">
+      <div class="rule-header">✓ Pode usar assim</div>
+      <ul class="rule-list">
+        <li>Logo em fundo branco ou creme</li>
+        <li>Logo em fundo azul escuro (navy)</li>
+        <li>Laranja apenas como acento (não como fundo principal)</li>
+        <li>Syne para títulos e destaque</li>
+        <li>DM Sans para corpo e textos longos</li>
+        <li>Mínimo 32px de altura para o logo</li>
+      </ul>
+    </div>
+    <div class="rule-box rule-dont">
+      <div class="rule-header">✗ Nunca use assim</div>
+      <ul class="rule-list">
+        <li>Logo em fundo laranja ou colorido</li>
+        <li>Distorcer ou rotacionar o logo</li>
+        <li>Usar cores fora da paleta oficial</li>
+        <li>Misturar mais de 2 fontes por peça</li>
+        <li>Outline, sombra ou efeitos no logo</li>
+        <li>Menos de 32px de altura no logo</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Forja — Brand Kit 2025 · Gerado com assistência de IA · Todos os direitos reservados
+</div>
+
+</div>
+</body>
+</html>

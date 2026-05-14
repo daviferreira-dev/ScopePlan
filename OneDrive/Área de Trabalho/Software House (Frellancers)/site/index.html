@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Forja — Presença digital que vende</title>
+<meta name="description" content="Forja é uma software house que cria sites profissionais, landing pages e e-commerces com preço fixo e prazo combinado.">
+<meta name="theme-color" content="#0C1C3E">
+<link rel="icon" href="/identidade-visual/favicon.svg" type="image/svg+xml">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--navy:#0C1C3E;--orange:#E85D20;--cream:#F5F0EA;--gray:#6B7280;--light:#FAFAF7}
+html{scroll-behavior:smooth}
+body{background:var(--cream);font-family:'DM Sans',sans-serif;color:var(--navy);overflow-x:hidden}
+a{text-decoration:none;color:inherit}
+
+/* NAV */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;transition:background .3s,box-shadow .3s}
+.nav.scrolled{background:rgba(255,255,255,.95);box-shadow:0 1px 12px rgba(0,0,0,.06);backdrop-filter:blur(8px)}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-logo svg{width:32px;height:32px}
+.nav-logo span{font-family:'Syne',sans-serif;font-weight:800;font-size:20px;letter-spacing:.06em;color:var(--navy)}
+.nav-links{display:flex;gap:2rem;align-items:center}
+.nav-links a{font-size:14px;font-weight:500;color:var(--gray);transition:color .2s}
+.nav-links a:hover{color:var(--navy)}
+.nav-links .cta-btn{background:var(--orange);color:#fff;padding:8px 20px;border-radius:8px;font-weight:500;transition:transform .2s,box-shadow .2s}
+.nav-links .cta-btn:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(232,93,32,.3)}
+.hamburger{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:8px}
+.hamburger span{width:22px;height:2px;background:var(--navy);border-radius:2px;transition:all .3s}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:6rem 2rem 4rem;background:var(--navy);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-50%;right:-20%;width:60%;height:200%;background:radial-gradient(circle,rgba(232,93,32,.08) 0%,transparent 60%);pointer-events:none}
+.hero-content{text-align:center;max-width:800px;position:relative;z-index:1}
+.hero-content h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(40px,7vw,72px);color:#fff;line-height:1.05;letter-spacing:.04em;margin-bottom:1.5rem}
+.hero-content h1 .accent{color:var(--orange)}
+.hero-content p{font-size:clamp(16px,2vw,20px);color:rgba(255,255,255,.6);max-width:540px;margin:0 auto 2.5rem;line-height:1.6;font-weight:300}
+.hero-content .hero-cta{display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:#fff;padding:14px 32px;border-radius:10px;font-weight:500;font-size:16px;transition:transform .2s,box-shadow .2s}
+.hero-content .hero-cta:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(232,93,32,.35)}
+.hero-badges{display:flex;gap:1.5rem;justify-content:center;margin-top:3rem;flex-wrap:wrap}
+.hero-badges .badge{background:rgba(255,255,255,.06);border:0.5px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 16px;font-size:13px;color:rgba(255,255,255,.5)}
+
+/* PROBLEMA */
+.problem{padding:6rem 2rem;background:var(--cream)}
+.section-header{text-align:center;max-width:600px;margin:0 auto 3rem}
+.section-header .label{font-size:11px;font-weight:500;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:1rem}
+.section-header h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(28px,4vw,40px);margin-bottom:1rem}
+.section-header p{color:var(--gray);line-height:1.6;font-size:16px}
+.problem-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;max-width:900px;margin:0 auto}
+.problem-card{background:#fff;border-radius:16px;padding:2rem;border:0.5px solid rgba(0,0,0,.06)}
+.problem-card .icon{width:48px;height:48px;border-radius:12px;background:rgba(232,93,32,.08);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:1rem}
+.problem-card h3{font-size:18px;font-weight:700;margin-bottom:.5rem}
+.problem-card p{font-size:14px;color:var(--gray);line-height:1.6}
+
+/* SERVIÇOS */
+.services{padding:6rem 2rem;background:#fff}
+.services-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1.5rem;max-width:1000px;margin:0 auto}
+.service-card{background:var(--light);border-radius:16px;padding:2.5rem;border:0.5px solid rgba(0,0,0,.04);transition:transform .2s,box-shadow .2s}
+.service-card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.08)}
+.service-card .service-icon{width:48px;height:48px;border-radius:12px;background:var(--navy);display:flex;align-items:center;justify-content:center;font-size:22px;margin-bottom:1.5rem}
+.service-card h3{font-family:'Syne',sans-serif;font-size:22px;font-weight:700;margin-bottom:.5rem}
+.service-card .price{font-size:32px;font-weight:800;font-family:'Syne',sans-serif;color:var(--orange);margin:.5rem 0}
+.service-card .meta{font-size:13px;color:var(--gray);margin-bottom:1rem}
+.service-card ul{list-style:none;padding:0}
+.service-card ul li{font-size:14px;padding:4px 0;color:var(--navy);display:flex;align-items:center;gap:6px}
+.service-card ul li::before{content:'✓';color:var(--orange);font-weight:700}
+
+/* PROCESSO */
+.process{padding:6rem 2rem;background:var(--navy);color:#fff}
+.process .section-header .label{color:var(--orange)}
+.process .section-header h2{color:#fff}
+.process .section-header p{color:rgba(255,255,255,.5)}
+.process-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:2rem;max-width:900px;margin:0 auto}
+.process-step{position:relative;padding:2rem;background:rgba(255,255,255,.04);border-radius:16px;border:0.5px solid rgba(255,255,255,.06)}
+.process-step .step-num{font-family:'Syne',sans-serif;font-weight:800;font-size:48px;color:var(--orange);opacity:.3;line-height:1;margin-bottom:1rem}
+.process-step h3{font-size:18px;font-weight:700;margin-bottom:.5rem}
+.process-step p{font-size:14px;color:rgba(255,255,255,.5);line-height:1.6}
+
+/* DIFERENCIAL */
+.diff{padding:6rem 2rem;background:var(--cream)}
+.diff-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;max-width:900px;margin:0 auto}
+.diff-item{background:#fff;border-radius:16px;padding:2rem;display:flex;gap:1rem;align-items:start}
+.diff-item .diff-icon{width:40px;height:40px;border-radius:10px;background:rgba(232,93,32,.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.diff-item h3{font-size:16px;font-weight:700;margin-bottom:.3rem}
+.diff-item p{font-size:13px;color:var(--gray);line-height:1.5}
+
+/* FAQ */
+.faq{padding:6rem 2rem;background:#fff}
+.faq-list{max-width:700px;margin:0 auto;display:flex;flex-direction:column;gap:1rem}
+.faq-item{background:var(--light);border-radius:12px;padding:1.5rem;cursor:pointer;transition:background .2s}
+.faq-item:hover{background:#f0ebe4}
+.faq-item .q{font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+.faq-item .q::after{content:'+';font-size:20px;color:var(--orange);transition:transform .2s}
+.faq-item.open .q::after{transform:rotate(45deg)}
+.faq-item .a{max-height:0;overflow:hidden;transition:max-height .3s;font-size:14px;color:var(--gray);line-height:1.6}
+.faq-item.open .a{max-height:200px;margin-top:1rem}
+
+/* CTA FINAL */
+.cta-final{padding:6rem 2rem;background:var(--orange);text-align:center;color:#fff}
+.cta-final h2{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(28px,4vw,44px);margin-bottom:1rem}
+.cta-final p{font-size:18px;opacity:.85;margin-bottom:2rem;max-width:500px;margin-left:auto;margin-right:auto}
+.cta-final .cta-btn{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--orange);padding:14px 32px;border-radius:10px;font-weight:700;font-size:16px;transition:transform .2s,box-shadow .2s}
+.cta-final .cta-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.15)}
+
+/* FOOTER */
+.footer{padding:3rem 2rem;background:var(--navy);color:rgba(255,255,255,.4);font-size:13px}
+.footer-inner{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
+.footer a{color:rgba(255,255,255,.6);transition:color .2s}
+.footer a:hover{color:#fff}
+.footer-logo{display:flex;align-items:center;gap:8px}
+.footer-logo svg{width:24px;height:24px}
+.footer-logo span{font-family:'Syne',sans-serif;font-weight:800;color:rgba(255,255,255,.6);letter-spacing:.04em;font-size:14px}
+
+/* MOBILE */
+@media(max-width:768px){
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .diff-grid{grid-template-columns:1fr}
+  .footer-inner{flex-direction:column;text-align:center}
+}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{opacity:0;transform:translateY(20px);transition:opacity .6s,transform .6s}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav" id="nav">
+  <a href="#" class="nav-logo">
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="8" fill="#0C1C3E"/><rect x="14" y="12" width="5" height="24" fill="#E85D20"/><rect x="14" y="12" width="20" height="5" fill="#E85D20"/><rect x="14" y="22" width="15" height="5" fill="#E85D20"/></svg>
+    <span>FORJA</span>
+  </a>
+  <div class="nav-links">
+    <a href="#servicos">Serviços</a>
+    <a href="#processo">Processo</a>
+    <a href="#faq">FAQ</a>
+    <a href="#contato" class="cta-btn">Falar com a Forja</a>
+  </div>
+  <div class="hamburger" id="hamburger" onclick="document.querySelector('.nav-links').style.display=document.querySelector('.nav-links').style.display==='flex'?'none':'flex'">
+    <span></span><span></span><span></span>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Presença digital<br>que <span class="accent">vende</span>.</h1>
+    <p>Sites profissionais com preço fixo e prazo combinado. Sem surpresa, sem enrolação. Seu negócio merece ser encontrado.</p>
+    <a href="#contato" class="hero-cta">Falar com a Forja →</a>
+    <div class="hero-badges">
+      <span class="badge">Preço fixo</span>
+      <span class="badge">Prazo combinado</span>
+      <span class="badge">Entrega completa</span>
+    </div>
+  </div>
+</section>
+
+<!-- PROBLEMA -->
+<section class="problem" id="problema">
+  <div class="section-header fade-up">
+    <div class="label">O problema</div>
+    <h2>Negócios excelentes estão invisíveis</h2>
+    <p>Empresas com produtos e serviços incríveis perdem clientes todos os dias porque não têm onde ser encontrados online.</p>
+  </div>
+  <div class="problem-grid">
+    <div class="problem-card fade-up">
+      <div class="icon">📱</div>
+      <h3>Só tem WhatsApp</h3>
+      <p>Manda endereço do Zap em vez de um site profissional. Transmite amadorismo sem querer.</p>
+    </div>
+    <div class="problem-card fade-up">
+      <div class="icon">👀</div>
+      <h3>Invisível no Google</h3>
+      <p>Quando alguém pesquisa, encontra o concorrente — não você. Oportunidade perdida todo dia.</p>
+    </div>
+    <div class="problem-card fade-up">
+      <div class="icon">🤝</div>
+      <h3>100% indicação</h3>
+      <p>Depende exclusivamente de boca a boca. Se ninguém indica, ninguém conhece. Crescimento travado.</p>
+    </div>
+  </div>
+</section>
+
+<!-- SERVIÇOS -->
+<section class="services" id="servicos">
+  <div class="section-header fade-up">
+    <div class="label">Serviços</div>
+    <h2>Tudo que seu negócio precisa para aparecer</h2>
+    <p>Preço fixo, prazo definido, entrega completa. Escolha o que faz sentido pra você.</p>
+  </div>
+  <div class="services-grid">
+    <div class="service-card fade-up">
+      <div class="service-icon">⚡</div>
+      <h3>Landing Page</h3>
+      <div class="price">R$ 1.497</div>
+      <div class="meta">7 dias úteis</div>
+      <ul>
+        <li>1 página de conversão</li>
+        <li>Design responsivo</li>
+        <li>Formulário de contato</li>
+        <li>SEO básico</li>
+        <li>Hospedagem 1º ano inclusa</li>
+      </ul>
+    </div>
+    <div class="service-card fade-up">
+      <div class="service-icon">🏢</div>
+      <h3>Site Institucional</h3>
+      <div class="price">R$ 2.997</div>
+      <div class="meta">14 dias úteis</div>
+      <ul>
+        <li>Até 5 páginas</li>
+        <li>Design responsivo</li>
+        <li>Painel administrativo</li>
+        <li>SEO otimizado</li>
+        <li>Hospedagem 1º ano inclusa</li>
+      </ul>
+    </div>
+    <div class="service-card fade-up">
+      <div class="service-icon">🛒</div>
+      <h3>E-commerce</h3>
+      <div class="price">R$ 4.997</div>
+      <div class="meta">21 dias úteis</div>
+      <ul>
+        <li>Até 30 produtos</li>
+        <li>Checkout integrado</li>
+        <li>Painel administrativo</li>
+        <li>SEO otimizado</li>
+        <li>Hospedagem 1º ano inclusa</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESSO -->
+<section class="process" id="processo">
+  <div class="section-header fade-up">
+    <div class="label">Processo</div>
+    <h2>Como funciona</h2>
+    <p>Processo simples e transparente. Você acompanha tudo do início ao fim.</p>
+  </div>
+  <div class="process-steps">
+    <div class="process-step fade-up">
+      <div class="step-num">1</div>
+      <h3>Briefing</h3>
+      <p>A gente entende seu negócio, seu público e seus objetivos. Você conta o que precisa, a gente traduz em projeto.</p>
+    </div>
+    <div class="process-step fade-up">
+      <div class="step-num">2</div>
+      <h3>Desenvolvimento</h3>
+      <p>Seu site toma forma. Você acompanha cada etapa em tempo real e valida tudo antes de ir pra frente.</p>
+    </div>
+    <div class="process-step fade-up">
+      <div class="step-num">3</div>
+      <h3>Entrega</h3>
+      <p>Site no ar, funcionando, bonito. No prazo combinado. Com painel administrativo e tudo que você precisa pra gerenciar.</p>
+    </div>
+  </div>
+</section>
+
+<!-- DIFERENCIAL -->
+<section class="diff" id="diferencial">
+  <div class="section-header fade-up">
+    <div class="label">Por que a Forja</div>
+    <h2>Diferenciais que importam</h2>
+  </div>
+  <div class="diff-grid">
+    <div class="diff-item fade-up">
+      <div class="diff-icon">💰</div>
+      <div><h3>Preço fixo</h3><p>Valor combinado no contrato. Sem cobrança por hora, sem surpresa na fatura.</p></div>
+    </div>
+    <div class="diff-item fade-up">
+      <div class="diff-icon">⏰</div>
+      <div><h3>Prazo definido</h3><p>7 a 21 dias úteis. Você sabe exatamente quando recebe seu site.</p></div>
+    </div>
+    <div class="diff-item fade-up">
+      <div class="diff-icon">🔍</div>
+      <div><h3>Processo transparente</h3><p>Acompanhe cada etapa. Nada de "confia em mim" — você vê tudo acontecendo.</p></div>
+    </div>
+    <div class="diff-item fade-up">
+      <div class="diff-icon">🛡️</div>
+      <div><h3>Suporte pós-entrega</h3><p>Não sumimos depois de entregar. Suporte e manutenção disponíveis quando você precisar.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq" id="faq">
+  <div class="section-header fade-up">
+    <div class="label">Dúvidas</div>
+    <h2>Perguntas frequentes</h2>
+  </div>
+  <div class="faq-list">
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="q">Quanto custa um site?</div>
+      <div class="a">Landing Pages a partir de R$ 1.497, Sites Institucionais a partir de R$ 2.997 e E-commerces a partir de R$ 4.997. Tudo com preço fixo no contrato — sem surpresa.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="q">Quanto tempo demora?</div>
+      <div class="a">Landing Pages: 7 dias úteis. Sites Institucionais: 14 dias úteis. E-commerces: 21 dias úteis. Prazo é combinado e respeitado.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="q">Preciso ter o conteúdo pronto?</div>
+      <div class="a">Não necessariamente. A gente te ajuda com textos e estrutura. Mas se você já tiver conteúdo, o processo fica ainda mais rápido.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="q">Vou conseguir editar o site depois?</div>
+      <div class="a">Sim. Todos os projetos incluem painel administrativo para você editar textos, imagens e produtos sem precisar de programador.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="q">E a hospedagem?</div>
+      <div class="a">O primeiro ano é por nossa conta. Após isso, a hospedagem custa R$ 297/ano — bem menos que os R$ 50-100/mês de serviços comuns.</div>
+    </div>
+    <div class="faq-item" onclick="this.classList.toggle('open')">
+      <div class="q">Qual a forma de pagamento?</div>
+      <div class="a">50% na aprovação do contrato e 50% na entrega. Para projetos acima de R$ 2.000, oferecemos 3x sem juros. À vista tem 5% de desconto.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-final" id="contato">
+  <h2>Vamos forjar sua<br>presença digital?</h2>
+  <p>Seu negócio merece ser encontrado. Chega de ser invisível online.</p>
+  <a href="https://wa.me/5511999990000?text=Ol%C3%A1!%20Quero%20saber%20mais%20sobre%20os%20servi%C3%A7os%20da%20Forja" class="cta-btn" target="_blank">Chamar no WhatsApp →</a>
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-logo">
+      <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect width="48" height="48" rx="8" fill="rgba(255,255,255,.1)"/><rect x="14" y="12" width="5" height="24" fill="#E85D20"/><rect x="14" y="12" width="20" height="5" fill="#E85D20"/><rect x="14" y="22" width="15" height="5" fill="#E85D20"/></svg>
+      <span>FORJA</span>
+    </div>
+    <div>&copy; 2026 Forja. Todos os direitos reservados.</div>
+    <div><a href="mailto:contato@forja.com.br">contato@forja.com.br</a></div>
+  </div>
+</footer>
+
+<script>
+// Nav scroll
+const nav=document.getElementById('nav');
+window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>50));
+
+// Fade-up on scroll
+const obs=new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}});
+},{threshold:.15});
+document.querySelectorAll('.fade-up').forEach(el=>obs.observe(el));
+</script>
+</body>
+</html>

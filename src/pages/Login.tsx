@@ -395,7 +395,7 @@ const styles = `
   }
 `;
 
-type Role = "analista" | "cliente";
+type Role = "analista" | "cliente" | "desenvolvedor";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -407,7 +407,7 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     alert(`Entrando como ${role}: ${email}`);
-    navigate(role === "analista" ? "/analista/projetos" : "/cliente/projetos");
+    navigate(role === "analista" ? "/analista/projetos" : role === "desenvolvedor" ? "/desenvolvedor/projetos" : "/cliente/projetos");
   };
 
   return (
@@ -513,6 +513,13 @@ export default function LoginPage() {
             >
               Cliente
             </button>
+        <button
+          type="button"
+          className={`btn-quick ${role === "desenvolvedor" ? "active" : ""}`}
+          onClick={() => setRole("desenvolvedor")}
+        >
+          Desenvolvedor
+        </button>
           </div>
   <p className="footer">
   Não possui uma conta? <span style={{ textDecoration: "underline", cursor: "pointer" }} onClick={() => navigate('/cadastro')}>Crie</span>

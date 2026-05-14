@@ -3,6 +3,7 @@ import Login from "./pages/Login.tsx";
 import Cadastro from "./pages/Cadastro.tsx";
 import Tela_Projetos_Analista from "./pages/analista/Tela_Projetos.tsx";
 import Tela_Projetos_Cliente from "./pages/cliente/Tela_Projetos.tsx";
+import Tela_Projetos_Desenvolvedor from "./pages/desenvolvedor/Tela_Projetos.tsx";
 
 export default function App() {
   return (
@@ -11,6 +12,7 @@ export default function App() {
       <Route path="/cadastro" element={<Cadastro />} />
       <Route path="/analista/projetos" element={<Tela_Projetos_Analista />} />
       <Route path="/cliente/projetos" element={<Tela_Projetos_Cliente />} />
+      <Route path="/desenvolvedor/projetos" element={<Tela_Projetos_Desenvolvedor />} />
       {/* Rotas legadas — mantêm compatibilidade */}
       <Route path="/Tela_Projetos" element={<Tela_Projetos_Analista />} />
       <Route path="/Tela_Itens" element={<Tela_Projetos_Analista />} />

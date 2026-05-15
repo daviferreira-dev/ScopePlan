@@ -209,6 +209,16 @@ const styles = `
     color: rgba(255,255,255,0.28);
   }
 
+  input::-ms-clear,
+  input::-ms-reveal,
+  input::-webkit-search-decoration,
+  input::-webkit-search-cancel-button,
+  input::-webkit-search-results-button,
+  input::-webkit-search-results-decoration,
+  input::-webkit-textfield-decoration-container {
+    display: none !important;
+  }
+
   input:focus {
     border-color: var(--input-border-focus);
     box-shadow: 0 0 0 3px rgba(255,255,255,0.07);

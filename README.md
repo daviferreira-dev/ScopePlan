@@ -351,8 +351,7 @@ ScopePlan/
 
 | Issue | Detalhes |
 |-------|----------|
-| **Audit log vazio** | Modelo e endpoint existem, mas `AuditLog.log()` nunca é chamado pelas rotas |
-| **Logout sem invalidação servidor** | `AuthContext.logout()` só limpa localStorage; não chama `authApi.logout()` |
+| **Logout sem invalidação servidor** | ✅ Resolvido - `AuthContext.logout()` agora chama `authApi.logout()` antes de limpar tokens |
 | **Token blocklist in-memory** | Tokens revogados no logout são perdidos ao reiniciar o servidor |
 | **Páginas não implementadas** | Desenvolvedor e Gestor são placeholders |
 | **Duplicação de código** | Diretórios `analista/` e `cliente/` têm páginas quase idênticas |

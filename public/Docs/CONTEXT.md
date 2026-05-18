@@ -251,10 +251,11 @@ Projects and requirements are never physically deleted. `DELETE` sets `ativo = F
 
 | Issue | Details | Severity |
 |-------|---------|----------|
-| **Audit log empty** | `AuditLog.log()` is never called from any route — the `audit_logs` table remains empty | Critical |
-| **Logout doesn't invalidate server token** | `AuthContext.logout()` only clears localStorage; doesn't call `authApi.logout()` | Medium |
+| **Audit log implementation** | ✅ Fixed — `AuditLog.log()` now called from all project and requirement CRUD routes | Resolved |
+| **Logout server invalidation** | ✅ Fixed — `AuthContext.logout()` now calls `authApi.logout()` before clearing tokens | Resolved |
+| **Validation 'pendente' handling** | ✅ Fixed — `create_validacao` endpoint now handles `resultado='pendente'` correctly | Resolved |
+| **Client ERS download topicIds** | ✅ Fixed — Client DownloadERS page now passes requirement IDs to API | Resolved |
 | **Token blocklist in-memory** | Revoked tokens are lost on server restart | Low |
 | **Developer/Manager portals not implemented** | Both are PlaceholderPage in App.tsx | Medium |
 | **Code duplication** | `analista/` and `cliente/` directories have near-identical pages | Low |
 | **ProtectedRoute duplication** | `src/components/ProtectedRoute.tsx` exists but isn't used; App.tsx has inline version | Low |
-| **Validation 'pendente' gap** | `ValidacaoCreateSchema` accepts `resultado='pendente'` but route handler doesn't handle it — may leave requirement status unchanged | Low |

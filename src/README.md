@@ -231,7 +231,7 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 
 | Issue | Detalhes |
 |-------|----------|
-| **Logout sem invalidação servidor** | `AuthContext.logout()` só limpa localStorage; não chama `authApi.logout()` |
+| **Logout sem invalidação servidor** | ✅ Resolvido - `AuthContext.logout()` agora chama `authApi.logout()` antes de limpar tokens |
 | **ProtectedRoute duplicado** | `src/components/ProtectedRoute.tsx` não é usado; App.tsx tem versão inline |
 | **Duplicação de código** | Diretórios `analista/` e `cliente/` têm páginas quase idênticas |
 | **Perfis não implementados** | Desenvolvedor e Gestor são placeholders |

@@ -126,7 +126,7 @@ O servidor estará disponível em `http://localhost:5000`
 
 **Parâmetros de query:** `page`, `per_page`, `projeto_id`, `acao`, `entidade_tipo`, `usuario_id`, `data_inicio`, `data_fim`
 
-> ⚠️ **Audit log não funcional:** O modelo `AuditLog` e o endpoint de leitura existem, mas `AuditLog.log()` nunca é chamado pelas rotas. A tabela `audit_logs` permanece vazia. A gravação automática de ações precisa ser implementada.
+> ✅ **Audit log implementado:** Todas as rotas de CRUD de projetos e requisitos agora registram eventos de auditoria automaticamente via `AuditLog.log()`.
 
 ---
 
@@ -312,9 +312,8 @@ Tentativas de acessar recursos de outros projetos retornam 403.
 
 | Issue | Detalhes |
 |-------|----------|
-| **Audit log vazio** | `AuditLog.log()` nunca é chamado pelas rotas — a tabela permanece vazia |
+| **Logout sem invalidação servidor** | ✅ Resolvido - Frontend agora chama `authApi.logout()` antes de limpar tokens |
 | **Token blocklist in-memory** | Tokens revogados no logout são perdidos ao reiniciar o servidor |
-| **Validação pendente** | `ValidacaoCreateSchema` aceita `resultado='pendente'`, mas a lógica do route handler não trata esse caso — pode deixar o status do requisito sem alteração |
 
 ## Licença
 

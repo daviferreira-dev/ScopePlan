@@ -1,0 +1,15 @@
+Perfil Teste User - Analista:
+	testeAnalista@gmail.com
+	analise123
+
+Perfil Teste User - Cliente
+	testeCliente@gmail.com
+	cliente123
+ 
+Perfil Teste User - Desenvolvedor
+	testeDesenvolvedor@gmail.com
+	desenvolvedor123
+
+Perfil Teste User - Gestor
+	testeGestor@gmail.com
+	gestor123

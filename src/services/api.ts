@@ -56,7 +56,7 @@ async function apiFetch<T>(
     }
     // Refresh failed, clear tokens
     clearTokens();
-    window.location.href = '/';
+    window.location.href = '/login';
     throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
   }
 
@@ -100,7 +100,6 @@ async function tryRefreshToken(): Promise<boolean> {
 // Custom error class
 export class ApiError extends Error {
   status: number;
-
   constructor(status: number, message: string) {
     super(message);
     this.status = status;
@@ -174,6 +173,10 @@ export const authApi = {
       method: 'POST',
     });
   },
+
+  listClientes(): Promise<{ clientes: { id: number; nome: string; email: string }[] }> {
+    return apiFetch<{ clientes: { id: number; nome: string; email: string }[] }>('/auth/clientes');
+  },
 };
 
 // ==================== PROJECTS API ====================
@@ -186,6 +189,7 @@ export interface ProjectData {
   custo_estimado: number | null;
   gestor_id: number;
   gestor: string | null;
+  cliente_id: number | null;
   nome_cliente: string | null;
   ativo: boolean;
   requisitos_count: number;
@@ -205,7 +209,10 @@ export interface ProjectsListResponse {
 
 export const projectsApi = {
   list(page = 1, perPage = 20, status?: string, search?: string): Promise<ProjectsListResponse> {
-    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
     if (status) params.set('status', status);
     if (search) params.set('search', search);
     return apiFetch<ProjectsListResponse>(`/projects?${params.toString()}`);
@@ -222,6 +229,7 @@ export const projectsApi = {
     descricao?: string;
     status?: string;
     custo_estimado?: number;
+    cliente_id?: number;
     nome_cliente?: string;
   }): Promise<{ message: string; project: ProjectData }> {
     return apiFetch<{ message: string; project: ProjectData }>('/projects', {
@@ -237,6 +245,7 @@ export const projectsApi = {
       descricao: string | null;
       status: string;
       custo_estimado: number | null;
+      cliente_id: number | null;
       nome_cliente: string | null;
     }>
   ): Promise<{ message: string; project: ProjectData }> {
@@ -252,13 +261,18 @@ export const projectsApi = {
     });
   },
 
-  downloadERS(projectId: number, format: 'pdf' | 'docx'): Promise<Blob> {
+  downloadERS(projectId: number, format: 'pdf' | 'docx', topicIds?: number[]): Promise<Blob> {
     const token = getAccessToken();
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const body = topicIds ? JSON.stringify({ topic_ids: topicIds }) : '{}';
+    headers['Content-Type'] = 'application/json';
+
     return fetch(`${API_BASE}/projects/${projectId}/ers/download?format=${format}`, {
       method: 'POST',
       headers,
+      body,
     }).then((response) => {
       if (!response.ok) throw new Error('Falha ao gerar o documento.');
       return response.blob();
@@ -272,7 +286,7 @@ export interface RequirementData {
   id: number;
   projeto_id: number;
   autor_id: number;
-  autor: string | null;
+  autor: { id: number; nome: string; email: string; perfil: string; ativo: boolean } | null;
   codigo: string | null;
   titulo: string;
   descricao: string;
@@ -283,7 +297,7 @@ export interface RequirementData {
   numero_versao: number;
   ativo: boolean;
   validacoes_count: number;
-  ultima_validacao: string | null;
+  ultima_validacao: { id: number; validador: { id: number; nome: string; email: string; perfil: string } | null; status: string; comentario: string; criado_em: string } | null;
   criado_em: string;
   atualizado_em: string;
 }
@@ -302,7 +316,7 @@ export interface ValidacaoData {
   id: number;
   requisito_id: number;
   validador_id: number;
-  validador: string | null;
+  validador: { id: number; nome: string; email: string; perfil: string; ativo: boolean } | null;
   resultado: string;
   comentario: string | null;
   validado_em: string;
@@ -408,8 +422,57 @@ export const requirementsApi = {
   },
 
   getVersionHistory(requirementId: number): Promise<{ versions: RequirementData[] }> {
-    return apiFetch<{ versions: RequirementData }>(
+    return apiFetch<{ versions: RequirementData[] }>(
       `/requirements/${requirementId}/version-history`
     );
+  },
+};
+
+// ==================== AUDIT API ====================
+
+export interface AuditLogData {
+  id: number;
+  usuario_id: number;
+  usuario: { id: number; nome: string; email: string; perfil: string } | null;
+  acao: string;
+  entidade_tipo: string;
+  entidade_id: number;
+  projeto_id: number | null;
+  detalhes: string | null;
+  criado_em: string;
+}
+
+export interface AuditListResponse {
+  audit_logs: AuditLogData[];
+  total: number;
+  page: number;
+  per_page: number;
+  pages: number;
+}
+
+export const auditApi = {
+  list(
+    page = 1,
+    perPage = 20,
+    filters?: {
+      projeto_id?: number;
+      acao?: string;
+      entidade_tipo?: string;
+      usuario_id?: number;
+      data_inicio?: string;
+      data_fim?: string;
+    }
+  ): Promise<AuditListResponse> {
+    const params = new URLSearchParams({
+      page: String(page),
+      per_page: String(perPage),
+    });
+    if (filters?.projeto_id) params.set('projeto_id', String(filters.projeto_id));
+    if (filters?.acao) params.set('acao', filters.acao);
+    if (filters?.entidade_tipo) params.set('entidade_tipo', filters.entidade_tipo);
+    if (filters?.usuario_id) params.set('usuario_id', String(filters.usuario_id));
+    if (filters?.data_inicio) params.set('data_inicio', filters.data_inicio);
+    if (filters?.data_fim) params.set('data_fim', filters.data_fim);
+    return apiFetch<AuditListResponse>(`/audit?${params.toString()}`);
   },
 };

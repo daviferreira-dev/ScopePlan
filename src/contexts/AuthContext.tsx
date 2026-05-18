@@ -4,7 +4,6 @@ import {
   setTokens,
   clearTokens,
   getAccessToken,
-  type ApiError,
 } from '../services/api';
 
 interface User {
@@ -71,9 +70,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(loginData.user);
   }, []);
 
-  const logout = useCallback(() => {
-    clearTokens();
-    setUser(null);
+  const logout = useCallback(async () => {
+    try {
+      await authApi.logout();
+    } catch (e) {
+      console.error('Logout error:', e);
+    } finally {
+      clearTokens();
+      setUser(null);
+    }
   }, []);
 
   const value: AuthContextType = {

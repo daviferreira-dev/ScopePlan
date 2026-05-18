@@ -50,10 +50,11 @@ def create_app(config_name=None):
         return jsonify({'message': 'Token revogado', 'error': 'token_revoked'}), 401
 
     # Register blueprints
-    from app.routes import auth_bp, projects_bp, requirements_bp
+    from app.routes import auth_bp, projects_bp, requirements_bp, audit_bp
     app.register_blueprint(auth_bp)
     app.register_blueprint(projects_bp)
     app.register_blueprint(requirements_bp)
+    app.register_blueprint(audit_bp)
 
     # Health check
     @app.route('/api/health', methods=['GET'])
@@ -62,7 +63,7 @@ def create_app(config_name=None):
 
     # Create tables
     with app.app_context():
-        from app.models import User, Project, Requirement, Validacao
+        from app.models import User, Project, Requirement, Validacao, AuditLog
         db.create_all()
 
     return app

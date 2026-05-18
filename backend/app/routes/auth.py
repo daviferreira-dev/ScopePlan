@@ -123,3 +123,17 @@ def update_me():
     db.session.commit()
 
     return {'message': 'Perfil atualizado com sucesso', 'user': user.to_dict()}, 200
+
+
+@auth_bp.route('/clientes', methods=['GET'])
+@jwt_required()
+def list_clientes():
+    """List all active users with perfil='cliente'. Used when creating/editing projects.
+    Only analistas and gestores can access this endpoint."""
+    from app import db
+    user_id = get_jwt_identity()
+    user = User.query.get(user_id)
+    if not user or user.perfil not in ('analista', 'gestor'):
+        return {'message': 'Acesso não autorizado'}, 403
+    clientes = User.query.filter_by(perfil='cliente', ativo=True).order_by(User.nome).all()
+    return {'clientes': [c.to_dict() for c in clientes]}, 200

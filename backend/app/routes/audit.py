@@ -1,25 +1,10 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app import db
-from app.models import User, AuditLog, Project, Requirement
+from app.models import User, AuditLog
+from app.utils.access import get_user_project_ids
 
 audit_bp = Blueprint('audit', __name__, url_prefix='/api/audit')
-
-
-def _get_user_project_ids(user):
-    """Return list of project IDs the user has access to."""
-    if user.perfil == 'cliente':
-        projects = Project.query.filter_by(cliente_id=user.id, ativo=True).with_entities(Project.id).all()
-    elif user.perfil in ('analista', 'gestor'):
-        projects = Project.query.filter_by(gestor_id=user.id, ativo=True).with_entities(Project.id).all()
-    elif user.perfil == 'desenvolvedor':
-        projects = db.session.query(Requirement.projeto_id).filter_by(
-            autor_id=user.id, ativo=True
-        ).distinct().all()
-        projects = [(p[0],) for p in projects]
-    else:
-        projects = []
-    return [p[0] for p in projects]
 
 
 @audit_bp.route('', methods=['GET'])
@@ -27,7 +12,8 @@ def _get_user_project_ids(user):
 def list_audit_logs():
     """List audit logs with optional filters, filtered by user's projects"""
     current_user_id = get_jwt_identity()
-    user = User.query.get(current_user_id)
+    user = db.session.get(User, current_user_id)
+
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
 
@@ -45,11 +31,9 @@ def list_audit_logs():
     per_page = min(per_page, 100)
 
     # Filter by user's accessible projects
-    user_project_ids = _get_user_project_ids(user)
-
+    user_project_ids = get_user_project_ids(user)
     query = AuditLog.query
 
-    # Always filter to user's projects only
     if projeto_id:
         # User can only filter to projects they have access to
         if projeto_id not in user_project_ids:
@@ -57,17 +41,20 @@ def list_audit_logs():
         query = query.filter(AuditLog.projeto_id == projeto_id)
     else:
         if user_project_ids:
-            query = query.filter(AuditLog.projeto_id.in_(user_project_ids))
+            # Include logs for user's projects AND logs without projeto_id
+            # (login, logout, user creation, etc. have projeto_id=NULL)
+            query = query.filter(
+                db.or_(
+                    AuditLog.projeto_id.in_(user_project_ids),
+                    AuditLog.projeto_id.is_(None)
+                )
+            )
         else:
-            # User has no projects — return empty
-            return {
-                'logs': [],
-                'total': 0,
-                'page': page,
-                'per_page': per_page,
-                'pages': 0
-            }
+            # User has no projects — still show system-level logs (no projeto_id)
+            query = query.filter(AuditLog.projeto_id.is_(None))
 
+    # Only show logs from the user themselves for non-project logs
+    # Project-scoped logs are visible to anyone with project access
     if acao:
         query = query.filter(AuditLog.acao == acao)
     if entidade_tipo:

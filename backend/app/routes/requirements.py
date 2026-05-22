@@ -3,70 +3,10 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models import Requirement, Project, User, Validacao, AuditLog
 from app.schemas import RequirementCreateSchema, RequirementUpdateSchema, ValidacaoCreateSchema, RequirementSchema
 from app.utils.decorators import validate_json, role_required
+from app.utils.access import get_user_project_ids, check_user_project_access, check_user_requirement_access
 from app import db
 
 requirements_bp = Blueprint('requirements', __name__, url_prefix='/api/requirements')
-
-
-def _get_user_project_ids(user):
-    """Return list of project IDs the user has access to."""
-    if user.perfil == 'cliente':
-        projects = Project.query.filter_by(cliente_id=user.id, ativo=True).with_entities(Project.id).all()
-    elif user.perfil in ('analista', 'gestor'):
-        projects = Project.query.filter_by(gestor_id=user.id, ativo=True).with_entities(Project.id).all()
-    elif user.perfil == 'desenvolvedor':
-        projects = db.session.query(Requirement.projeto_id).filter_by(
-            autor_id=user.id, ativo=True
-        ).distinct().all()
-        projects = [(p[0],) for p in projects]
-    else:
-        projects = []
-    return [p[0] for p in projects]
-
-
-def _check_user_project_access(user, projeto_id):
-    """Verify that the user has access to the given project based on their role.
-    Returns (project, error_response). If error_response is set, access is denied."""
-    project = Project.query.filter_by(id=projeto_id, ativo=True).first()
-    if not project:
-        return None, ({'message': 'Projeto não encontrado'}, 404)
-
-    if user.perfil == 'cliente':
-        if project.cliente_id != user.id:
-            return None, ({'message': 'Acesso negado a este projeto'}, 403)
-    elif user.perfil in ('analista', 'gestor'):
-        if project.gestor_id != user.id:
-            return None, ({'message': 'Acesso negado a este projeto'}, 403)
-    elif user.perfil == 'desenvolvedor':
-        has_reqs = Requirement.query.filter_by(
-            projeto_id=project.id, autor_id=user.id, ativo=True
-        ).first()
-        if not has_reqs:
-            return None, ({'message': 'Acesso negado a este projeto'}, 403)
-
-    return project, None
-
-
-def _check_user_requirement_access(user, requirement):
-    """Verify that the user has access to the project of this requirement."""
-    project = Project.query.filter_by(id=requirement.projeto_id, ativo=True).first()
-    if not project:
-        return {'message': 'Projeto do requisito não encontrado'}, 404
-
-    if user.perfil == 'cliente':
-        if project.cliente_id != user.id:
-            return {'message': 'Acesso negado a este requisito'}, 403
-    elif user.perfil in ('analista', 'gestor'):
-        if project.gestor_id != user.id:
-            return {'message': 'Acesso negado a este requisito'}, 403
-    elif user.perfil == 'desenvolvedor':
-        has_reqs = Requirement.query.filter_by(
-            projeto_id=project.id, autor_id=user.id, ativo=True
-        ).first()
-        if not has_reqs:
-            return {'message': 'Acesso negado a este requisito'}, 403
-
-    return None
 
 
 @requirements_bp.route('', methods=['POST'])
@@ -75,7 +15,7 @@ def _check_user_requirement_access(user, requirement):
 def create_requirement():
     data = request.validated_data
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -84,11 +24,11 @@ def create_requirement():
         return {'message': 'Apenas analistas ou desenvolvedores podem criar requisitos'}, 403
 
     # Check user access to this project
-    _, access_error = _check_user_project_access(user, data['projeto_id'])
+    _, access_error = check_user_project_access(user, data['projeto_id'])
     if access_error:
         return access_error
 
-    project = Project.query.get(data['projeto_id'])
+    project = db.session.get(Project, data['projeto_id'])
     if not project:
         return {'message': 'Projeto não encontrado'}, 404
 
@@ -119,6 +59,7 @@ def create_requirement():
     db.session.commit()
 
     AuditLog.log(user_id, 'criacao', 'requisito', requirement.id, project.id, {'titulo': requirement.titulo, 'tipo': requirement.tipo})
+    db.session.commit()
 
     return {'message': 'Requisito criado com sucesso', 'requirement': requirement.to_dict()}, 201
 
@@ -127,7 +68,7 @@ def create_requirement():
 @jwt_required()
 def list_requirements():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -141,13 +82,13 @@ def list_requirements():
 
     if projeto_id:
         # Verify user access to this project
-        _, access_error = _check_user_project_access(user, projeto_id)
+        _, access_error = check_user_project_access(user, projeto_id)
         if access_error:
             return access_error
         query = query.filter_by(projeto_id=projeto_id)
     else:
         # Filter by user's accessible projects
-        user_project_ids = _get_user_project_ids(user)
+        user_project_ids = get_user_project_ids(user)
         query = query.filter(Requirement.projeto_id.in_(user_project_ids))
 
     if status_filter:
@@ -160,11 +101,13 @@ def list_requirements():
         query = query.filter_by(prioridade=prioridade_filter)
 
     if search:
+        # Escape LIKE wildcards to prevent pattern injection
+        escaped = search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         query = query.filter(
             db.or_(
-                Requirement.titulo.ilike(f'%{search}%'),
-                Requirement.descricao.ilike(f'%{search}%'),
-                Requirement.codigo.ilike(f'%{search}%')
+                Requirement.titulo.ilike(f'%{escaped}%', escape='\\'),
+                Requirement.descricao.ilike(f'%{escaped}%', escape='\\'),
+                Requirement.codigo.ilike(f'%{escaped}%', escape='\\')
             )
         )
 
@@ -185,14 +128,14 @@ def list_requirements():
 @jwt_required()
 def get_requirement(requirement_id):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
 
     if not requirement:
         return {'message': 'Requisito não encontrado'}, 404
 
-    access_error = _check_user_requirement_access(user, requirement)
+    access_error = check_user_requirement_access(user, requirement)
     if access_error:
         return access_error
 
@@ -205,7 +148,7 @@ def get_requirement(requirement_id):
 def update_requirement(requirement_id):
     data = request.validated_data
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -218,7 +161,7 @@ def update_requirement(requirement_id):
     if not requirement:
         return {'message': 'Requisito não encontrado'}, 404
 
-    access_error = _check_user_requirement_access(user, requirement)
+    access_error = check_user_requirement_access(user, requirement)
     if access_error:
         return access_error
 
@@ -240,6 +183,7 @@ def update_requirement(requirement_id):
     db.session.commit()
 
     AuditLog.log(user_id, 'atualizacao', 'requisito', requirement.id, requirement.projeto_id, {'titulo': requirement.titulo, 'status': requirement.status})
+    db.session.commit()
 
     return {'message': 'Requisito atualizado com sucesso', 'requirement': requirement.to_dict()}
 
@@ -248,7 +192,7 @@ def update_requirement(requirement_id):
 @jwt_required()
 def delete_requirement(requirement_id):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -261,7 +205,7 @@ def delete_requirement(requirement_id):
     if not requirement:
         return {'message': 'Requisito não encontrado'}, 404
 
-    access_error = _check_user_requirement_access(user, requirement)
+    access_error = check_user_requirement_access(user, requirement)
     if access_error:
         return access_error
 
@@ -270,6 +214,7 @@ def delete_requirement(requirement_id):
     db.session.commit()
 
     AuditLog.log(user_id, 'exclusao', 'requisito', requirement.id, requirement.projeto_id, {'titulo': requirement.titulo})
+    db.session.commit()
 
     return {'message': 'Requisito removido com sucesso'}
 
@@ -278,7 +223,7 @@ def delete_requirement(requirement_id):
 @jwt_required()
 def submit_review(requirement_id):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -291,7 +236,7 @@ def submit_review(requirement_id):
     if not requirement:
         return {'message': 'Requisito não encontrado'}, 404
 
-    access_error = _check_user_requirement_access(user, requirement)
+    access_error = check_user_requirement_access(user, requirement)
     if access_error:
         return access_error
 
@@ -302,6 +247,7 @@ def submit_review(requirement_id):
     db.session.commit()
 
     AuditLog.log(user_id, 'submissao_revisao', 'requisito', requirement.id, requirement.projeto_id, {'status_anterior': 'rascunho', 'status_atual': 'em_revisao'})
+    db.session.commit()
 
     return {'message': 'Requisito submetido para revisão', 'requirement': requirement.to_dict()}
 
@@ -312,7 +258,7 @@ def submit_review(requirement_id):
 def create_validacao(requirement_id):
     data = request.validated_data
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -325,7 +271,7 @@ def create_validacao(requirement_id):
     if not requirement:
         return {'message': 'Requisito não encontrado'}, 404
 
-    access_error = _check_user_requirement_access(user, requirement)
+    access_error = check_user_requirement_access(user, requirement)
     if access_error:
         return access_error
 
@@ -348,14 +294,11 @@ def create_validacao(requirement_id):
         requirement.status = 'rejeitado'
     elif data['resultado'] == 'aprovado_com_ressalvas':
         requirement.status = 'aprovado'
-    # Task #1: Handle 'pendente' result - leaves status unchanged
-    elif data['resultado'] == 'pendente':
-        # Leaves requirement status as 'em_revisao'
-        pass
 
     db.session.commit()
 
     AuditLog.log(user_id, 'validacao', 'requisito', requirement.id, requirement.projeto_id, {'resultado': data['resultado'], 'status_anterior': status_anterior, 'status_atual': requirement.status})
+    db.session.commit()
 
     return {'message': 'Validação registrada com sucesso', 'validacao': validacao.to_dict()}, 201
 
@@ -364,7 +307,7 @@ def create_validacao(requirement_id):
 @jwt_required()
 def list_validacoes(requirement_id):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 20, type=int)
@@ -374,7 +317,7 @@ def list_validacoes(requirement_id):
     if not requirement:
         return {'message': 'Requisito não encontrado'}, 404
 
-    access_error = _check_user_requirement_access(user, requirement)
+    access_error = check_user_requirement_access(user, requirement)
     if access_error:
         return access_error
 
@@ -395,14 +338,14 @@ def list_validacoes(requirement_id):
 @jwt_required()
 def version_history(requirement_id):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
 
     if not requirement:
         return {'message': 'Requisito não encontrado'}, 404
 
-    access_error = _check_user_requirement_access(user, requirement)
+    access_error = check_user_requirement_access(user, requirement)
     if access_error:
         return access_error
 

@@ -521,8 +521,8 @@ export default function Tela_Projetos() {
         }
     }
 
-    const handleLogout = () => {
-        logout();
+    const handleLogout = async () => {
+        await logout();
         navigate("/");
     };
 

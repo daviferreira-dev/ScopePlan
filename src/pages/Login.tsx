@@ -389,14 +389,14 @@ export default function LoginPage() {
         e.preventDefault();
         setLoading(true); setError("");
         try { await login(email, password); }
-        catch (err: any) { setError(err.message || "Credenciais inválidas. Tente novamente."); }
+        catch (err: unknown) { setError((err instanceof Error ? err.message : String(err)) || "Credenciais inválidas. Tente novamente."); }
         finally { setLoading(false); }
     };
 
     const handleQuickLogin = async (qEmail: string, qSenha: string) => {
         setError(""); setLoading(true);
         try { await login(qEmail, qSenha); }
-        catch (err: any) { setError(err.message || "Credenciais inválidas."); }
+        catch (err: unknown) { setError((err instanceof Error ? err.message : String(err)) || "Credenciais inválidas."); }
         finally { setLoading(false); }
     };
 

@@ -56,7 +56,7 @@ async function apiFetch<T>(
     }
     // Refresh failed, clear tokens
     clearTokens();
-    window.location.href = '/login';
+    window.dispatchEvent(new Event("auth:expired"));
     throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
   }
 
@@ -164,7 +164,7 @@ export const authApi = {
   refresh(): Promise<LoginResponse> {
     return apiFetch<LoginResponse>('/auth/refresh', {
       method: 'POST',
-      body: JSON.stringify({ refresh_token: getRefreshToken() }),
+      // Refresh token sent via Authorization header by tryRefreshToken()
     });
   },
 
@@ -261,20 +261,30 @@ export const projectsApi = {
     });
   },
 
-  downloadERS(projectId: number, format: 'pdf' | 'docx', topicIds?: number[]): Promise<Blob> {
-    const token = getAccessToken();
-    const headers: Record<string, string> = {};
-    if (token) headers['Authorization'] = `Bearer ${token}`;
+  downloadERS(projectId: number, format: 'pdf' | 'docx' = 'docx', topicIds?: number[]): Promise<Blob> {
+    const doFetch = (token: string | null) => {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      return fetch(`${API_BASE}/projects/${projectId}/ers/download?format=${format}`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ formato: format, topic_ids: topicIds || [] }),
+      });
+    };
 
-    const body = topicIds ? JSON.stringify({ topic_ids: topicIds }) : '{}';
-    headers['Content-Type'] = 'application/json';
-
-    return fetch(`${API_BASE}/projects/${projectId}/ers/download?format=${format}`, {
-      method: 'POST',
-      headers,
-      body,
-    }).then((response) => {
-      if (!response.ok) throw new Error('Falha ao gerar o documento.');
+    return doFetch(getAccessToken()).then(async (response) => {
+      if (response.status === 401) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) {
+          const retry = await doFetch(getAccessToken());
+          if (!retry.ok) throw new ApiError(retry.status, 'Falha ao gerar o documento.');
+          return retry.blob();
+        }
+        clearTokens();
+        window.dispatchEvent(new Event('auth:expired'));
+        throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
+      }
+      if (!response.ok) throw new ApiError(response.status, 'Falha ao gerar o documento.');
       return response.blob();
     });
   },

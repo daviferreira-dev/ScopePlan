@@ -183,8 +183,8 @@ export default function DownloadERS({ project, requirements, onBack }: Props) {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
-    } catch (err: any) {
-      setError(err.message || "Erro inesperado ao gerar download.");
+    } catch (err: unknown) {
+      setError((err instanceof Error ? err.message : String(err)) || "Erro inesperado ao gerar download.");
     } finally {
       setLoading(false);
     }

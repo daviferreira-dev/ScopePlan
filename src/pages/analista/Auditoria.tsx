@@ -1,4 +1,4 @@
-import React, { useState, useEffect, type JSX } from "react";
+import React, { useState, useEffect } from "react";
 import { auditApi, projectsApi, type AuditLogData, type ProjectData } from "../../services/api";
 
 const styles = `
@@ -425,7 +425,6 @@ export default function Auditoria() {
  const [error, setError] = useState<string | null>(null);
  const [filterProject, setFilterProject] = useState("");
  const [filterType, setFilterType] = useState("");
- const [filterUser, setFilterUser] = useState("");
  const [dateFrom, setDateFrom] = useState("");
  const [dateTo, setDateTo] = useState("");
  const [searchText, setSearchText] = useState("");
@@ -455,7 +454,7 @@ export default function Auditoria() {
  try {
  setLoading(true); setError(null);
  const filters: Record<string, string> = {};
- if (filterProject) filters.projeto_id = parseInt(filterProject) || undefined;
+ if (filterProject) filters.projeto_id = String(parseInt(filterProject) || "");
  if (filterType) filters.acao = filterType;
  if (dateFrom) filters.data_inicio = dateFrom;
  if (dateTo) filters.data_fim = dateTo;

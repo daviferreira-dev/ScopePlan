@@ -176,8 +176,7 @@ const styles = `
  border-radius: 50%;
  background: linear-gradient(135deg, var(--green-bright), var(--green-light));
  display: flex; align-items: center; justify-content: center;
- font-size: 11px; font-weight: 700; color: #fff;
- flex-shrink: 0;
+ font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0;
  box-shadow: 0 2px 8px rgba(52,196,90,0.35);
  }
 
@@ -186,20 +185,16 @@ const styles = `
  .user-role { font-size: 10px; color: rgba(255,255,255,0.35); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
 
  .btn-logout {
- background: none; border: none;
- color: rgba(255,255,255,0.25);
- cursor: pointer; padding: 5px; border-radius: 7px;
- transition: color 0.2s, background 0.2s;
+ background: none; border: none; color: rgba(255,255,255,0.25); cursor: pointer;
+ padding: 5px; border-radius: 7px; transition: color 0.2s, background 0.2s;
  display: flex; align-items: center; flex-shrink: 0;
  }
  .btn-logout:hover { color: #ff8080; background: rgba(255,80,80,0.12); }
 
  /* ── MAIN ── */
  .main {
- flex: 1; display: flex; flex-direction: column;
- overflow: hidden;
- background: var(--surface);
- min-width: 0;
+ flex: 1; display: flex; flex-direction: column; overflow: hidden;
+ background: var(--surface); min-width: 0;
  }
 
  /* ── TOPBAR ── */
@@ -253,7 +248,9 @@ const styles = `
  }
 
  .stat-pill {
- display: flex; align-items: center; gap: 8px;
+ display: flex;
+ align-items: center;
+ gap: 8px;
  background: #fff;
  border: 1px solid var(--card-border);
  border-radius: 12px;
@@ -264,7 +261,9 @@ const styles = `
  }
 
  .stat-pill strong {
- font-size: 16px; font-weight: 700; color: var(--text-primary);
+ font-size: 16px;
+ font-weight: 700;
+ color: var(--text-primary);
  font-family: 'Sora', sans-serif;
  }
 
@@ -334,10 +333,8 @@ const styles = `
  .card-badge {
  font-size: 10px; font-weight: 600;
  padding: 3px 9px; border-radius: 99px;
- background: var(--progress-bg);
- color: var(--green-mid);
- letter-spacing: 0.5px;
- text-transform: uppercase;
+ background: var(--progress-bg); color: var(--green-mid);
+ letter-spacing: 0.5px; text-transform: uppercase;
  }
 
  .card-name {
@@ -371,8 +368,7 @@ const styles = `
 
  .card-progress-pct {
  font-size: 14px; font-weight: 700;
- color: var(--green-mid);
- font-family: 'Sora', sans-serif;
+ color: var(--green-mid); font-family: 'Sora', sans-serif;
  }
 
  .progress-bar-bg {
@@ -409,8 +405,7 @@ const styles = `
  .empty-state {
  display: flex; flex-direction: column;
  align-items: center; justify-content: center;
- gap: 14px; padding: 80px 20px;
- text-align: center;
+ gap: 14px; padding: 80px 20px; text-align: center;
  animation: fadeUp 0.5s cubic-bezier(0.22,1,0.36,1) both;
  }
 
@@ -444,8 +439,7 @@ const styles = `
  }
  .btn-empty-create:hover {
  box-shadow: 0 6px 20px rgba(34,136,63,0.40);
- transform: translateY(-1px);
- filter: brightness(1.05);
+ transform: translateY(-1px); filter: brightness(1.05);
  }
 
  /* ── PLACEHOLDER PAGE ── */
@@ -475,16 +469,14 @@ const styles = `
  }
  .btn-new-project:hover {
  box-shadow: 0 6px 20px rgba(34,136,63,0.40);
- transform: translateY(-1px);
- filter: brightness(1.05);
+ transform: translateY(-1px); filter: brightness(1.05);
  }
  .btn-new-project:active { transform: translateY(0); }
 
  /* ── MODAL ── */
  .modal-overlay {
  position: fixed; inset: 0;
- background: rgba(0,0,0,0.40);
- backdrop-filter: blur(6px);
+ background: rgba(0,0,0,0.40); backdrop-filter: blur(6px);
  z-index: 100;
  display: flex; align-items: center; justify-content: center;
  padding: 20px;
@@ -508,8 +500,7 @@ const styles = `
 
  .modal-title {
  font-family: 'Playfair Display', serif;
- font-size: 20px; font-weight: 700;
- color: var(--text-primary); margin-bottom: 6px;
+ font-size: 20px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;
  }
 
  .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; }
@@ -545,11 +536,9 @@ const styles = `
 
  .btn-cancel {
  flex: 1; padding: 12px;
- background: var(--surface-2); border: none;
- border-radius: 10px;
+ background: var(--surface-2); border: none; border-radius: 10px;
  font-family: 'Sora', sans-serif; font-size: 14px; font-weight: 600;
- color: var(--text-muted); cursor: pointer;
- transition: background 0.18s;
+ color: var(--text-muted); cursor: pointer; transition: background 0.18s;
  }
  .btn-cancel:hover { background: #e4ece6; color: var(--text-primary); }
 
@@ -564,8 +553,7 @@ const styles = `
  }
  .btn-confirm:hover {
  box-shadow: 0 6px 20px rgba(34,136,63,0.40);
- transform: translateY(-1px);
- filter: brightness(1.05);
+ transform: translateY(-1px); filter: brightness(1.05);
  }
  .btn-confirm:disabled { opacity: 0.5; cursor: not-allowed; transform: none; filter: none; }
 
@@ -622,7 +610,7 @@ export default function Tela_Projetos() {
  const [newProjectClient, setNewProjectClient] = useState("");
  const [sidebarOpen, setSidebarOpen] = useState(false);
  const [clientes, setClientes] = useState<{ id: number; nome: string; email: string }[]>([]);
-  const [selectedClienteId, setSelectedClienteId] = useState<number | "novo" | "">("");
+ const [selectedClienteId, setSelectedClienteId] = useState<number | "novo" | "">("");
  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
 
  useEffect(() => {
@@ -648,67 +636,67 @@ export default function Tela_Projetos() {
  }
  }, [showModal]);
 
- const handleLogout = () => {
- logout();
+ const handleLogout = async () => {
+ await logout();
  navigate("/");
  };
 
-  const handleCreateProject = async () => {
-    if (!newProjectName.trim()) return;
-    try {
-      let cliente_id: number | undefined;
-      let nome_cliente: string | undefined;
-      if (selectedClienteId === "novo") {
-        nome_cliente = newProjectClient.trim() || undefined;
-      } else if (selectedClienteId) {
-        cliente_id = selectedClienteId;
-        const cli = clientes.find(c => c.id === selectedClienteId);
-        nome_cliente = cli?.nome;
-      }
-      await projectsApi.create({
-        nome: newProjectName.trim(),
-        nome_cliente,
-        cliente_id,
-      });
-      setNewProjectName("");
-      setNewProjectClient("");
-      setSelectedClienteId("");
-      setShowModal(false);
-      fetchProjects();
-    } catch (err: any) {
-      console.error("Erro ao criar projeto:", err.message);
-    }
-  };
+ const handleCreateProject = async () => {
+ if (!newProjectName.trim()) return;
+ try {
+ let cliente_id: number | undefined;
+ let nome_cliente: string | undefined;
+ if (selectedClienteId === "novo") {
+ nome_cliente = newProjectClient.trim() || undefined;
+ } else if (selectedClienteId) {
+ cliente_id = selectedClienteId;
+ const cli = clientes.find(c => c.id === selectedClienteId);
+ nome_cliente = cli?.nome;
+ }
+ await projectsApi.create({
+ nome: newProjectName.trim(),
+ nome_cliente,
+ cliente_id,
+ });
+ setNewProjectName("");
+ setNewProjectClient("");
+ setSelectedClienteId("");
+ setShowModal(false);
+ fetchProjects();
+ } catch (err: unknown) {
+ console.error("Erro ao criar projeto:", (err instanceof Error ? err.message : String(err)));
+ }
+ };
 
-  const openModal = () => {
-    setNewProjectName("");
-    setNewProjectClient("");
-    setSelectedClienteId("");
-    setShowModal(true);
-  };
+ const openModal = () => {
+ setNewProjectName("");
+ setNewProjectClient("");
+ setSelectedClienteId("");
+ setShowModal(true);
+ };
 
  const formatRelativeTime = (dateString: string) => {
-  const date = new Date(dateString);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
+ const date = new Date(dateString);
+ const now = new Date();
+ const diffMs = now.getTime() - date.getTime();
+ const diffSeconds = Math.floor(diffMs / 1000);
+ const diffMinutes = Math.floor(diffSeconds / 60);
+ const diffHours = Math.floor(diffMinutes / 60);
+ const diffDays = Math.floor(diffHours / 24);
 
-  if (diffSeconds < 60) return "agora mesmo";
-  if (diffMinutes < 60) return `há ${diffMinutes} min`;
-  if (diffHours < 24) return `há ${diffHours}h`;
-  if (diffDays === 1) return "ontem";
-  if (diffDays < 30) return `há ${diffDays} dias`;
-  const diffMonths = Math.floor(diffDays / 30);
-  if (diffMonths === 1) return "há 1 mês";
-  return `há ${diffMonths} meses`;
+ if (diffSeconds < 60) return "agora mesmo";
+ if (diffMinutes < 60) return `há ${diffMinutes} min`;
+ if (diffHours < 24) return `há ${diffHours}h`;
+ if (diffDays === 1) return "ontem";
+ if (diffDays < 30) return `há ${diffDays} dias`;
+ const diffMonths = Math.floor(diffDays / 30);
+ if (diffMonths === 1) return "há 1 mês";
+ return `há ${diffMonths} meses`;
 };
 
 const formatTime = (dateString: string) => {
-  const date = new Date(dateString);
-  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+ const date = new Date(dateString);
+ return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 };
 
  const calculateProgress = (project: ProjectData) => {
@@ -727,12 +715,12 @@ const formatTime = (dateString: string) => {
  };
 
  if (selectedProject) {
-    return (
-      <ProjectDetail
-        project={selectedProject}
-        onBack={() => setSelectedProject(null)}
-      />
-    );
+ return (
+ <ProjectDetail
+ project={selectedProject}
+ onBack={() => setSelectedProject(null)}
+ />
+ );
  }
 
  const totalRequisitos = projects.reduce((s, p) => s + p.requisitos_count, 0);
@@ -971,40 +959,40 @@ const formatTime = (dateString: string) => {
  />
  </div>
 
-              <div className="modal-field">
-              <label className="modal-label">Cliente</label>
-              <select
-                className="modal-input"
-                value={selectedClienteId}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "novo" || val === "") {
-                    setSelectedClienteId(val as "novo" | "");
-                    if (val !== "novo") setNewProjectClient("");
-                  } else {
-                    setSelectedClienteId(Number(val));
-                    setNewProjectClient("");
-                  }
-                }}
-              >
-                <option value="">Sem cliente</option>
-                {clientes.map(c => (
-                  <option key={c.id} value={c.id}>{c.nome} ({c.email})</option>
-                ))}
-                <option value="novo">+ Digitar nome do cliente...</option>
-              </select>
-              {selectedClienteId === "novo" && (
-                <input
-                  className="modal-input"
-                  style={{ marginTop: 8 }}
-                  type="text"
-                  placeholder="Nome do cliente"
-                  value={newProjectClient}
-                  onChange={(e) => setNewProjectClient(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
-                />
-              )}
-            </div>
+ <div className="modal-field">
+ <label className="modal-label">Cliente</label>
+ <select
+ className="modal-input"
+ value={selectedClienteId}
+ onChange={(e) => {
+ const val = e.target.value;
+ if (val === "novo" || val === "") {
+ setSelectedClienteId(val as "novo" | "");
+ if (val !== "novo") setNewProjectClient("");
+ } else {
+ setSelectedClienteId(Number(val));
+ setNewProjectClient("");
+ }
+ }}
+ >
+ <option value="">Sem cliente</option>
+ {clientes.map(c => (
+ <option key={c.id} value={c.id}>{c.nome} ({c.email})</option>
+ ))}
+ <option value="novo">+ Digitar nome do cliente...</option>
+ </select>
+ {selectedClienteId === "novo" && (
+ <input
+ className="modal-input"
+ style={{ marginTop: 8 }}
+ type="text"
+ placeholder="Nome do cliente"
+ value={newProjectClient}
+ onChange={(e) => setNewProjectClient(e.target.value)}
+ onKeyDown={(e) => e.key === "Enter" && handleCreateProject()}
+ />
+ )}
+ </div>
 
  <div className="modal-actions">
  <button className="btn-cancel" onClick={() => setShowModal(false)}>Cancelar</button>

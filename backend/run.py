@@ -1,4 +1,9 @@
 import os
+from dotenv import load_dotenv
+
+# Load .env file before importing app
+load_dotenv()
+
 from app import create_app
 
 config_name = os.environ.get('FLASK_ENV') or 'development'

@@ -20,11 +20,21 @@ def create_app(config_name=None):
     from app.config import config
     app.config.from_object(config[config_name])
 
+    # Validate production config
+    if config_name == 'production':
+        config['production'].validate()
+
     # Initialize extensions
     db.init_app(app)
     jwt.init_app(app)
     migrate.init_app(app, db)
-    CORS(app, supports_credentials=True)
+
+    # CORS — restrict origins in production
+    allowed_origins = os.environ.get('CORS_ORIGINS', '').split(',')
+    if config_name == 'production' and any(allowed_origins):
+        CORS(app, supports_credentials=True, origins=[o.strip() for o in allowed_origins if o.strip()])
+    else:
+        CORS(app, supports_credentials=True)
 
     # JWT blocklist check
     from app.routes.auth import _token_blocklist

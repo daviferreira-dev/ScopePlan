@@ -1,11 +1,11 @@
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models import Project, User, Requirement, Validacao, AuditLog
-from app.schemas import ProjectCreateSchema, ProjectUpdateSchema, ProjectSchema
+from app.models import Project, User, Requirement, AuditLog
+from app.schemas import ProjectCreateSchema, ProjectUpdateSchema
 from app.utils.decorators import validate_json, role_required
+from app.utils.access import check_user_project_access
 from app import db
 import io
-import os
 
 projects_bp = Blueprint('projects', __name__, url_prefix='/api/projects')
 
@@ -16,7 +16,7 @@ projects_bp = Blueprint('projects', __name__, url_prefix='/api/projects')
 def create_project():
     data = request.validated_data
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -31,7 +31,7 @@ def create_project():
     cliente_id = data.get('cliente_id')
     nome_cliente = data.get('nome_cliente')
     if cliente_id:
-        cliente = User.query.get(cliente_id)
+        cliente = db.session.get(User, cliente_id)
         if cliente and cliente.perfil == 'cliente':
             nome_cliente = cliente.nome
         else:
@@ -50,6 +50,7 @@ def create_project():
     db.session.commit()
 
     AuditLog.log(user_id, 'criacao', 'projeto', project.id, project.id, {'nome': project.nome})
+    db.session.commit()
 
     return {'message': 'Projeto criado com sucesso', 'project': project.to_dict()}, 201
 
@@ -58,50 +59,54 @@ def create_project():
 @jwt_required()
 def list_projects():
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
 
-    if user.perfil == 'cliente':
-        projects = Project.query.filter_by(cliente_id=user.id, ativo=True).all()
-    elif user.perfil in ('analista', 'gestor'):
-        projects = Project.query.filter_by(gestor_id=user.id, ativo=True).all()
-    elif user.perfil == 'desenvolvedor':
-        # Get projects where developer has requirements
-        reqs = Requirement.query.filter_by(autor_id=user.id, ativo=True).all()
-        project_ids = list(set(r.project_id for r in reqs))
-        projects = Project.query.filter(Project.id.in_(project_ids), Project.ativo == True).all()
-    else:
-        projects = []
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    per_page = min(per_page, 100)
 
-    return jsonify([p.to_dict() for p in projects]), 200
+    query = Project.query.filter_by(ativo=True)
+
+    if user.perfil == 'cliente':
+        query = query.filter_by(cliente_id=user.id)
+    elif user.perfil in ('analista', 'gestor'):
+        query = query.filter_by(gestor_id=user.id)
+    elif user.perfil == 'desenvolvedor':
+        project_ids = db.session.query(Requirement.projeto_id).filter_by(
+            autor_id=user.id, ativo=True
+        ).distinct().scalar_subquery()
+        query = query.filter(Project.id.in_(project_ids))
+    else:
+        query = query.filter(Project.id == -1)  # no results
+
+    pagination = query.order_by(Project.criado_em.desc()).paginate(
+        page=page, per_page=per_page, error_out=False
+    )
+
+    return jsonify({
+        'projetos': [p.to_dict() for p in pagination.items],
+        'total': pagination.total,
+        'page': pagination.page,
+        'per_page': pagination.per_page,
+        'pages': pagination.pages
+    }), 200
 
 
 @projects_bp.route('/<int:project_id>', methods=['GET'])
 @jwt_required()
 def get_project(project_id):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
 
-    project = Project.query.filter_by(id=project_id, ativo=True).first()
-    if not project:
-        return {'message': 'Projeto não encontrado'}, 404
-
-    # Check access
-    if user.perfil == 'cliente':
-        if project.cliente_id != user.id:
-            return {'message': 'Acesso negado a este projeto'}, 403
-    elif user.perfil in ('analista', 'gestor'):
-        if project.gestor_id != user.id:
-            return {'message': 'Acesso negado a este projeto'}, 403
-    elif user.perfil == 'desenvolvedor':
-        has_req = Requirement.query.filter_by(projeto_id=project_id, autor_id=user.id, ativo=True).first()
-        if not has_req:
-            return {'message': 'Acesso negado a este projeto'}, 403
+    project, access_error = check_user_project_access(user, project_id)
+    if access_error:
+        return access_error
 
     return jsonify(project.to_dict()), 200
 
@@ -112,7 +117,7 @@ def get_project(project_id):
 def update_project(project_id):
     data = request.validated_data
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -120,11 +125,11 @@ def update_project(project_id):
     if user.perfil not in ('analista', 'gestor'):
         return {'message': 'Apenas analistas ou gestores podem editar projetos'}, 403
 
-    project = Project.query.filter_by(id=project_id, ativo=True).first()
-    if not project:
-        return {'message': 'Projeto não encontrado'}, 404
+    project, access_error = check_user_project_access(user, project_id)
+    if access_error:
+        return access_error
 
-    # Check access
+    # Additional check: only the gestor of this project can edit it
     if project.gestor_id != user.id:
         return {'message': 'Acesso negado a este projeto'}, 403
 
@@ -142,7 +147,7 @@ def update_project(project_id):
     if 'cliente_id' in data:
         cliente_id = data['cliente_id']
         if cliente_id:
-            cliente = User.query.get(cliente_id)
+            cliente = db.session.get(User, cliente_id)
             if cliente and cliente.perfil == 'cliente':
                 project.cliente_id = cliente_id
                 project.nome_cliente = cliente.nome
@@ -152,6 +157,7 @@ def update_project(project_id):
     db.session.commit()
 
     AuditLog.log(user_id, 'atualizacao', 'projeto', project.id, project.id, {'nome': project.nome})
+    db.session.commit()
 
     return {'message': 'Projeto atualizado com sucesso', 'project': project.to_dict()}, 200
 
@@ -160,7 +166,7 @@ def update_project(project_id):
 @jwt_required()
 def delete_project(project_id):
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
@@ -168,11 +174,10 @@ def delete_project(project_id):
     if user.perfil not in ('analista', 'gestor'):
         return {'message': 'Apenas analistas ou gestores podem excluir projetos'}, 403
 
-    project = Project.query.filter_by(id=project_id, ativo=True).first()
-    if not project:
-        return {'message': 'Projeto não encontrado'}, 404
+    project, access_error = check_user_project_access(user, project_id)
+    if access_error:
+        return access_error
 
-    # Check access
     if project.gestor_id != user.id:
         return {'message': 'Acesso negado a este projeto'}, 403
 
@@ -181,6 +186,7 @@ def delete_project(project_id):
     db.session.commit()
 
     AuditLog.log(user_id, 'exclusao', 'projeto', project.id, project.id, {'nome': project.nome})
+    db.session.commit()
 
     return {'message': 'Projeto excluído com sucesso'}, 200
 
@@ -193,30 +199,18 @@ def download_ers(project_id):
     from docx.enum.text import WD_ALIGN_PARAGRAPH
 
     user_id = get_jwt_identity()
-    user = User.query.get(user_id)
+    user = db.session.get(User, user_id)
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
 
-    project = Project.query.filter_by(id=project_id, ativo=True).first()
-    if not project:
-        return {'message': 'Projeto não encontrado'}, 404
-
-    # Check access
-    if user.perfil == 'cliente':
-        if project.cliente_id != user.id:
-            return {'message': 'Acesso negado a este projeto'}, 403
-    elif user.perfil in ('analista', 'gestor'):
-        if project.gestor_id != user.id:
-            return {'message': 'Acesso negado a este projeto'}, 403
-    elif user.perfil == 'desenvolvedor':
-        has_req = Requirement.query.filter_by(projeto_id=project_id, autor_id=user.id, ativo=True).first()
-        if not has_req:
-            return {'message': 'Acesso negado a este projeto'}, 403
+    project, access_error = check_user_project_access(user, project_id)
+    if access_error:
+        return access_error
 
     # Get format and topic_ids from request
     data = request.get_json() or {}
-    formato = data.get('formato', 'docx')
+    formato = data.get('formato', request.args.get('format', 'docx'))
     topic_ids = data.get('topic_ids')  # Can be None or list
 
     # Get approved requirements only (RN002)
@@ -226,15 +220,15 @@ def download_ers(project_id):
     if topic_ids and isinstance(topic_ids, list) and len(topic_ids) > 0:
         reqs = [r for r in reqs if r.id in topic_ids]
 
-    # Sort by type and code
-    type_order = {'funcional': 0, 'nao_funcional': 1, 'regra_negocio': 2, 'restricao': 3}
+    # Sort by type and code — keys match model's tipo values
+    type_order = {'funcional': 0, 'nao_funcional': 1, 'negocio': 2, 'restricao': 3}
     reqs.sort(key=lambda r: (type_order.get(r.tipo, 99), r.codigo))
 
     # Create DOCX
     doc = Document()
 
     # Title
-    title = doc.add_heading(f'Especificação de Requisitos de Software', 0)
+    title = doc.add_heading('Especificação de Requisitos de Software', 0)
     title.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
     doc.add_paragraph(f'Projeto: {project.nome}')
@@ -243,15 +237,15 @@ def download_ers(project_id):
     doc.add_paragraph(f'Data: {project.atualizado_em.strftime("%d/%m/%Y") if project.atualizado_em else "N/A"}')
     doc.add_paragraph()
 
-    # Group by type
+    # Group by type — keys match model's tipo values
     type_names = {
         'funcional': 'Requisitos Funcionais',
         'nao_funcional': 'Requisitos Não-Funcionais',
-        'regra_negocio': 'Regras de Negócio',
+        'negocio': 'Regras de Negócio',
         'restricao': 'Restrições'
     }
 
-    for req_type in ['funcional', 'nao_funcional', 'regra_negocio', 'restricao']:
+    for req_type in ['funcional', 'nao_funcional', 'negocio', 'restricao']:
         type_reqs = [r for r in reqs if r.tipo == req_type]
         if type_reqs:
             doc.add_heading(type_names.get(req_type, req_type), level=1)
@@ -267,6 +261,7 @@ def download_ers(project_id):
     buffer.seek(0)
 
     AuditLog.log(user_id, 'download', 'requisito', project_id, project_id, {'formato': formato, 'topic_ids': topic_ids})
+    db.session.commit()
 
     return send_file(
         buffer,

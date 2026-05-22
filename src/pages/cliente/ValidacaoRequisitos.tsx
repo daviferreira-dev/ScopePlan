@@ -2,6 +2,7 @@ import scopeplanLogo from "../../assets/scopeplan.png";
 import { useState, useEffect } from "react";
 import { requirementsApi } from "../../services/api";
 import type { RequirementData, ProjectData } from "../../services/api";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
 const styles = `
@@ -260,6 +261,9 @@ const styles = `
  }
  .btn-approve:hover { background: #d0edda; transform: translateY(-1px); }
  .btn-approve:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+ .btn-observe { flex: 1; padding: 10px 16px; background: #fefce8; color: #b45309; border: 1.5px solid #fde68a; border-radius: 10px; font-family: 'Sora', sans-serif; font-weight: 600; font-size: 13px; cursor: pointer; transition: background 0.15s, transform 0.12s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+ .btn-observe:hover { background: #fef9c3; transform: translateY(-1px); }
+ .btn-observe:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
 
  /* ── OBSERVATION ── */
  .req-observations {
@@ -351,6 +355,7 @@ interface Props {
 
 export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  const { user, logout } = useAuth();
+ const navigate = useNavigate();
  const [requirements, setRequirements] = useState<RequirementData[]>([]);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
@@ -395,7 +400,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  if (!text) return;
  try {
  setSubmittingId(reqId);
- await requirementsApi.createValidacao(reqId, { resultado: 'observacao', comentario: text });
+ await requirementsApi.createValidacao(reqId, { resultado: 'aprovado_com_ressalvas', comentario: text });
  setObservationInputs(prev => ({ ...prev, [reqId]: "" }));
  } catch (err) { console.error('Erro ao adicionar observação:', err); }
  finally { setSubmittingId(null); }
@@ -416,7 +421,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  return "pendente";
  };
 
- const handleLogout = () => { logout(); window.location.href = "/"; };
+ const handleLogout = async () => { await logout(); navigate("/"); };
  const getUserInitials = () => { if (!user) return "US"; return user.nome.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2); };
  const getUserName = () => user?.nome || "Usuário";
  const getUserRole = () => {
@@ -539,7 +544,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
  </svg>
- Comentários (3)
+ Comentários ({req.validacoes_count})
  </span>
  <span className="req-meta-item">
  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -570,6 +575,17 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  <path d="M5 13l4 4L19 7"/>
  </svg>
  Aprovar
+ </button>
+ <button
+ className="btn-observe"
+ onClick={() => setShowObservation(prev => ({ ...prev, [req.id]: !prev[req.id] }))}
+ disabled={submittingId === req.id}
+ >
+ <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+ <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+ <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+ </svg>
+ Observar
  </button>
  </div>
 

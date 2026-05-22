@@ -324,7 +324,7 @@ export default function Tela_Itens({ project, onBack }: Props) {
         count: requirements.filter(r => r.tipo === t.type).length
     }));
 
-    const handleLogout = () => { logout(); navigate("/"); };
+    const handleLogout = async () => { await logout(); navigate("/"); };
 
     const getUserInitials = () => {
         if (!user) return "US";

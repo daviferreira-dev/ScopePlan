@@ -392,7 +392,7 @@ export default function CadastroPage() {
     if (password !== confirmPassword) { setError("As senhas não coincidem"); return; }
     setError(""); setLoading(true);
     try { await register(nome, email, password, perfil); }
-    catch (err: any) { setError(err.message || "Erro ao criar conta. Tente novamente."); }
+    catch (err: unknown) { setError((err instanceof Error ? err.message : String(err)) || "Erro ao criar conta. Tente novamente."); }
     finally { setLoading(false); }
   };
 

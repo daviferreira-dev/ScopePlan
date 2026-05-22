@@ -535,6 +535,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  const [showModal, setShowModal] = useState(false);
  const fileInputRef = useRef<HTMLInputElement>(null);
  const [dragOver, setDragOver] = useState(false);
+ const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
  const [sidebarOpen, setSidebarOpen] = useState(false);
 
  const isCliente = isClienteAuth;
@@ -546,8 +547,9 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  try {
  await requirementsApi.createValidacao(reqId, { resultado: "aprovado" });
  setRequirements(prev => prev.map(r => r.id === reqId ? { ...r, status: "aprovado" } : r));
- } catch (err: any) {
- console.error("Erro ao aprovar:", err.message);
+ } catch (err: unknown) {
+ const msg = err instanceof Error ? err.message : "Erro desconhecido";
+ console.error("Erro ao aprovar:", msg);
  } finally {
  setLoadingAction(null);
  }
@@ -558,8 +560,9 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  try {
  await requirementsApi.createValidacao(reqId, { resultado: "rejeitado" });
  setRequirements(prev => prev.map(r => r.id === reqId ? { ...r, status: "em_revisao" } : r));
- } catch (err: any) {
- console.error("Erro ao rejeitar:", err.message);
+ } catch (err: unknown) {
+ const msg = err instanceof Error ? err.message : "Erro desconhecido";
+ console.error("Erro ao rejeitar:", msg);
  } finally {
  setLoadingAction(null);
  }
@@ -606,8 +609,9 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  const res = await requirementsApi.list(project.id);
  setRequirements(res.requisitos.filter(r => r.tipo === tipo));
  setShowModal(false);
- } catch (err: any) {
- console.error("Erro ao criar requisito:", err.message);
+ } catch (err: unknown) {
+ const msg = err instanceof Error ? err.message : "Erro desconhecido";
+ console.error("Erro ao criar requisito:", msg);
  }
  };
 
@@ -621,7 +625,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  return user?.perfil || "";
  };
 
- const handleLogout = () => { logout(); navigate("/"); };
+ const handleLogout = async () => { await logout(); navigate("/"); };
 
  return (
  <>
@@ -712,6 +716,13 @@ export default function ValidacaoRequisitos({ project, topic, onBack }: Props) {
  multiple
  ref={fileInputRef}
  style={{ display: "none" }}
+ onChange={(e) => {
+ const files = Array.from(e.target.files || []);
+ if (files.length > 0) {
+ setUploadedFiles(prev => [...prev, ...files]);
+ }
+ e.target.value = "";
+ }}
  />
  </div>
  </>

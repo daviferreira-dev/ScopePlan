@@ -15,6 +15,7 @@ class UserLoginSchema(Schema):
 
 class UserUpdateSchema(Schema):
     nome = fields.String(validate=validate.Length(min=2, max=120))
+    senha_atual = fields.String(load_only=True, validate=validate.Length(min=1, max=128))
     senha = fields.String(validate=validate.Length(min=6, max=128))
     ativo = fields.Boolean()
 

@@ -76,10 +76,18 @@ export default function App() {
           } />
 
           {/* Rotas do Desenvolvedor */}
-          <Route path="/desenvolvedor/projetos" element={<PlaceholderPage title="Painel do Desenvolvedor" />} />
+          <Route path="/desenvolvedor/projetos" element={
+            <ProtectedRoute allowedProfiles={['desenvolvedor']}>
+              <PlaceholderPage title="Painel do Desenvolvedor" />
+            </ProtectedRoute>
+          } />
 
           {/* Rotas do Gestor */}
-          <Route path="/gestor/projetos" element={<PlaceholderPage title="Painel do Gestor" />} />
+          <Route path="/gestor/projetos" element={
+            <ProtectedRoute allowedProfiles={['gestor']}>
+              <PlaceholderPage title="Painel do Gestor" />
+            </ProtectedRoute>
+          } />
 
           {/* Rota de acesso negado */}
           <Route path="/acesso-negado" element={

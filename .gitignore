@@ -38,6 +38,8 @@ __pycache__/
 *.db-journal
 .pytest_cache/
 venv/
+.venv-prod/
+.venv/
 
 # Database files
 instance/
@@ -57,3 +59,4 @@ backend/test_api.sh
 
 # Test credentials
 public/Docs/Perfis de Teste.txt
+.aider*

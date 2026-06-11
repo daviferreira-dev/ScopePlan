@@ -3,18 +3,27 @@ set -e
 
 cd "$(dirname "$0")"
 
-echo "==> Python: $(python --version)"
-echo "==> Pip:    $(python -m pip --version)"
-echo "==> Dir:    $(pwd)"
+VENV="$(pwd)/.venv-prod"
 
-echo "==> Instalando dependencias..."
-python -m pip install -r requirements.txt
+echo "==> Python do sistema: $(python --version)"
+
+# Cria venv proprio isolado do ambiente gerenciado pelo Render
+if [ ! -f "$VENV/bin/python" ]; then
+    echo "==> Criando virtualenv isolado em $VENV ..."
+    python -m venv "$VENV"
+fi
+
+echo "==> Instalando dependencias no venv isolado..."
+"$VENV/bin/pip" install -r requirements.txt
+
+echo "==> Verificando imports criticos..."
+"$VENV/bin/python" -c "import flask_socketio, eventlet, cryptography, psycopg2; print('Todos os modulos OK')"
 
 echo "==> Rodando migrations..."
-python migrate.py
+"$VENV/bin/python" migrate.py
 
 echo "==> Iniciando servidor na porta ${PORT:-5000}..."
-exec python -m gunicorn \
+exec "$VENV/bin/gunicorn" \
   --worker-class eventlet \
   -w 1 \
   --bind "0.0.0.0:${PORT:-5000}" \

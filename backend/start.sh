@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -e
 
+# Garante que todos os caminhos resolvem relativo ao diretorio do script (backend/)
+cd "$(dirname "$0")"
+
 echo "==> Instalando dependencias..."
 python -m pip install -r requirements.txt --quiet --no-cache-dir
 

@@ -1,17 +1,23 @@
 #!/usr/bin/env bash
 set -e
 
-# Garante que todos os caminhos resolvem relativo ao diretorio do script (backend/)
 cd "$(dirname "$0")"
 
+echo "==> Python: $(python --version)"
+echo "==> Pip:    $(python -m pip --version)"
+echo "==> Dir:    $(pwd)"
+
 echo "==> Instalando dependencias..."
-python -m pip install -r requirements.txt --quiet --no-cache-dir
+python -m pip install -r requirements.txt
 
 echo "==> Rodando migrations..."
 python migrate.py
 
-echo "==> Iniciando servidor..."
-exec python -m gunicorn --worker-class eventlet -w 1 \
+echo "==> Iniciando servidor na porta ${PORT:-5000}..."
+exec python -m gunicorn \
+  --worker-class eventlet \
+  -w 1 \
   --bind "0.0.0.0:${PORT:-5000}" \
   --timeout 120 \
+  --log-level info \
   run:app

@@ -1,454 +1,64 @@
-const API_BASE = '/api';
+// In production, VITE_API_URL points to the backend service (e.g. https://scopeplan-api.onrender.com/api)
+// In dev, falls back to /api which Vite proxies to localhost:5000
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
-// Token management
-export function getAccessToken(): string | null {
-  return localStorage.getItem('access_token');
-}
-
-export function getRefreshToken(): string | null {
-  return localStorage.getItem('refresh_token');
-}
-
-export function setTokens(access: string, refresh: string): void {
-  localStorage.setItem('access_token', access);
-  localStorage.setItem('refresh_token', refresh);
-}
-
-export function clearTokens(): void {
-  localStorage.removeItem('access_token');
-  localStorage.removeItem('refresh_token');
-}
-
-// Generic fetch wrapper with JWT
-async function apiFetch<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = getAccessToken();
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  };
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  const response = await fetch(`${API_BASE}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  // If token expired, try refresh
-  if (response.status === 401) {
-    const refreshed = await tryRefreshToken();
-    if (refreshed) {
-      headers['Authorization'] = `Bearer ${getAccessToken()}`;
-      const retryResponse = await fetch(`${API_BASE}${endpoint}`, {
-        ...options,
-        headers,
-      });
-      if (!retryResponse.ok) {
-        const error = await retryResponse.json().catch(() => ({}));
-        throw new ApiError(retryResponse.status, error.message || 'Erro na requisição');
-      }
-      return retryResponse.json();
-    }
-    // Refresh failed, clear tokens
-    clearTokens();
-    window.dispatchEvent(new Event("auth:expired"));
-    throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
-  }
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, error.message || 'Erro na requisição');
-  }
-
-  // For 204 No Content
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
-}
-
-async function tryRefreshToken(): Promise<boolean> {
-  const refresh = getRefreshToken();
-  if (!refresh) return false;
-
-  try {
-    const response = await fetch(`${API_BASE}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${refresh}`,
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      setTokens(data.access_token, refresh);
-      return true;
-    }
-    return false;
-  } catch {
-    return false;
-  }
-}
-
-// Custom error class
-export class ApiError extends Error {
-  status: number;
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-    this.name = 'ApiError';
-  }
-}
-
-// ==================== AUTH API ====================
-
-export interface LoginResponse {
-  access_token: string;
-  refresh_token: string;
-  user: {
-    id: number;
-    nome: string;
-    email: string;
-    perfil: string;
-  };
-}
-
-export interface RegisterResponse {
-  message: string;
-  user: {
-    id: number;
-    nome: string;
-    email: string;
-    perfil: string;
-  };
-}
-
-export interface MeResponse {
-  user: {
-    id: number;
-    nome: string;
-    email: string;
-    perfil: string;
-    ativo: boolean;
-    criado_em: string;
-    atualizado_em: string;
-  };
-}
-
-export const authApi = {
-  login(email: string, senha: string): Promise<LoginResponse> {
-    return apiFetch<LoginResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ email, senha }),
-    });
-  },
-
-  register(nome: string, email: string, senha: string, perfil: string): Promise<RegisterResponse> {
-    return apiFetch<RegisterResponse>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify({ nome, email, senha, perfil }),
-    });
-  },
-
-  me(): Promise<MeResponse> {
-    return apiFetch<MeResponse>('/auth/me');
-  },
-
-  refresh(): Promise<LoginResponse> {
-    return apiFetch<LoginResponse>('/auth/refresh', {
-      method: 'POST',
-      // Refresh token sent via Authorization header by tryRefreshToken()
-    });
-  },
-
-  logout(): Promise<{ message: string }> {
-    return apiFetch<{ message: string }>('/auth/logout', {
-      method: 'POST',
-    });
-  },
-
-  listClientes(): Promise<{ clientes: { id: number; nome: string; email: string }[] }> {
-    return apiFetch<{ clientes: { id: number; nome: string; email: string }[] }>('/auth/clientes');
-  },
-};
-
-// ==================== PROJECTS API ====================
+// ── Types ────────────────────────────────────────────────────
 
 export interface ProjectData {
   id: number;
   nome: string;
-  descricao: string | null;
-  status: string;
-  custo_estimado: number | null;
-  gestor_id: number;
-  gestor: string | null;
-  cliente_id: number | null;
-  nome_cliente: string | null;
-  ativo: boolean;
+  nome_cliente?: string;
+  cliente_id?: number;
+  descricao?: string;
   requisitos_count: number;
   aprovados_count: number;
-  criado_em: string;
-  atualizado_em: string;
-  requisitos?: RequirementData[];
+  criado_em?: string;
+  atualizado_em?: string;
 }
 
-export interface ProjectsListResponse {
-  projetos: ProjectData[];
-  total: number;
-  page: number;
-  per_page: number;
-  pages: number;
+export interface Validacao {
+  id: number;
+  requisito_id: number;
+  validador_id: number;
+  resultado: string;
+  comentario?: string;
+  criado_em?: string;
+  validador?: User;
 }
-
-export const projectsApi = {
-  list(page = 1, perPage = 20, status?: string, search?: string): Promise<ProjectsListResponse> {
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(perPage),
-    });
-    if (status) params.set('status', status);
-    if (search) params.set('search', search);
-    return apiFetch<ProjectsListResponse>(`/projects?${params.toString()}`);
-  },
-
-  get(projectId: number, includeRequirements = false): Promise<{ project: ProjectData }> {
-    return apiFetch<{ project: ProjectData }>(
-      `/projects/${projectId}?include_requirements=${includeRequirements}`
-    );
-  },
-
-  create(data: {
-    nome: string;
-    descricao?: string;
-    status?: string;
-    custo_estimado?: number;
-    cliente_id?: number;
-    nome_cliente?: string;
-  }): Promise<{ message: string; project: ProjectData }> {
-    return apiFetch<{ message: string; project: ProjectData }>('/projects', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  update(
-    projectId: number,
-    data: Partial<{
-      nome: string;
-      descricao: string | null;
-      status: string;
-      custo_estimado: number | null;
-      cliente_id: number | null;
-      nome_cliente: string | null;
-    }>
-  ): Promise<{ message: string; project: ProjectData }> {
-    return apiFetch<{ message: string; project: ProjectData }>(`/projects/${projectId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  delete(projectId: number): Promise<{ message: string }> {
-    return apiFetch<{ message: string }>(`/projects/${projectId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  downloadERS(projectId: number, format: 'pdf' | 'docx' = 'docx', topicIds?: number[]): Promise<Blob> {
-    const doFetch = (token: string | null) => {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      return fetch(`${API_BASE}/projects/${projectId}/ers/download?format=${format}`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ formato: format, topic_ids: topicIds || [] }),
-      });
-    };
-
-    return doFetch(getAccessToken()).then(async (response) => {
-      if (response.status === 401) {
-        const refreshed = await tryRefreshToken();
-        if (refreshed) {
-          const retry = await doFetch(getAccessToken());
-          if (!retry.ok) throw new ApiError(retry.status, 'Falha ao gerar o documento.');
-          return retry.blob();
-        }
-        clearTokens();
-        window.dispatchEvent(new Event('auth:expired'));
-        throw new ApiError(401, 'Sessão expirada. Faça login novamente.');
-      }
-      if (!response.ok) throw new ApiError(response.status, 'Falha ao gerar o documento.');
-      return response.blob();
-    });
-  },
-};
-
-// ==================== REQUIREMENTS API ====================
 
 export interface RequirementData {
   id: number;
   projeto_id: number;
-  autor_id: number;
-  autor: { id: number; nome: string; email: string; perfil: string; ativo: boolean } | null;
-  codigo: string | null;
-  titulo: string;
-  descricao: string;
   tipo: string;
-  categoria: string | null;
-  prioridade: string;
+  codigo?: string;
+  titulo?: string;
+  descricao?: string;
   status: string;
-  numero_versao: number;
-  ativo: boolean;
-  validacoes_count: number;
-  ultima_validacao: { id: number; validador: { id: number; nome: string; email: string; perfil: string } | null; status: string; comentario: string; criado_em: string } | null;
-  criado_em: string;
-  atualizado_em: string;
+  criado_em?: string;
+  atualizado_em?: string;
+  autor?: User;
+  validacoes?: Validacao[];
+  validacoes_count?: number;
 }
 
-export interface RequirementsListResponse {
-  requisitos: RequirementData[];
-  total: number;
-  page: number;
-  per_page: number;
-  pages: number;
-}
-
-// ==================== VALIDACOES API ====================
-
-export interface ValidacaoData {
+export interface User {
   id: number;
-  requisito_id: number;
-  validador_id: number;
-  validador: { id: number; nome: string; email: string; perfil: string; ativo: boolean } | null;
-  resultado: string;
-  comentario: string | null;
-  validado_em: string;
+  nome: string;
+  email: string;
+  perfil: string;
+  ativo?: boolean;
 }
-
-export interface ValidacoesListResponse {
-  validacoes: ValidacaoData[];
-  total: number;
-  page: number;
-  per_page: number;
-  pages: number;
-}
-
-export const requirementsApi = {
-  list(
-    projetoId: number,
-    page = 1,
-    perPage = 50,
-    filters?: { tipo?: string; prioridade?: string; status?: string; search?: string }
-  ): Promise<RequirementsListResponse> {
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(perPage),
-      projeto_id: String(projetoId),
-    });
-    if (filters?.tipo) params.set('tipo', filters.tipo);
-    if (filters?.prioridade) params.set('prioridade', filters.prioridade);
-    if (filters?.status) params.set('status', filters.status);
-    if (filters?.search) params.set('search', filters.search);
-    return apiFetch<RequirementsListResponse>(
-      `/requirements?${params.toString()}`
-    );
-  },
-
-  create(
-    data: {
-      titulo: string;
-      descricao?: string;
-      projeto_id: number;
-      codigo?: string;
-      tipo?: string;
-      categoria?: string;
-      prioridade?: string;
-      status?: string;
-    }
-  ): Promise<{ message: string; requirement: RequirementData }> {
-    return apiFetch<{ message: string; requirement: RequirementData }>('/requirements', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
-  },
-
-  update(
-    requirementId: number,
-    data: Partial<{
-      titulo: string;
-      descricao: string;
-      codigo: string;
-      tipo: string;
-      categoria: string;
-      prioridade: string;
-      status: string;
-    }>
-  ): Promise<{ message: string; requirement: RequirementData }> {
-    return apiFetch<{ message: string; requirement: RequirementData }>(`/requirements/${requirementId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    });
-  },
-
-  delete(requirementId: number): Promise<{ message: string }> {
-    return apiFetch<{ message: string }>(`/requirements/${requirementId}`, {
-      method: 'DELETE',
-    });
-  },
-
-  submitReview(requirementId: number): Promise<{ message: string; requirement: RequirementData }> {
-    return apiFetch<{ message: string; requirement: RequirementData }>(
-      `/requirements/${requirementId}/submit-review`,
-      { method: 'POST' }
-    );
-  },
-
-  createValidacao(
-    requirementId: number,
-    data: { resultado: string; comentario?: string }
-  ): Promise<{ message: string; validacao: ValidacaoData }> {
-    return apiFetch<{ message: string; validacao: ValidacaoData }>(
-      `/requirements/${requirementId}/validacoes`,
-      { method: 'POST', body: JSON.stringify(data) }
-    );
-  },
-
-  listValidacoes(
-    requirementId: number,
-    page = 1,
-    perPage = 50
-  ): Promise<ValidacoesListResponse> {
-    const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
-    return apiFetch<ValidacoesListResponse>(
-      `/requirements/${requirementId}/validacoes?${params.toString()}`
-    );
-  },
-
-  getVersionHistory(requirementId: number): Promise<{ versions: RequirementData[] }> {
-    return apiFetch<{ versions: RequirementData[] }>(
-      `/requirements/${requirementId}/version-history`
-    );
-  },
-};
-
-// ==================== AUDIT API ====================
 
 export interface AuditLogData {
   id: number;
-  usuario_id: number;
-  usuario: { id: number; nome: string; email: string; perfil: string } | null;
+  usuario_id?: number;
+  usuario_nome?: string;
+  usuario_email?: string;
+  usuario?: User;
   acao: string;
   entidade_tipo: string;
-  entidade_id: number;
-  projeto_id: number | null;
-  detalhes: string | null;
+  entidade_id?: number;
+  detalhes?: string;
   criado_em: string;
 }
 
@@ -460,29 +70,389 @@ export interface AuditListResponse {
   pages: number;
 }
 
-export const auditApi = {
-  list(
-    page = 1,
-    perPage = 20,
-    filters?: {
-      projeto_id?: number;
-      acao?: string;
-      entidade_tipo?: string;
-      usuario_id?: number;
-      data_inicio?: string;
-      data_fim?: string;
+// ── Token management ─────────────────────────────────────────
+// Access token in memory only; refresh token via HttpOnly cookie
+
+let accessToken: string | null = null;
+
+export function getAccessToken(): string | null {
+  return accessToken;
+}
+
+export function setTokens(access: string, _refresh?: string): void {
+  accessToken = access;
+  // Refresh token is handled via HttpOnly cookie — no client-side storage needed
+}
+
+export function clearTokens(): void {
+  accessToken = null;
+}
+
+// ── Refresh token mutex ──────────────────────────────────────
+// Only one refresh request in flight at a time
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    try {
+      // Refresh token is sent automatically via HttpOnly cookie (path=/api/auth)
+      // credentials: 'include' ensures cookies are sent cross-origin
+      const response = await fetch(`${API_BASE}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Server rotates refresh tokens — new cookie is set via Set-Cookie header
+        setTokens(data.access_token);
+        return true;
+      }
+      return false;
+    } catch {
+      return false;
+    } finally {
+      refreshPromise = null;
     }
-  ): Promise<AuditListResponse> {
-    const params = new URLSearchParams({
-      page: String(page),
-      per_page: String(perPage),
+  })();
+
+  return refreshPromise;
+}
+
+// ── Auth headers builder ─────────────────────────────────────
+
+function buildAuthHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  const token = getAccessToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+// ── Core fetch wrappers ──────────────────────────────────────
+
+export async function apiFetch<T = unknown>(
+  path: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+
+  const { headers: callerHeaders, ...rest } = options;
+  const mergedHeaders = mergeHeaders(buildAuthHeaders(), callerHeaders);
+
+  const response = await fetch(url, {
+    ...rest,
+    headers: mergedHeaders,
+    credentials: 'include',
+  });
+
+  if (response.status === 401) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      const retryHeaders = mergeHeaders(buildAuthHeaders(), callerHeaders);
+      const retryResponse = await fetch(url, {
+        ...rest,
+        headers: retryHeaders,
+        credentials: 'include',
+      });
+      if (retryResponse.ok) return retryResponse.json();
+      clearTokens();
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+      throw new Error('Sessao expirada');
+    }
+    clearTokens();
+    window.dispatchEvent(new CustomEvent('auth:expired'));
+    throw new Error('Sessao expirada');
+  }
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(err.message || err.error || `Erro ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function apiFetchBlob(
+  path: string,
+  options: RequestInit = {}
+): Promise<Blob> {
+  const url = path.startsWith('http') ? path : `${API_BASE}${path}`;
+
+  const { headers: callerHeaders, ...rest } = options;
+  const mergedHeaders = mergeHeaders(buildAuthHeaders(), callerHeaders);
+
+  const response = await fetch(url, {
+    ...rest,
+    headers: mergedHeaders,
+    credentials: 'include',
+  });
+
+  if (response.status === 401) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      const retryHeaders = mergeHeaders(buildAuthHeaders(), callerHeaders);
+      const retryResponse = await fetch(url, {
+        ...rest,
+        headers: retryHeaders,
+        credentials: 'include',
+      });
+      if (retryResponse.ok) return retryResponse.blob();
+      clearTokens();
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+      throw new Error('Sessao expirada');
+    }
+    clearTokens();
+    window.dispatchEvent(new CustomEvent('auth:expired'));
+    throw new Error('Sessao expirada');
+  }
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(err.message || err.error || `Erro ${response.status}`);
+  }
+
+  return response.blob();
+}
+
+// ── Logout ───────────────────────────────────────────────────
+
+export async function logout(): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      headers: buildAuthHeaders(),
+      credentials: 'include',
     });
-    if (filters?.projeto_id) params.set('projeto_id', String(filters.projeto_id));
-    if (filters?.acao) params.set('acao', filters.acao);
-    if (filters?.entidade_tipo) params.set('entidade_tipo', filters.entidade_tipo);
-    if (filters?.usuario_id) params.set('usuario_id', String(filters.usuario_id));
-    if (filters?.data_inicio) params.set('data_inicio', filters.data_inicio);
-    if (filters?.data_fim) params.set('data_fim', filters.data_fim);
-    return apiFetch<AuditListResponse>(`/audit?${params.toString()}`);
+  } catch {
+    /* ignore — clear local state anyway */
+  }
+  clearTokens();
+}
+
+// ── Header merge helper ──────────────────────────────────────
+
+function mergeHeaders(
+  base: Record<string, string>,
+  caller: HeadersInit | undefined
+): Record<string, string> {
+  if (!caller) return base;
+  const merged = { ...base };
+  if (caller instanceof Headers) {
+    caller.forEach((v, k) => { merged[k] = v; });
+  } else if (Array.isArray(caller)) {
+    for (const [k, v] of caller as [string, string][]) { merged[k] = v; }
+  } else {
+    Object.assign(merged, caller);
+  }
+  return merged;
+}
+
+// ── Domain API helpers ───────────────────────────────────────
+
+export const authApi = {
+  register(nome: string, email: string, senha: string, perfil: string) {
+    return apiFetch<{ access_token: string; user: unknown }>(
+      '/auth/register',
+      { method: 'POST', body: JSON.stringify({ nome, email, senha, perfil }) }
+    );
+  },
+
+  login(email: string, senha: string) {
+    return apiFetch<{ access_token: string; user: unknown }>(
+      '/auth/login',
+      { method: 'POST', body: JSON.stringify({ email, senha }) }
+    );
+  },
+
+  me(options?: { signal?: AbortSignal }) {
+    return apiFetch<{ user: unknown }>(
+      '/auth/me',
+      options?.signal ? { signal: options.signal } : {}
+    );
+  },
+
+  getUser(id: number) {
+    return apiFetch<{ user: unknown }>(`/auth/${id}`);
+  },
+
+  updateUser(id: number, data: Record<string, unknown>) {
+    return apiFetch<{ user: unknown }>(`/auth/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  listClientes(options?: { signal?: AbortSignal }) {
+    return apiFetch<{ clientes: { id: number; nome: string; email: string }[] }>(
+      '/auth/clientes',
+      options?.signal ? { signal: options.signal } : {}
+    );
   },
 };
+
+export const projectsApi = {
+  list(
+    page: number = 1,
+    size: number = 20,
+    filters?: Record<string, string>,
+    search?: string,
+    options?: { signal?: AbortSignal }
+  ) {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (search) params.set('search', search);
+    if (filters) {
+      for (const [k, v] of Object.entries(filters)) {
+        if (v) params.set(k, v);
+      }
+    }
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ projetos: ProjectData[]; total: number }>(
+      `/projetos?${params.toString()}`,
+      init
+    );
+  },
+
+  create(data: Record<string, unknown>) {
+    return apiFetch<{ projeto: ProjectData }>('/projetos', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  get(id: number) {
+    return apiFetch<{ projeto: ProjectData }>(`/projetos/${id}`);
+  },
+
+  update(id: number, data: Record<string, unknown>) {
+    return apiFetch<{ projeto: ProjectData }>(`/projetos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete(id: number) {
+    return apiFetch(`/projetos/${id}`, { method: 'DELETE' });
+  },
+
+  downloadERS(projectId: number, format: 'pdf' | 'docx', body?: Record<string, unknown>) {
+    return apiFetchBlob(`/projetos/${projectId}/ers.${format}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  },
+};
+
+export const requirementsApi = {
+  list(
+    projectId: number,
+    page: number = 1,
+    size: number = 50,
+    filters?: Record<string, string>,
+    options?: { signal?: AbortSignal }
+  ) {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (filters) {
+      for (const [k, v] of Object.entries(filters)) {
+        if (v) params.set(k, v);
+      }
+    }
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ requisitos: RequirementData[]; total: number }>(
+      `/projetos/${projectId}/requisitos?${params.toString()}`,
+      init
+    );
+  },
+
+  create(projectId: number, data: Record<string, unknown>) {
+    return apiFetch<{ requisito: RequirementData }>(`/projetos/${projectId}/requisitos`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  get(projectId: number, id: number) {
+    return apiFetch<{ requisito: RequirementData }>(`/projetos/${projectId}/requisitos/${id}`);
+  },
+
+  update(projectId: number, id: number, data: Record<string, unknown>) {
+    return apiFetch<{ requisito: RequirementData }>(`/projetos/${projectId}/requisitos/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete(projectId: number, id: number) {
+    return apiFetch(`/projetos/${projectId}/requisitos/${id}`, { method: 'DELETE' });
+  },
+
+  createValidacao(requirementId: number, data: Record<string, unknown>) {
+    return apiFetch<{ validacao: unknown }>(`/requisitos/${requirementId}/validacoes`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  versionHistory(requirementId: number) {
+    return apiFetch<{ versions: unknown[] }>(`/requisitos/${requirementId}/versions`);
+  },
+};
+
+export const auditApi = {
+  list(
+    page: number = 1,
+    size: number = 20,
+    filters?: Record<string, string>,
+    options?: { signal?: AbortSignal }
+  ) {
+    const params = new URLSearchParams({ page: String(page), size: String(size) });
+    if (filters) {
+      for (const [k, v] of Object.entries(filters)) {
+        if (v) params.set(k, v);
+      }
+    }
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<AuditListResponse>(
+      `/audit?${params.toString()}`,
+      init
+    );
+  },
+};
+
+export const validationApi = {
+  list(requirementId: number) {
+    return apiFetch<{ validacoes: unknown[] }>(`/requisitos/${requirementId}/validacoes`);
+  },
+
+  create(requirementId: number, data: Record<string, unknown>) {
+    return apiFetch<{ validacao: unknown }>(`/requisitos/${requirementId}/validacoes`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  update(requirementId: number, id: number, data: Record<string, unknown>) {
+    return apiFetch<{ validacao: unknown }>(`/requisitos/${requirementId}/validacoes/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+
+  delete(requirementId: number, id: number) {
+    return apiFetch(`/requisitos/${requirementId}/validacoes/${id}`, { method: 'DELETE' });
+  },
+};
+
+// Legacy aliases (pages may import these names)
+export { projectsApi as projectApi, requirementsApi as requirementApi };

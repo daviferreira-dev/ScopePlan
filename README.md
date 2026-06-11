@@ -4,42 +4,30 @@ Sistema de gerenciamento de requisitos de projeto com geração de ERS (Especifi
 
 ## Stack
 
-- **Frontend:** React 19 + TypeScript + Vite
+- **Frontend:** React 19 + TypeScript + Vite 8
 - **Backend:** Flask (Python) + SQLAlchemy + JWT
 - **Banco de dados:** SQLite (desenvolvimento) / PostgreSQL (produção)
 
-## Status do Projeto
+## Arquitetura Shared + Props (2026-06-01)
 
-### Portal do Analista — Integrado com API (2026-05-18)
+Todas as telas de conteúdo são componentes compartilhados em `src/pages/shared/` que recebem `perfil` como prop e adaptam UI/permissões internamente. Cada perfil tem um thin wrapper em `src/pages/<perfil>/Tela_Projetos.tsx` que importa de `../shared/`.
 
-Todas as telas do analista estão integradas com a API backend e utilizam dados reais:
+| Componente | Arquivo | Diferenças por perfil |
+|------------|---------|----------------------|
+| Projetos | `shared/TelaProjetos.tsx` | `showCreateButton` para analista/gestor |
+| Itens (tópicos) | `shared/TelaItens.tsx` | `perfil` passado adiante |
+| Validação | `shared/ValidacaoRequisitos.tsx` | Analista/desenvolvedor: add requisito; Cliente: aprovar/rejeitar/observar |
+| Download ERS | `shared/DownloadERS.tsx` | Analista/gestor: filtro de tópicos via `topicIds`; outros: download completo |
+| Auditoria | `shared/Auditoria.tsx` | Analista/gestor: paginação servidor + filtros data; outros: filtro client-side |
 
-| Tela | Arquivo | API | Status |
-|------|---------|-----|--------|
-| Projetos | `Tela_Projetos.tsx` | `projectsApi.list()`, `projectsApi.create()`, `authApi.listClientes()` | ✅ Integrado |
-| Itens (tópicos) | `Tela_Itens.tsx` | `requirementsApi.list()` | ✅ Integrado |
-| Validação | `ValidacaoRequisitos.tsx` | `requirementsApi.createValidacao()`, `requirementsApi.create()`, `requirementsApi.list()` | ✅ Integrado |
-| Download ERS | `DownloadERS.tsx` | `projectsApi.downloadERS()` (com `topicIds`) | ✅ Integrado |
-| Auditoria | `Auditoria.tsx` | `auditApi.list()` (paginação + filtros servidor), `projectsApi.list()` | ✅ Integrado |
+### Todos os Portais — Integrados com API
 
-### Portal do Cliente — Integrado com API (2026-05-18)
-
-Todas as telas do cliente estão integradas com a API backend:
-
-| Tela | Arquivo | API | Status |
-|------|---------|-----|--------|
-| Projetos | `Tela_Projetos.tsx` | `projectsApi.list()` (somente leitura) | ✅ Integrado |
-| Itens | `Tela_Itens.tsx` | `requirementsApi.list()` | ✅ Integrado |
-| Validação | `ValidacaoRequisitos.tsx` | `requirementsApi.createValidacao()`, `requirementsApi.list()` (com observação) | ✅ Integrado |
-| Download ERS | `DownloadERS.tsx` | `projectsApi.downloadERS()` (sem `topicIds`) | ✅ Integrado |
-| Auditoria | `Auditoria.tsx` | `auditApi.list()` (sem paginação, filtro client-side) | ✅ Integrado |
-
-### Portais Pendentes
-
-| Perfil | Status |
-|--------|--------|
-| Desenvolvedor | Placeholder — sem página dedicada |
-| Gestor | Placeholder — sem página dedicada |
+| Perfil | Wrapper | Status |
+|--------|---------|--------|
+| Analista | `analista/Tela_Projetos.tsx` | ✅ Integrado |
+| Cliente | `cliente/Tela_Projetos.tsx` | ✅ Integrado |
+| Desenvolvedor | `desenvolvedor/Tela_Projetos.tsx` | ✅ Integrado |
+| Gestor | `gestor/Tela_Projetos.tsx` | ✅ Integrado |
 
 ### Autenticação
 
@@ -47,6 +35,7 @@ Todas as telas do cliente estão integradas com a API backend:
 |------|---------|-----|--------|
 | Login | `Login.tsx` | `authApi.login()` via `useAuth()` | ✅ Integrado |
 | Cadastro | `Cadastro.tsx` | `authApi.register()` via `useAuth()` | ✅ Integrado |
+| Logout | `AuthContext.tsx` | `authApi.logout()` revoga token no servidor (blocklist em banco) | ✅ Integrado |
 
 **Build:** TypeScript compilation ✅ | Vite build ✅
 
@@ -56,11 +45,10 @@ Todas as telas do cliente estão integradas com a API backend:
 - CRUD de projetos (vinculados a um cliente)
 - CRUD de requisitos (RF, RNF, RN, RT) por projeto, com versionamento
 - Fluxo de validação: rascunho → em revisão → aprovado/rejeitado
-- Geração de ERS em DOCX (e PDF se WeasyPrint/GTK estiver disponível)
-- **Isolamento de dados por usuário** — cada usuário só vê seus próprios projetos, requisitos e logs de auditoria (analista/gestor por gestor_id, cliente por cliente_id, desenvolvedor por autor_id)
-- **Registro de auditoria** — modelo e endpoint de leitura existem, porém nenhuma ação é gravada automaticamente (ver nota abaixo)
-
-> ✅ **Audit log implementado:** Todas as rotas de CRUD de projetos e requisitos agora registram eventos de auditoria automaticamente via `AuditLog.log()`.
+- Geração de ERS em DOCX e PDF (reportlab)
+- **Isolamento de dados por usuário** — cada usuário só vê seus próprios projetos, requisitos e logs de auditoria
+- **Registro de auditoria** — `AuditLog.log()` é chamado automaticamente nas rotas de CRUD de projetos e requisitos
+- **Logout com revogação de token** — `authApi.logout()` revoga access + refresh tokens via blocklist; refresh token via cookie HttpOnly
 
 ## Regras de negócio
 
@@ -103,6 +91,12 @@ Todas as telas do cliente estão integradas com a API backend:
 ### Exclusão lógica (RN004)
 
 - Projetos e requisitos não são fisicamente deletados — recebem `ativo = False`.
+
+### Validação de requisitos
+
+- Resultados possíveis: `aprovado`, `aprovado_com_ressalvas`, `rejeitado`
+- Consenso: requisito muda de status quando 2+ validadores concordam
+- Cliente pode aprovar, rejeitar ou registrar observação (resultado = `aprovado_com_ressalvas`)
 
 ## Pré-requisitos
 
@@ -156,9 +150,9 @@ Abra `http://localhost:5173` no navegador.
 | `/analista/projetos/:id/validacao` | Validação de requisitos | Analista |
 | `/analista/projetos/:id/ers` | Download da ERS | Analista |
 | `/analista/projetos/:id/auditoria` | Registro de auditoria | Analista |
-| `/cliente/projetos` | Painel do Cliente | Cliente (integrado) |
-| `/desenvolvedor/projetos` | Painel do Desenvolvedor | Desenvolvedor (placeholder) |
-| `/gestor/projetos` | Painel do Gestor | Gestor (placeholder) |
+| `/cliente/projetos` | Painel do Cliente | Cliente |
+| `/desenvolvedor/projetos` | Painel do Desenvolvedor | Desenvolvedor |
+| `/gestor/projetos` | Painel do Gestor | Gestor |
 | `/acesso-negado` | Acesso negado | Pública |
 
 > **Nota:** As sub-páginas (tópicos, validação, download, auditoria) são controladas por estado (`activePage`, `selectedProject`, `activeTopic`), não por rotas aninhadas.
@@ -177,13 +171,13 @@ Abra `http://localhost:5173` no navegador.
 |--------|------|-----------|
 | POST | `/api/auth/register` | Cadastro de usuário |
 | POST | `/api/auth/login` | Login (retorna JWT) |
-| POST | `/api/auth/logout` | Logout (revoga token via blocklist) |
+| POST | `/api/auth/logout` | Logout (revoga tokens + limpa cookie HttpOnly) |
 | POST | `/api/auth/refresh` | Renovar token |
 | GET | `/api/auth/me` | Dados do usuário logado |
 | PUT | `/api/auth/me` | Atualizar perfil do usuário |
 | GET | `/api/auth/clientes` | Lista clientes (para vincular a projetos) |
 
-> **Nota:** A blocklist de tokens do logout é armazenada em memória — tokens revogados são perdidos ao reiniciar o servidor.
+> **Nota:** A blocklist de tokens do logout é armazenada no banco de dados via modelo `TokenBlocklist`. O `AuthContext.logout()` chama `authApi.logout()` para revogar os tokens no servidor.
 
 ### Projetos
 
@@ -194,7 +188,7 @@ Abra `http://localhost:5173` no navegador.
 | GET | `/api/projects/:id` | Detalhes do projeto (verifica acesso) |
 | PUT | `/api/projects/:id` | Atualizar projeto (analista, gestor) |
 | DELETE | `/api/projects/:id` | Exclusão lógica do projeto (analista, gestor) |
-| POST | `/api/projects/:id/ers/download` | Gerar e baixar ERS (qualquer perfil com acesso) |
+| POST | `/api/projects/:id/download-ers` | Gerar e baixar ERS (qualquer perfil com acesso) |
 
 ### Requisitos
 
@@ -214,7 +208,7 @@ Abra `http://localhost:5173` no navegador.
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET | `/api/audit` | Listar registros de auditoria (filtrado por projeto, ação, entidade_tipo, usuário, data) |
+| GET | `/api/audit` | Listar registros de auditoria (filtros: projeto, ação, entidade_tipo, usuário, data, busca textual) |
 
 ## Variáveis de ambiente (Backend)
 
@@ -259,14 +253,14 @@ conn = sqlite3.connect('instance/scopepan.db')
 cursor = conn.cursor()
 cursor.execute(\"SELECT name FROM sqlite_master WHERE type='table'\")
 for t in cursor.fetchall():
- print(t[0])
+    print(t[0])
 conn.close()
 "
 ```
 
 ## Notas para Windows
 
-- **WeasyPrint** (geração de PDF da ERS) requer bibliotecas GTK. Se não tiver instalado, o formato PDF não estará disponível, mas o formato DOCX funciona normalmente. Para instalar o GTK, use o MSYS2 ou o instalador do WeasyPrint para Windows.
+- **reportlab** é usada para geração de PDF da ERS (alternativa ao DOCX). Se não estiver instalada, apenas DOCX estará disponível.
 - Se tiver problemas com o `bcrypt`, certifique-se de ter o Visual Studio Build Tools instalado para compilar extensões C, ou use wheels pré-compilados.
 
 ## Scripts úteis
@@ -291,72 +285,80 @@ cd backend && flask shell
 ScopePlan/
 ├── backend/
 │   ├── app/
-│   │   ├── __init__.py          # Factory do Flask (create_app, blueprints, health check)
-│   │   ├── config.py            # Configurações (dev/prod)
-│   │   ├── models/              # Modelos SQLAlchemy
-│   │   │   ├── user.py          # Usuário (nome, email, senha, perfil)
-│   │   │   ├── project.py       # Projeto (nome, descricao, cliente_id)
-│   │   │   ├── requirement.py   # Requisito (titulo, descricao, tipo, prioridade, status)
-│   │   │   ├── validacao.py     # Validação de requisito
-│   │   │   └── audit_log.py     # Registro de auditoria (modelo existe, gravação pendente)
-│   │   ├── routes/              # Blueprints da API
-│   │   │   ├── auth.py          # Autenticação e registro (7 endpoints)
-│   │   │   ├── projects.py      # CRUD de projetos + download ERS
-│   │   │   ├── requirements.py  # CRUD de requisitos + validações
-│   │   │   └── audit.py         # Consulta de registros de auditoria
-│   │   ├── schemas/             # Schemas Marshmallow
-│   │   └── utils/               # Decorators e utilitários
-│   ├── instance/                # Banco SQLite
+│   │   ├── __init__.py           # Factory do Flask (create_app, blueprints, health check)
+│   │   ├── config.py             # Configurações (dev/prod)
+│   │   ├── models/               # Modelos SQLAlchemy
+│   │   │   ├── user.py           # Usuário (nome, email, senha, perfil)
+│   │   │   ├── project.py        # Projeto (nome, descricao, cliente_id)
+│   │   │   ├── requirement.py    # Requisito (titulo, descricao, tipo, prioridade, status)
+│   │   │   ├── requirement_version.py  # Versionamento de requisitos (RN003)
+│   │   │   ├── validacao.py      # Validação de requisito
+│   │   │   ├── audit_log.py      # Registro de auditoria (gravação automática)
+│   │   │   └── token_blocklist.py # Blocklist de tokens revogados
+│   │   ├── routes/               # Blueprints da API
+│   │   │   ├── auth.py           # Autenticação e registro (6 endpoints)
+│   │   │   ├── projects.py       # CRUD de projetos + download ERS
+│   │   │   ├── requirements.py   # CRUD de requisitos + validações + version history
+│   │   │   └── audit.py          # Consulta de registros de auditoria (com busca textual)
+│   │   ├── schemas/              # Schemas Marshmallow
+│   │   └── utils/                # Utilitários
+│   │       ├── decorators.py     # Decoradores de validação de perfil e acesso
+│   │       ├── access.py         # Funções de isolamento de dados por usuário
+│   │       └── ers_generator.py  # Geração de ERS (DOCX/PDF)
+│   ├── instance/                 # Banco SQLite
 │   ├── requirements.txt
-│   ├── run.py                   # Entry point do servidor
-│   └── .env                     # Variáveis de ambiente
+│   ├── run.py                    # Entry point do servidor
+│   └── .env                      # Variáveis de ambiente
 ├── src/
-│   ├── pages/                   # Páginas React
-│   │   ├── Login.tsx            # Login (integrado com API)
-│   │   ├── Cadastro.tsx         # Cadastro de usuário (integrado com API)
-│   │   ├── Home.tsx             # Landing page
-│   │   ├── analista/            # Páginas do perfil Analista (integrado com API)
-│   │   │   ├── Tela_Projetos.tsx    # Lista de projetos + criação
-│   │   │   ├── Tela_Itens.tsx       # Requisitos do projeto (tópicos)
-│   │   │   ├── ValidacaoRequisitos.tsx # Validação de requisitos
-│   │   │   ├── DownloadERS.tsx      # Download da ERS (DOCX/PDF)
-│   │   │   └── Auditoria.tsx        # Registro de auditoria
-│   │   └── cliente/             # Páginas do perfil Cliente (integrado com API)
-│   │       ├── Tela_Projetos.tsx    # Painel do cliente (somente leitura)
-│   │       ├── Tela_Itens.tsx       # Requisitos do projeto
-│   │       ├── ValidacaoRequisitos.tsx # Validação + observação
-│   │       ├── DownloadERS.tsx      # Download da ERS
-│   │       └── Auditoria.tsx        # Auditoria simplificada
-│   ├── contexts/                # Contextos (AuthContext)
-│   ├── services/                # Cliente API (api.ts)
-│   ├── components/              # ErrorBoundary, ProtectedRoute (não usado)
-│   ├── App.tsx                  # Rotas da aplicação (com AuthProvider)
-│   └── main.tsx                 # Entry point React
+│   ├── pages/                    # Páginas React
+│   │   ├── Login.tsx             # Login (integrado com API)
+│   │   ├── Cadastro.tsx          # Cadastro de usuário (integrado com API)
+│   │   ├── Home.tsx              # Landing page
+│   │   ├── shared/               # Componentes compartilhados (recebem perfil prop)
+│   │   │   ├── TelaProjetos.tsx  # Lista de projetos (showCreateButton por perfil)
+│   │   │   ├── TelaItens.tsx     # Requisitos do projeto (tópicos)
+│   │   │   ├── ValidacaoRequisitos.tsx # Validação + add requisito + observação
+│   │   │   ├── DownloadERS.tsx   # Download da ERS (DOCX/PDF, topicIds por perfil)
+│   │   │   └── Auditoria.tsx     # Auditoria (paginação servidor/client-side por perfil)
+│   │   ├── analista/             # Wrapper do perfil Analista
+│   │   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="analista"
+│   │   ├── cliente/              # Wrapper do perfil Cliente
+│   │   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="cliente"
+│   │   ├── desenvolvedor/        # Wrapper do perfil Desenvolvedor
+│   │   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="desenvolvedor"
+│   │   └── gestor/               # Wrapper do perfil Gestor
+│   │       └── Tela_Projetos.tsx # Importa de shared/ com perfil="gestor"
+│   ├── contexts/                 # Contextos (AuthContext)
+│   ├── services/                 # Cliente API (api.ts)
+│   ├── components/               # ErrorBoundary, AppLayout
+│   ├── utils/                    # Helpers, Constants (tópicos, cores, ícones)
+│   ├── App.tsx                   # Rotas da aplicação (com AuthProvider)
+│   └── main.tsx                  # Entry point React
 ├── package.json
 ├── vite.config.ts
 └── tsconfig.json
 ```
 
-## Diferenças entre portais Analista e Cliente
+## Diferenças de comportamento por perfil
 
-| Aspecto | Analista | Cliente |
-|---------|----------|---------|
-| Criar projeto | ✅ Botão "Novo Projeto" | ❌ Somente leitura |
-| Criar requisito | ✅ Na tela de validação | ❌ |
-| Observação em validação | ❌ | ✅ `resultado: 'observacao'` com comentário |
-| Auditoria | Paginação servidor + filtros (projeto, ação, datas) | Sem paginação, filtro client-side |
-| Download ERS | Filtra tópicos via `topicIds` | ✅ Integrado - passa `topicIds` à API |
+Todos os componentes em `shared/` recebem `perfil` e adaptam seu comportamento:
+
+| Aspecto | Analista | Cliente | Desenvolvedor | Gestor |
+|---------|----------|---------|---------------|--------|
+| Criar projeto | ✅ | ❌ | ❌ | ✅ |
+| Criar requisito | ✅ | ❌ | ✅ | ❌ |
+| Observação em validação | ❌ | ✅ | ❌ | ❌ |
+| Filtro de tópicos no download ERS | ✅ `topicIds` | ❌ | ❌ | ✅ `topicIds` |
+| Auditoria | Paginação servidor + filtros (projeto, ação, datas, busca) | Filtro client-side | Filtro client-side | Paginação servidor + filtros |
 
 ## Problemas conhecidos
 
 | Issue | Detalhes |
 |-------|----------|
-| **Audit log vazio** | Modelo e endpoint existem, mas `AuditLog.log()` nunca é chamado pelas rotas |
-| **Logout sem invalidação servidor** | `AuthContext.logout()` só limpa localStorage; não chama `authApi.logout()` |
-| **Token blocklist in-memory** | Tokens revogados no logout são perdidos ao reiniciar o servidor |
-| **Páginas não implementadas** | Desenvolvedor e Gestor são placeholders |
-| **Duplicação de código** | Diretórios `analista/` e `cliente/` têm páginas quase idênticas |
-| **ProtectedRoute duplicado** | `src/components/ProtectedRoute.tsx` não é usado; App.tsx tem versão inline |
+| **Upload de arquivo** | UI presente mas sem lógica real de upload |
+| **reportlab** | PDF indisponível sem reportlab — DOCX funciona normalmente |
+| **Version history sem UI** | Backend salva versões; endpoint e frontend API existem; nenhuma página consome os dados ainda |
+| **CRUD de projetos sem UI** | Endpoints GET/PUT/DELETE de projetos individuais existem no backend mas não têm UI no frontend |
 
 ## Licença
 

@@ -7,7 +7,7 @@ import ValidacaoRequisitos from '../shared/ValidacaoRequisitos';
 import Auditoria from '../shared/Auditoria';
 import DownloadERS from '../shared/DownloadERS';
 
-export default function AnalistaProjetos() {
+export default function DesenvolvedorProjetos() {
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
   const [view, setView] = useState<View>('projetos');
   const [topicSelection, setTopicSelection] = useState<TopicSelection | null>(null);
@@ -45,7 +45,7 @@ export default function AnalistaProjetos() {
       <TelaItens
         project={selectedProject}
         onBack={handleBack}
-        perfil="analista"
+        perfil="desenvolvedor"
         onTopicSelect={handleTopicSelect}
         onDownload={handleDownload}
         onAuditPage={handleAuditPage}
@@ -59,7 +59,7 @@ export default function AnalistaProjetos() {
         project={selectedProject}
         topic={{ ...topicSelection.topic, requirements: topicSelection.requirements }}
         onBack={handleBack}
-        perfil="analista"
+        perfil="desenvolvedor"
       />
     );
   }
@@ -70,23 +70,22 @@ export default function AnalistaProjetos() {
         project={selectedProject}
         requirements={topicSelection?.requirements || []}
         onBack={handleBack}
-        perfil="analista"
+        perfil="desenvolvedor"
       />
     );
   }
 
   if (view === 'auditoria') {
-    return <Auditoria perfil="analista" onBack={handleBack} />;
+    return <Auditoria perfil="desenvolvedor" onBack={handleBack} />;
   }
 
   return (
     <TelaProjetos
-      perfil="analista"
-      topbarTitle="Painel do Analista"
-      topbarSubtitle="Gerencie seus projetos e requisitos."
-      showCreateButton
+      perfil="desenvolvedor"
+      topbarTitle="Painel do Desenvolvedor"
+      topbarSubtitle="Acompanhe requisitos e validações."
       onProjectSelect={handleProjectSelect}
-      auditoriaContent={<Auditoria perfil="analista" />}
+      auditoriaContent={<Auditoria perfil="desenvolvedor" />}
     />
   );
 }

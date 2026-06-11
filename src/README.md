@@ -48,96 +48,78 @@ npm run preview
 
 ```
 src/
-├── App.tsx                    # Rotas, ProtectedRoute inline, ErrorBoundary
-├── main.tsx                   # Entry point (StrictMode + BrowserRouter)
-├── index.css                  # Estilos globais mínimos
-├── assets/
-│   ├── hero.png               # Imagem hero
-│   ├── logo_scope_plan.svg    # Logo SVG
-│   ├── scopeplan.png          # Logo PNG (usado nas páginas)
-│   ├── react.svg              # Logo React (default)
-│   └── vite.svg               # Logo Vite (default)
+├── App.tsx                   # Rotas, ProtectedRoute inline, ErrorBoundary
+├── main.tsx                  # Entry point (StrictMode + BrowserRouter)
+├── index.css                 # Estilos globais mínimos
+├── assets/                   # Imagens e logos
 ├── components/
-│   ├── ErrorBoundary.tsx      # Captura erros de renderização
-│   └── ProtectedRoute.tsx     # NÃO UTILIZADO (App.tsx usa versão inline)
+│   ├── AppLayout.tsx         # Layout com sidebar/topbar (recebe perfil prop)
+│   └── ErrorBoundary.tsx     # Captura erros de renderização
 ├── contexts/
-│   └── AuthContext.tsx        # Provider de autenticação + hook useAuth()
+│   └── AuthContext.tsx       # Provider de autenticação + hook useAuth()
 ├── services/
-│   └── api.ts                 # Cliente HTTP (axios) — authApi, projectsApi, requirementsApi, auditApi
+│   └── api.ts                # Cliente HTTP (axios) — authApi, projectsApi, requirementsApi, auditApi
+├── utils/
+│   ├── helpers.ts            # Funções utilitárias (formatação, status, useLogout)
+│   └── constants.tsx         # Tópicos, cores, ícones, labels, mapeamentos
 ├── pages/
-│   ├── Home.tsx               # Landing page (pública)
-│   ├── Login.tsx              # Login (integrado com API via useAuth)
-│   ├── Cadastro.tsx           # Cadastro de usuário (integrado com API via useAuth)
-│   ├── analista/              # Portal do Analista — integrado com API
-│   │   ├── Tela_Projetos.tsx        # Lista de projetos + criação + seleção de cliente
-│   │   ├── Tela_Itens.tsx           # Requisitos do projeto (tópicos por tipo)
-│   │   ├── ValidacaoRequisitos.tsx  # Validação (aprovar/rejeitar) + criação de requisito
-│   │   ├── DownloadERS.tsx          # Download da ERS (DOCX/PDF, com filtro de tópicos)
-│   │   └── Auditoria.tsx            # Registro de auditoria (paginação servidor + filtros)
-│   └── cliente/               # Portal do Cliente — integrado com API
-│       ├── Tela_Projetos.tsx        # Painel do cliente (somente leitura)
-│       ├── Tela_Itens.tsx           # Requisitos do projeto (tópicos por tipo)
-│       ├── ValidacaoRequisitos.tsx  # Validação (aprovar/rejeitar/observação com comentário)
-│       ├── DownloadERS.tsx          # Download da ERS (DOCX/PDF, sem filtro de tópicos)
-│       └── Auditoria.tsx            # Registro de auditoria (sem paginação, filtro client-side)
+│   ├── Home.tsx              # Landing page (pública)
+│   ├── Login.tsx             # Login (integrado com API via useAuth)
+│   ├── Cadastro.tsx          # Cadastro de usuário (integrado com API via useAuth)
+│   ├── shared/               # Componentes compartilhados (recebem perfil prop)
+│   │   ├── TelaProjetos.tsx  # Lista de projetos (showCreateButton por perfil)
+│   │   ├── TelaItens.tsx     # Requisitos do projeto (tópicos por tipo)
+│   │   ├── ValidacaoRequisitos.tsx # Validação + add requisito + observação
+│   │   ├── DownloadERS.tsx   # Download da ERS (DOCX/PDF, topicIds por perfil)
+│   │   └── Auditoria.tsx     # Auditoria (paginação servidor/client-side por perfil)
+│   ├── analista/             # Wrapper do perfil Analista
+│   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="analista"
+│   ├── cliente/              # Wrapper do perfil Cliente
+│   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="cliente"
+│   ├── desenvolvedor/        # Wrapper do perfil Desenvolvedor
+│   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="desenvolvedor"
+│   └── gestor/               # Wrapper do perfil Gestor
+│       └── Tela_Projetos.tsx # Importa de shared/ com perfil="gestor"
 ```
 
-> **Nota:** Os diretórios `src/pages/desenvolvedor/` e `src/pages/gestor/` existem mas estão vazios. Esses perfis usam `PlaceholderPage` inline em App.tsx.
+> **Nota:** Os wrappers em `analista/`, `cliente/`, `desenvolvedor/` e `gestor/` são thin components que importam de `shared/` e passam `perfil`. Toda a lógica de UI e comportamento está nos componentes compartilhados.
 
 ---
 
 ## Status de integração com API
 
-Todas as 12 páginas existentes estão **100% integradas com a API backend**. Não há dados mock ou hardcoded em nenhuma página.
+Todos os 4 portais estão **100% integrados com a API backend**. Não há dados mock ou hardcoded.
 
-### Autenticação
+### Componentes Shared
 
-| Página | Arquivo | API | Status |
-|--------|---------|-----|--------|
-| Login | `Login.tsx` | `authApi.login()` via `useAuth().login()` | ✅ Integrado |
-| Cadastro | `Cadastro.tsx` | `authApi.register()` via `useAuth().register()` | ✅ Integrado |
+| Componente | Arquivo | Comportamento por perfil |
+|------------|---------|--------------------------|
+| Projetos | `shared/TelaProjetos.tsx` | `showCreateButton` para analista/gestor |
+| Itens | `shared/TelaItens.tsx` | `perfil` passado adiante |
+| Validação | `shared/ValidacaoRequisitos.tsx` | Analista/dev: add requisito; Cliente: aprovar/rejeitar/observar |
+| Download ERS | `shared/DownloadERS.tsx` | Analista/gestor: filtro tópicos (`topicIds`); outros: download completo |
+| Auditoria | `shared/Auditoria.tsx` | Analista/gestor: paginação servidor + filtros data + busca textual; outros: filtro client-side |
 
-> Login.tsx possui perfis de teste rápidos (`QUICK_PROFILES`) para conveniência — não são dados mock.
+### Perfis
 
-### Portal do Analista
-
-| Página | Arquivo | API | Status |
-|--------|---------|-----|--------|
-| Projetos | `Tela_Projetos.tsx` | `projectsApi.list()`, `projectsApi.create()`, `authApi.listClientes()` | ✅ Integrado |
-| Itens | `Tela_Itens.tsx` | `requirementsApi.list()` | ✅ Integrado |
-| Validação | `ValidacaoRequisitos.tsx` | `requirementsApi.createValidacao()`, `requirementsApi.create()`, `requirementsApi.list()` | ✅ Integrado |
-| Download ERS | `DownloadERS.tsx` | `projectsApi.downloadERS(projectId, format, topicIds)` | ✅ Integrado |
-| Auditoria | `Auditoria.tsx` | `auditApi.list(page, perPage, filters)`, `projectsApi.list()` | ✅ Integrado |
-
-### Portal do Cliente
-
-| Página | Arquivo | API | Status |
-|--------|---------|-----|--------|
-| Projetos | `Tela_Projetos.tsx` | `projectsApi.list()` (somente leitura) | ✅ Integrado |
-| Itens | `Tela_Itens.tsx` | `requirementsApi.list()` | ✅ Integrado |
-| Validação | `ValidacaoRequisitos.tsx` | `requirementsApi.createValidacao()`, `requirementsApi.list()` | ✅ Integrado |
-| Download ERS | `DownloadERS.tsx` | `projectsApi.downloadERS(projectId, format)` | ✅ Integrado |
-| Auditoria | `Auditoria.tsx` | `auditApi.list()` (sem parâmetros, filtro client-side) | ✅ Integrado |
-
-### Perfis Pendentes
-
-| Perfil | Rota | Status |
-|--------|------|--------|
-| Desenvolvedor | `/desenvolvedor/projetos` | Placeholder (PlaceholderPage inline) |
-| Gestor | `/gestor/projetos` | Placeholder (PlaceholderPage inline) |
+| Perfil | Wrapper | Status |
+|--------|---------|--------|
+| Analista | `analista/Tela_Projetos.tsx` | ✅ Integrado |
+| Cliente | `cliente/Tela_Projetos.tsx` | ✅ Integrado |
+| Desenvolvedor | `desenvolvedor/Tela_Projetos.tsx` | ✅ Integrado |
+| Gestor | `gestor/Tela_Projetos.tsx` | ✅ Integrado |
 
 ---
 
-## Diferenças entre portais Analista e Cliente
+## Diferenças de comportamento por perfil
 
-| Aspecto | Analista | Cliente |
-|---------|----------|---------|
-| Criar projeto | ✅ Botão "Novo Projeto" com modal | ❌ Somente leitura |
-| Criar requisito | ✅ Na tela de validação | ❌ |
-| Observação em validação | ❌ | ✅ `resultado: 'observacao'` com campo de comentário |
-| Auditoria — paginação | ✅ Servidor (`page`, `perPage`) | ❌ Client-side |
-| Auditoria — filtros | ✅ Projeto, ação, data início/fim | ❌ Filtro simples client-side |
-| Download ERS — filtro | ✅ Seleção de tópicos (`topicIds`) | ⚠️ UI com checkboxes de tópicos, mas NÃO passa `topicIds` à API (bug) |
+| Aspecto | Analista | Cliente | Desenvolvedor | Gestor |
+|---------|----------|---------|---------------|--------|
+| Criar projeto | ✅ | ❌ | ❌ | ✅ |
+| Criar requisito | ✅ | ❌ | ✅ | ❌ |
+| Observação em validação | ❌ | ✅ | ❌ | ❌ |
+| Filtro tópicos no download ERS | ✅ `topicIds` | ❌ | ❌ | ✅ `topicIds` |
+| Auditoria | Paginação servidor + filtros + busca | Filtro client-side | Filtro client-side | Paginação servidor + filtros + busca |
 
 ---
 
@@ -147,12 +129,12 @@ O `AuthContext` gerencia o estado de autenticação global:
 
 | Ação | Comportamento |
 |------|---------------|
-| `login(email, senha)` | Chama `authApi.login()`, salva tokens no localStorage |
+| `login(email, senha)` | Chama `authApi.login()`, salva access token em memória; refresh via cookie HttpOnly |
 | `register(nome, email, senha, perfil)` | Chama `authApi.register()` + `authApi.login()` (auto-login) |
-| `logout()` | Remove tokens do localStorage (⚠️ não chama `authApi.logout()`) |
+| `logout()` | Chama `authApi.logout()` para revogar tokens no servidor + limpar cookie, depois limpa access token da memória |
 | Restaurar sessão | No mount, se token existe, chama `authApi.me()` |
 
-> ⚠️ **Gap:** O logout do frontend não invalida o token no servidor. O endpoint `POST /api/auth/logout` existe no backend mas não é chamado pelo AuthContext.
+> **Token revogação:** O `logout()` chama `POST /api/auth/logout` com access token no header. O backend revoga ambos os tokens (access + refresh) na `TokenBlocklist` e limpa o cookie de refresh.
 
 ---
 
@@ -175,11 +157,8 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 | Função | Endpoint |
 |--------|----------|
 | `list()` | `GET /api/projects` |
-| `get(id)` | `GET /api/projects/:id` |
 | `create(data)` | `POST /api/projects` |
-| `update(id, data)` | `PUT /api/projects/:id` |
-| `delete(id)` | `DELETE /api/projects/:id` |
-| `downloadERS(projectId, format, topicIds?)` | `POST /api/projects/:id/ers/download` |
+| `downloadERS(projectId, format, topicIds?)` | `POST /api/projects/:id/download-ers` |
 
 ### `requirementsApi`
 | Função | Endpoint |
@@ -214,8 +193,8 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 | `/analista/projetos/:id/ers` | DownloadERS | analista | ✅ |
 | `/analista/projetos/:id/auditoria` | Auditoria | analista | ✅ |
 | `/cliente/projetos` | Tela_Projetos | cliente | ✅ |
-| `/desenvolvedor/projetos` | PlaceholderPage | desenvolvedor | ✅ |
-| `/gestor/projetos` | PlaceholderPage | gestor | ✅ |
+| `/desenvolvedor/projetos` | Tela_Projetos | desenvolvedor | ✅ |
+| `/gestor/projetos` | Tela_Projetos | gestor | ✅ |
 | `/acesso-negado` | Acesso negado | Pública | ❌ |
 
 > **Nota:** As sub-páginas (tópicos, validação, download, auditoria) são controladas por estado (`activePage`, `selectedProject`, `activeTopic`) dentro dos componentes pai, não por rotas aninhadas separadas.
@@ -231,11 +210,8 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 
 | Issue | Detalhes |
 |-------|----------|
-| **Logout sem invalidação servidor** | `AuthContext.logout()` só limpa localStorage; não chama `authApi.logout()` |
-| **ProtectedRoute duplicado** | `src/components/ProtectedRoute.tsx` não é usado; App.tsx tem versão inline |
-| **Duplicação de código** | Diretórios `analista/` e `cliente/` têm páginas quase idênticas |
-| **Perfis não implementados** | Desenvolvedor e Gestor são placeholders |
 | **Upload de arquivo** | UI presente mas sem lógica real de upload |
+| **Version history sem UI** | `requirementsApi.versionHistory()` existe mas nenhuma página consome os dados |
 
 ## Licença
 

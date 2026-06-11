@@ -16,6 +16,9 @@ dist-ssr
 .env
 .env.*
 
+# Claude Code local settings
+.openclaude/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -32,3 +35,25 @@ __pycache__/
 *.pyc
 *.pyo
 *.db
+*.db-journal
+.pytest_cache/
+venv/
+
+# Database files
+instance/
+*.sql
+*.sqlite
+*.sqlite3
+
+# Security — never commit these
+*.pem
+*.key
+
+# Build output
+dist/
+
+# Stale test scripts
+backend/test_api.sh
+
+# Test credentials
+public/Docs/Perfis de Teste.txt

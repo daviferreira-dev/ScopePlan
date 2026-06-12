@@ -1,17 +1,10 @@
-from .auth import UserRegistrationSchema, UserLoginSchema, UserUpdateSchema, UserSchema
-from .project import ProjectCreateSchema, ProjectUpdateSchema, ProjectSchema
-from .requirement import (
-    RequirementCreateSchema,
-    RequirementUpdateSchema,
-    ValidacaoCreateSchema,
-    ValidacaoSchema,
-    RequirementSchema
-)
+from .auth import UserRegistrationSchema, UserLoginSchema, UserUpdateSchema
+from .project import ProjectCreateSchema, ProjectUpdateSchema
+from .requirement import RequirementCreateSchema, RequirementUpdateSchema, ValidacaoCreateSchema
 
 __all__ = [
-    'UserRegistrationSchema', 'UserLoginSchema', 'UserUpdateSchema', 'UserSchema',
-    'ProjectCreateSchema', 'ProjectUpdateSchema', 'ProjectSchema',
+    'UserRegistrationSchema', 'UserLoginSchema', 'UserUpdateSchema',
+    'ProjectCreateSchema', 'ProjectUpdateSchema',
     'RequirementCreateSchema', 'RequirementUpdateSchema',
-    'ValidacaoCreateSchema', 'ValidacaoSchema',
-    'RequirementSchema'
+    'ValidacaoCreateSchema',
 ]

@@ -114,7 +114,7 @@ O servidor estará disponível em `http://localhost:5000`
 | GET | `/api/requirements/:id/validacoes` | Sim | Dono do projeto | Listar validações do requisito |
 | GET | `/api/requirements/:id/version-history` | Sim | Dono do projeto | Histórico de versões do requisito |
 
-> **Versionamento (RN003):** Se um requisito aprovado tiver título ou descrição alterados, o status volta para `em_revisao` e a versão é incrementada.
+> **Versionamento (RN003):** Se um requisito com status `aprovado` ou `aprovado_com_ressalvas` tiver título ou descrição alterados, o status volta para `em_revisao` e a versão é incrementada. O histórico de versões é salvo na tabela `requirement_version` e pode ser consultado via endpoint `/api/requirements/:id/version-history`.
 
 > **Validação:** O resultado pode ser `aprovado`, `rejeitado` ou `aprovado_com_ressalvas` (com campo `comentario` obrigatório). O status do requisito muda por consenso (2+ validadores concordam).
 

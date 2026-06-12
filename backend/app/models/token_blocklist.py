@@ -1,6 +1,10 @@
 """Token blocklist stored in the database — survives restarts and shared across workers."""
+import time
 from datetime import datetime, timezone
 from app import db
+
+_revoked_cache = {}  # {jti: (is_revoked, timestamp)}
+_CACHE_TTL = 60  # seconds
 
 
 class TokenBlocklist(db.Model):
@@ -24,6 +28,8 @@ class TokenBlocklist(db.Model):
             entry = TokenBlocklist(jti=jti, expires_at=expires_at)
             db.session.add(entry)
             savepoint.commit()
+            # Update cache
+            _revoked_cache[jti] = (True, time.time())
             return entry
         except Exception:
             savepoint.rollback()
@@ -31,5 +37,16 @@ class TokenBlocklist(db.Model):
 
     @staticmethod
     def is_revoked(jti):
-        """Check if a JTI is in the blocklist."""
-        return TokenBlocklist.query.filter_by(jti=jti).first() is not None
+        """Check if a JTI is in the blocklist, with in-memory cache (TTL-based)."""
+        now = time.time()
+        cached = _revoked_cache.get(jti)
+        if cached and (now - cached[1]) < _CACHE_TTL:
+            return cached[0]
+        result = TokenBlocklist.query.filter_by(jti=jti).first() is not None
+        _revoked_cache[jti] = (result, now)
+        # Prune expired entries when cache grows too large
+        if len(_revoked_cache) > 1000:
+            expired = [k for k, v in _revoked_cache.items() if (now - v[1]) >= _CACHE_TTL]
+            for k in expired:
+                del _revoked_cache[k]
+        return result

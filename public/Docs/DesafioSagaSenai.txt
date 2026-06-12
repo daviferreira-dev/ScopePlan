@@ -1,0 +1,55 @@
+Plataforma colaborativa e automatizada para levantamento e documentação de requisitos em projetos de software.
+Descrição resumida:
+O levantamento de requisitos em projetos de sistemas é demorado, sujeito a falhas de comunicação entre cliente e empresa e depende da clareza das informações trocadas. A documentação costuma ser manual e repetitiva, elevando custos e prazos. Isso gera riscos como divergências de entendimento, retrabalho e atrasos por documentação incompleta. Sem ferramentas colaborativas e automatizadas, a comunicação falha e o desenvolvimento fica mais lento e oneroso.
+
+
+Benefícios esperados:
+- Reduzir o tempo gasto no levantamento e na documentação de requisitos.
+- Diminuir riscos de falhas de comunicação entre cliente e equipe de desenvolvimento.
+- Reduzir retrabalho causado por informações incompletas ou divergentes.
+- Aumentar a precisão e a clareza na definição dos requisitos do sistema.
+- Padronizar a documentação, evitando inconsistências e versões conflitantes.
+- Acelerar o processo de validação dos requisitos pelo cliente.
+- Aumentar a eficiência operacional da equipe de análise e desenvolvimento.
+
+Diminuir custos associados a correções tardias por má definição dos requisitos.
+
+
+Detalhamento:
+O levantamento de requisitos é uma das etapas mais críticas no desenvolvimento de sistemas, pois define tudo o que será construído e alinhado entre a equipe técnica e o cliente. No entanto, esse processo ainda é frequentemente manual, demorado e sujeito a falhas de comunicação, especialmente quando informações são trocadas por e-mail, documentos extensos ou reuniões sem registros estruturados. A ausência de ferramentas colaborativas dificulta a interação em tempo real entre cliente e empresa, resultando em entendimentos divergentes, perda de informações importantes e falta de padronização nas entregas. Além disso, a documentação produzida manualmente tende a ser repetitiva, consumir muito tempo e ficar rapidamente desatualizada quando ocorrem mudanças no escopo. Esse cenário aumenta os riscos de retrabalho, impacta o cronograma e pode gerar custos adicionais durante a fase de desenvolvimento. Diante dessa realidade, torna-se fundamental a criação de uma plataforma que automatize e padronize o levantamento de requisitos, facilite a comunicação entre as partes envolvidas, gere documentação atualizada automaticamente e ofereça recursos colaborativos para revisão e validação contínuas. Essa solução permitirá reduzir falhas, aumentar a assertividade do projeto, otimizar o tempo da equipe e garantir uma entrega mais eficiente e alinhada às necessidades do cliente.
+
+
+Escola:
+(SP) 1.32 Escola SENAI de Informática
+
+
+Restrições (O que a solução não pode ter):
+A demanda não possui restrições.
+
+
+Estado:
+SP
+
+
+Área de atuação:
+Tecnologia da Informação
+
+
+Empresa:
+LabWare
+
+
+Data de cadastro:
+14/11/2025 11:18
+
+
+Data de início da vigência:
+14/11/2025
+
+
+Vigência:
+14/11/2026 - (12 mes(es))
+
+
+Ativo:
+Sim

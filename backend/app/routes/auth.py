@@ -82,8 +82,8 @@ def register():
 
     db.session.commit()
 
-    access_token = create_access_token(identity=user.id)
-    refresh_token = create_refresh_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
 
     # Set refresh token as HttpOnly cookie; return only access_token in JSON
     response = make_response(jsonify({
@@ -106,8 +106,8 @@ def login():
     if not user.ativo:
         return {'message': 'Conta desativada'}, 403
 
-    access_token = create_access_token(identity=user.id)
-    refresh_token = create_refresh_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
 
     AuditLog.log(user.id, 'login', 'usuario', user.id, None, {'email': user.email})
 
@@ -138,8 +138,8 @@ def refresh():
     if not user or not user.ativo:
         return {'message': 'Usuário desativado'}, 403
 
-    access_token = create_access_token(identity=identity)
-    new_refresh_token = create_refresh_token(identity=identity)
+    access_token = create_access_token(identity=str(identity))
+    new_refresh_token = create_refresh_token(identity=str(identity))
 
     # Token rotation: set new refresh token cookie
     response = make_response(jsonify({

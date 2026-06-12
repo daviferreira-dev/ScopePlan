@@ -2,334 +2,189 @@ import { useState } from "react";
 import { projectsApi, type ProjectData, type RequirementData } from "../../services/api";
 import AppLayout from "../../components/AppLayout";
 import { REQUIREMENT_TOPICS as BASE_TOPICS, TOPIC_TYPE_MAP } from "../../utils/constants";
-
-const pageStyles = `
-.main { background: var(--surface); }
-.content { flex: 1; overflow: hidden; padding: 0; }
-
-/* ── DOWNLOAD LAYOUT ── */
-.download-layout { display: flex; height: 100%; }
-
-.download-left {
-  width: 420px; min-width: 420px;
-  border-right: 1px solid var(--card-border);
-  background: #fff; display: flex; flex-direction: column; overflow-y: auto;
-}
-.download-left-inner { padding: 28px 32px; }
-.download-title {
-  font-family: 'Playfair Display', serif; font-size: 22px;
-  font-weight: 700; color: var(--text-primary); margin-bottom: 6px;
-}
-.download-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 28px; }
-.section-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--green-muted); margin-bottom: 10px;
-}
-
-/* ── TOPIC CHECKBOXES ── */
-.topic-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 28px; }
-.topic-checkbox {
-  display: flex; align-items: center; gap: 12px;
-  padding: 12px 16px; background: var(--surface);
-  border: 1.5px solid var(--card-border); border-radius: 12px;
-  cursor: pointer; transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-.topic-checkbox:hover { background: var(--progress-bg); border-color: rgba(34,136,63,0.22); }
-.topic-checkbox.selected {
-  background: var(--progress-bg); border-color: var(--green-bright);
-  box-shadow: 0 0 0 2px rgba(34,136,63,0.12);
-}
-.topic-checkbox input[type="checkbox"] {
-  appearance: none; -webkit-appearance: none;
-  width: 20px; height: 20px; border: 2px solid rgba(34,136,63,0.25);
-  border-radius: 6px; flex-shrink: 0; cursor: pointer;
-  position: relative; transition: border-color 0.15s, background 0.15s; background: #fff;
-}
-.topic-checkbox input[type="checkbox"]:checked { background: var(--green-bright); border-color: var(--green-bright); }
-.topic-checkbox input[type="checkbox"]:checked::after {
-  content: ""; position: absolute; left: 5px; top: 2px;
-  width: 5px; height: 10px; border: solid #fff; border-width: 0 2.5px 2.5px 0;
-  transform: rotate(45deg);
-}
-.topic-name { font-size: 14px; font-weight: 500; color: var(--text-primary); flex: 1; }
-.topic-count { font-size: 12px; color: var(--text-muted); font-weight: 500; }
-
-/* ── FORMAT OPTIONS ── */
-.format-options { display: flex; gap: 10px; margin-bottom: 28px; }
-.format-option {
-  flex: 1; padding: 14px 14px; background: var(--surface);
-  border: 1.5px solid var(--card-border); border-radius: 12px;
-  text-align: center; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
-}
-.format-option:hover { background: var(--progress-bg); border-color: rgba(34,136,63,0.22); }
-.format-option.selected {
-  background: var(--progress-bg); border-color: var(--green-bright);
-  box-shadow: 0 0 0 2px rgba(34,136,63,0.12);
-}
-.format-name {
-  font-family: 'Playfair Display', serif; font-size: 16px;
-  font-weight: 700; color: var(--text-primary); margin-bottom: 2px;
-}
-.format-desc { font-size: 11px; color: var(--text-muted); }
-
-/* ── ACTION BUTTONS ── */
-.actions { display: flex; gap: 10px; margin-top: 4px; }
-.actions .btn-cancel {
-  flex: 1; padding: 12px 16px; background: var(--surface);
-  border: 1px solid var(--card-border); border-radius: 11px;
-  font-family: 'Sora', sans-serif; font-size: 13px; font-weight: 600;
-  color: var(--text-muted); cursor: pointer;
-  transition: background 0.18s, border-color 0.18s; text-align: center;
-}
-.actions .btn-cancel:hover { background: var(--progress-bg); border-color: rgba(34,136,63,0.18); color: var(--text-primary); }
-.actions .btn-download { flex: 1; justify-content: center; }
-
-.error-message {
-  background: #fef0f0; color: #b91c1c; font-size: 13px;
-  padding: 10px 14px; border-radius: 10px; margin-bottom: 16px;
-  border: 1px solid #f5c6c6;
-}
-
-/* ── PREVIEW PANEL ── */
-.download-right {
-  flex: 1; overflow: auto; background: var(--surface-2);
-  padding: 24px; display: flex; justify-content: center; align-items: flex-start;
-}
-.preview-panel {
-  background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.07);
-  width: 210mm; min-height: 297mm; padding: 30mm 20mm 20mm 30mm;
-  font-family: 'Times New Roman', serif; color: #000;
-  line-height: 1.5; font-size: 12pt; border-radius: 4px;
-}
-
-.abnt-cover { text-align: center; padding-top: 60px; }
-.abnt-cover h1 { font-size: 18pt; font-weight: bold; color: #000; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
-.abnt-cover .subtitle { font-size: 14pt; font-weight: normal; color: #000; margin-bottom: 20px; }
-.abnt-cover .project-name { font-size: 18pt; font-weight: bold; color: #000; margin: 30px 0 10px; }
-.abnt-cover .client { font-size: 14pt; color: #000; margin-bottom: 60px; }
-.abnt-cover .date { font-size: 12pt; color: #000; margin-top: 80px; }
-
-.abnt-toc { margin: 20px 0; }
-.abnt-toc h2 { font-size: 14pt; font-weight: bold; color: #000; text-align: center; margin-bottom: 12px; }
-.abnt-toc-item { display: flex; justify-content: space-between; font-size: 12pt; color: #000; margin-bottom: 6px; }
-.abnt-toc-dots { flex: 1; border-bottom: 1px dotted #000; margin: 0 6px; align-self: flex-end; }
-
-.abnt-section { margin-top: 20px; }
-.abnt-section h2 { font-size: 13pt; font-weight: bold; color: #000; text-align: left; margin-bottom: 10px; }
-
-.abnt-req-list { list-style: none; padding-left: 0; margin-top: 8px; }
-.abnt-req-item { margin-bottom: 12px; font-size: 12pt; color: #000; }
-.abnt-req-code { font-weight: bold; color: #000; margin-right: 8px; }
-.abnt-req-title { font-weight: bold; color: #000; }
-.abnt-req-desc { color: #333; font-size: 11pt; margin-left: 20px; margin-top: 4px; line-height: 1.5; }
-.abnt-no-reqs { font-style: italic; color: #444; font-size: 12pt; margin-left: 20px; }
-
-@media (max-width: 1200px) {
-  .download-layout { flex-direction: column !important; height: auto !important; overflow-y: auto !important; }
-  .download-left { width: 100% !important; min-width: 0 !important; max-height: none !important; border-right: none !important; border-bottom: 1px solid var(--card-border); padding: 24px 20px !important; }
-  .download-left-inner { max-width: 100%; }
-  .download-right { width: 100% !important; min-height: 0 !important; padding: 24px 20px !important; display: flex; justify-content: center; }
-  .preview-panel { width: 100% !important; max-width: 680px !important; min-height: auto !important; padding: 24px 20px !important; margin: 0 auto; }
-}
-@media (max-width: 768px) {
-  .content { padding: 0 16px 16px; overflow-y: auto !important; }
-  .format-options { flex-wrap: wrap; }
-  .actions { flex-direction: column; gap: 10px; }
-  .actions .btn-cancel, .actions .btn-download { width: 100%; }
-}
-@media (max-width: 480px) {
-  .download-left { padding: 18px 14px !important; }
-  .download-right { padding: 18px 14px !important; }
-  .preview-panel { padding: 16px 12px !important; }
-  .topic-checkbox { padding: 8px 6px; }
-}
-`;
+import styles from './DownloadERS.module.css';
 
 interface TopicInfo {
-  id: number;
-  name: string;
-  type: string;
-  count: number;
-  requirements: RequirementData[];
+	id: number;
+	name: string;
+	type: string;
+	count: number;
+	requirements: RequirementData[];
 }
 
 interface Props {
-  project: ProjectData;
-  requirements: RequirementData[];
-  onBack: () => void;
-  perfil: 'analista' | 'cliente' | 'gestor' | 'desenvolvedor';
+	project: ProjectData;
+	requirements: RequirementData[];
+	onBack: () => void;
+	perfil: 'analista' | 'cliente' | 'gestor' | 'desenvolvedor';
 }
 
 type Format = "pdf" | "docx";
 
 export default function DownloadERS({ project, requirements, onBack, perfil }: Props) {
-  const canFilterTopics = perfil === 'analista' || perfil === 'gestor';
+	const canFilterTopics = perfil === 'analista' || perfil === 'gestor';
 
-  const topicsWithCount: TopicInfo[] = BASE_TOPICS.map(t => ({
-    ...t,
-    count: requirements.filter(r => r.tipo === t.type).length,
-    requirements: requirements.filter(r => r.tipo === t.type),
-  }));
+	const topicsWithCount: TopicInfo[] = BASE_TOPICS.map(t => ({
+		...t,
+		count: requirements.filter(r => r.tipo === t.type).length,
+		requirements: requirements.filter(r => r.tipo === t.type),
+	}));
 
-  const [selectedIds, setSelectedIds] = useState<number[]>(BASE_TOPICS.map(t => t.id));
-  const [format, setFormat] = useState<Format>("pdf");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+	const [selectedIds, setSelectedIds] = useState<number[]>(BASE_TOPICS.map(t => t.id));
+	const [format, setFormat] = useState<Format>("pdf");
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState("");
 
-  const toggleTopic = (id: number) => {
-    setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-  };
+	const toggleTopic = (id: number) => {
+		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+	};
 
-  const selectedTopics = topicsWithCount.filter((t) => selectedIds.includes(t.id));
+	const selectedTopics = topicsWithCount.filter((t) => selectedIds.includes(t.id));
 	const previewTopics = canFilterTopics ? selectedTopics : topicsWithCount;
 
-  const handleDownload = async () => {
-    if (selectedIds.length === 0) {
-      setError("Selecione pelo menos um tópico.");
-      return;
-    }
+	const handleDownload = async () => {
+		if (selectedIds.length === 0) {
+			setError("Selecione pelo menos um tópico.");
+			return;
+		}
 
-    setError("");
-    setLoading(true);
+		setError("");
+		setLoading(true);
 
-    try {
-      let blob: Blob;
+		try {
+			let blob: Blob;
 
-      if (canFilterTopics) {
-        const selectedTypes = selectedIds.map(id => TOPIC_TYPE_MAP[id]).filter(Boolean);
-        blob = await projectsApi.downloadERS(
-          project.id,
-          format,
-          selectedTypes.length === BASE_TOPICS.length ? undefined : { topicIds: selectedTypes }
-        );
-      } else {
-        blob = await projectsApi.downloadERS(project.id, format);
-      }
+			if (canFilterTopics) {
+				const selectedTypes = selectedIds.map(id => TOPIC_TYPE_MAP[id]).filter(Boolean);
+				blob = await projectsApi.downloadERS(
+					project.id,
+					format,
+					selectedTypes.length === BASE_TOPICS.length ? undefined : { topicIds: selectedTypes }
+				);
+			} else {
+				blob = await projectsApi.downloadERS(project.id, format);
+			}
 
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = `${project.nome.replace(/\s+/g, "_")}_ERS.${format}`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
-    } catch (err: unknown) {
-      setError((err instanceof Error ? err.message : String(err)) || "Erro inesperado ao gerar download.");
-    } finally {
-      setLoading(false);
-    }
-  };
+			const blobUrl = URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = blobUrl;
+			link.download = `${project.nome.replace(/\s+/g, "_")}_ERS.${format}`;
+			document.body.appendChild(link);
+			link.click();
+			document.body.removeChild(link);
+			setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+		} catch (err: unknown) {
+			setError((err instanceof Error ? err.message : String(err)) || "Erro inesperado ao gerar download.");
+		} finally {
+			setLoading(false);
+		}
+	};
 
-  return (
-    <>
-      <style>{pageStyles}</style>
-      <AppLayout
-        perfil={perfil}
-        activePage="projetos"
-        onPageChange={() => onBack()}
-        topbarTitle="Download da ERS"
-        topbarSubtitle={project.nome}
-      >
-        <div className="content">
-          <div className="download-layout">
-            <div className="download-left">
-              <div className="download-left-inner">
-                <h2 className="download-title">Exportar Documento ERS</h2>
-                <p className="download-subtitle">Selecione os tópicos e o formato para gerar o arquivo.</p>
+	return (
+		<AppLayout
+			perfil={perfil}
+			activePage="projetos"
+			onPageChange={() => onBack()}
+			topbarTitle="Download da ERS"
+			topbarSubtitle={project.nome}
+		>
+			<div className={styles.content}>
+				<div className={styles['download-layout']}>
+					<div className={styles['download-left']}>
+						<div className={styles['download-left-inner']}>
+							<h2 className={styles['download-title']}>Exportar Documento ERS</h2>
+							<p className={styles['download-subtitle']}>Selecione os tópicos e o formato para gerar o arquivo.</p>
 
-																{canFilterTopics && (
-																	<>
-	                <div className="section-label">Tópicos da ERS</div>
-	                <div className="topic-list">
-	                  {topicsWithCount.map((topic) => (
-	                    <label key={topic.id} className={`topic-checkbox ${selectedIds.includes(topic.id) ? "selected" : ""}`}>
-	                      <input
-	                        type="checkbox"
-	                        checked={selectedIds.includes(topic.id)}
-	                        onChange={() => toggleTopic(topic.id)}
-	                      />
-	                      <span className="topic-name">{topic.name}</span>
-	                      <span className="topic-count">{topic.count} requisitos</span>
-	                    </label>
-	                  ))}
-	                </div>
-																	</>
-																)}
+							{canFilterTopics && (
+								<>
+									<div className={styles['section-label']}>Tópicos da ERS</div>
+									<div className={styles['topic-list']}>
+										{topicsWithCount.map((topic) => (
+											<label key={topic.id} className={`${styles['topic-checkbox']}${selectedIds.includes(topic.id) ? ` ${styles.selected}` : ""}`}>
+												<input
+													type="checkbox"
+													checked={selectedIds.includes(topic.id)}
+													onChange={() => toggleTopic(topic.id)}
+												/>
+												<span className={styles['topic-name']}>{topic.name}</span>
+												<span className={styles['topic-count']}>{topic.count} requisitos</span>
+											</label>
+										))}
+									</div>
+								</>
+							)}
 
-                <div className="section-label">Formato</div>
-                <div className="format-options">
-                  <div className={`format-option ${format === "pdf" ? "selected" : ""}`} onClick={() => setFormat("pdf")}>
-                    <div className="format-name">PDF</div>
-                    <div className="format-desc">Documento portável</div>
-                  </div>
-                  <div className={`format-option ${format === "docx" ? "selected" : ""}`} onClick={() => setFormat("docx")}>
-                    <div className="format-name">DOCX</div>
-                    <div className="format-desc">Microsoft Word</div>
-                  </div>
-                </div>
+							<div className={styles['section-label']}>Formato</div>
+							<div className={styles['format-options']}>
+								<div className={`${styles['format-option']}${format === "pdf" ? ` ${styles.selected}` : ""}`} onClick={() => setFormat("pdf")}>
+									<div className={styles['format-name']}>PDF</div>
+									<div className={styles['format-desc']}>Documento portável</div>
+								</div>
+								<div className={`${styles['format-option']}${format === "docx" ? ` ${styles.selected}` : ""}`} onClick={() => setFormat("docx")}>
+									<div className={styles['format-name']}>DOCX</div>
+									<div className={styles['format-desc']}>Microsoft Word</div>
+								</div>
+							</div>
 
-                {error && <div className="error-message">{error}</div>}
+							{error && <div className={styles['error-message']}>{error}</div>}
 
-                <div className="actions">
-                  <button className="btn-cancel" onClick={onBack}>
-                    Cancelar
-                  </button>
-                  <button className="btn-download" onClick={handleDownload} disabled={loading || (canFilterTopics && selectedIds.length === 0)}>
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-                    </svg>
-                    {loading ? "Gerando..." : "Baixar ERS"}
-                  </button>
-                </div>
-              </div>
-            </div>
+							<div className={styles.actions}>
+								<button className={styles.btnCancel} onClick={onBack}>
+									Cancelar
+								</button>
+								<button className="btn-download" onClick={handleDownload} disabled={loading || (canFilterTopics && selectedIds.length === 0)}>
+									<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+										<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+									</svg>
+									{loading ? "Gerando..." : "Baixar ERS"}
+								</button>
+							</div>
+						</div>
+					</div>
 
-            <div className="download-right">
-              <div className="preview-panel">
-                <div className="abnt-cover">
-                  <h1>Especificação de Requisitos de Software</h1>
-                  <div className="subtitle">ERS</div>
-                  <div className="project-name">{project.nome}</div>
-                  <div className="client">Cliente: {project.nome_cliente || "—"}</div>
-                  <div className="date">{new Date().toLocaleDateString("pt-BR")}</div>
-                </div>
+					<div className={styles['download-right']}>
+						<div className={styles['preview-panel']}>
+							<div className={styles['abnt-cover']}>
+								<h1>Especificação de Requisitos de Software</h1>
+								<div className="subtitle">ERS</div>
+								<div className="project-name">{project.nome}</div>
+								<div className="client">Cliente: {project.nome_cliente || "—"}</div>
+								<div className="date">{new Date().toLocaleDateString("pt-BR")}</div>
+							</div>
 
-                <div className="abnt-toc">
-                  <h2>Sumário</h2>
-                  {previewTopics.map((topic, index) => (
-                    <div className="abnt-toc-item" key={topic.id}>
-                      <span>{index + 1}. {topic.name}</span>
-                      <span className="abnt-toc-dots"></span>
-                      <span>{topic.count}</span>
-                    </div>
-                  ))}
-                </div>
+							<div className={styles['abnt-toc']}>
+								<h2>Sumário</h2>
+								{previewTopics.map((topic, index) => (
+									<div className={styles['abnt-toc-item']} key={topic.id}>
+										<span>{index + 1}. {topic.name}</span>
+										<span className={styles['abnt-toc-dots']}></span>
+										<span>{topic.count}</span>
+									</div>
+								))}
+							</div>
 
-                {previewTopics.map((topic, index) => (
-                  <div className="abnt-section" key={topic.id}>
-                    <h2>{index + 1}. {topic.name}</h2>
-                    {topic.requirements.length === 0 ? (
-                      <p className="abnt-no-reqs">Nenhum requisito documentado neste tópico.</p>
-                    ) : (
-                      <ul className="abnt-req-list">
-                        {topic.requirements.map((req) => (
-                          <li className="abnt-req-item" key={req.id}>
-                            <span className="abnt-req-code">{req.codigo || `REQ-${req.id}`}</span>
-                            <span className="abnt-req-title">{req.titulo}</span>
-                            <div className="abnt-req-desc">{req.descricao}</div>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </AppLayout>
-    </>
-  );
+							{previewTopics.map((topic, index) => (
+								<div className={styles['abnt-section']} key={topic.id}>
+									<h2>{index + 1}. {topic.name}</h2>
+									{topic.requirements.length === 0 ? (
+										<p className={styles['abnt-no-reqs']}>Nenhum requisito documentado neste tópico.</p>
+									) : (
+										<ul className={styles['abnt-req-list']}>
+											{topic.requirements.map((req) => (
+												<li className={styles['abnt-req-item']} key={req.id}>
+													<span className={styles['abnt-req-code']}>{req.codigo || `REQ-${req.id}`}</span>
+													<span className={styles['abnt-req-title']}>{req.titulo}</span>
+													<div className={styles['abnt-req-desc']}>{req.descricao}</div>
+												</li>
+											))}
+										</ul>
+									)}
+								</div>
+							))}
+						</div>
+					</div>
+				</div>
+			</div>
+		</AppLayout>
+	);
 }

@@ -4,26 +4,48 @@ from app import db
 
 class Requirement(db.Model):
     __tablename__ = 'requisitos'
+    __table_args__ = (
+        db.CheckConstraint(
+            "tipo IN ('funcional', 'nao_funcional', 'negocio', 'restricao')",
+            name='ck_requisitos_tipo'
+        ),
+        db.CheckConstraint(
+            "prioridade IN ('baixa', 'media', 'alta', 'critica')",
+            name='ck_requisitos_prioridade'
+        ),
+        db.CheckConstraint(
+            "status IN ('rascunho', 'em_revisao', 'aprovado', 'rejeitado', 'aprovado_com_ressalvas')",
+            name='ck_requisitos_status'
+        ),
+        db.UniqueConstraint('projeto_id', 'codigo', name='uq_requisito_projeto_codigo'),
+        db.Index('ix_requisitos_projeto_ativo', 'projeto_id', 'ativo'),
+    )
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    projeto_id = db.Column(db.Integer, db.ForeignKey('projetos.id'), nullable=False)
-    autor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    codigo = db.Column(db.String(20))  # e.g. "RF-001"
+    projeto_id = db.Column(db.Integer, db.ForeignKey('projetos.id', ondelete='CASCADE'), nullable=False, index=True)
+    autor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'), nullable=True, index=True)
+    codigo = db.Column(db.String(20), nullable=False, default='', server_default='')
     titulo = db.Column(db.String(300), nullable=False)
     descricao = db.Column(db.Text)
-    tipo = db.Column(db.String(30))  # funcional, nao_funcional, negocio, restricao
-    categoria = db.Column(db.String(100))  # e.g. "Requisitos Funcionais", "Regras de Negócio"
-    prioridade = db.Column(db.String(20))  # baixa, media, alta, critica
-    status = db.Column(db.String(30), nullable=False, default='rascunho')  # rascunho, em_revisao, aprovado, rejeitado, implementado
+    tipo = db.Column(db.String(30))
+    categoria = db.Column(db.String(100))
+    prioridade = db.Column(db.String(20))
+    status = db.Column(db.String(30), nullable=False, default='rascunho', index=True)
     numero_versao = db.Column(db.SmallInteger, nullable=False, default=1)
-    ativo = db.Column(db.Boolean, nullable=False, default=True)  # RN004: deleção lógica
+    ativo = db.Column(db.Boolean, nullable=False, default=True, index=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    validacoes = db.relationship('Validacao', backref='requisito', lazy='dynamic', cascade='all, delete-orphan')
+    validacoes = db.relationship('Validacao', backref='requisito', lazy='select', cascade='all, delete-orphan')
 
-    def to_dict(self, include_projeto=False, include_validacoes=False):
+    def incrementar_versao(self, user_id=None):
+        """RN003: Snapshot current state and increment version number."""
+        from app.models.requirement_version import RequirementVersion
+        RequirementVersion.snapshot(self, user_id)
+        self.numero_versao += 1
+
+    def to_dict(self, include_validacoes=False):
         """Convert requirement to dictionary"""
         data = {
             'id': self.id,
@@ -39,27 +61,9 @@ class Requirement(db.Model):
             'status': self.status,
             'numero_versao': self.numero_versao,
             'ativo': self.ativo,
-            'validacoes_count': self.validacoes.count(),
-            'ultima_validacao': self._get_ultima_validacao(),
             'criado_em': self.criado_em.isoformat() if self.criado_em else None,
-            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None
+            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None,
         }
-
-        if include_projeto and self.projeto:
-            data['projeto'] = self.projeto.to_dict()
-
         if include_validacoes:
-            from app.models import Validacao
-            data['validacoes'] = [v.to_dict() for v in self.validacoes.order_by(Validacao.validado_em.desc()).all()]
-
+            data['validacoes'] = [v.to_dict() for v in self.validacoes]
         return data
-
-    def _get_ultima_validacao(self):
-        """Get the most recent validation result"""
-        from app.models import Validacao
-        ultima = self.validacoes.order_by(Validacao.validado_em.desc()).first()
-        return ultima.to_dict() if ultima else None
-
-    def incrementar_versao(self):
-        """Increment requirement version"""
-        self.numero_versao = (self.numero_versao or 0) + 1

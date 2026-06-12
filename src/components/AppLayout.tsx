@@ -96,7 +96,7 @@ export default function AppLayout({
           </div>
           <div className="topbar-right">
             {topbarActions}
-            <span className={`role-tag ${perfil}`}>{getRoleLabel(perfil)}</span>
+            <span className={`role-tag role-tag--${perfil}`}>{getRoleLabel(perfil)}</span>
           </div>
         </header>
 

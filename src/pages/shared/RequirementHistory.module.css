@@ -1,0 +1,283 @@
+.content-inner {
+	padding: 24px;
+	max-width: 1200px;
+	margin: 0 auto;
+}
+
+/* Empty State */
+.empty-state {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 60px 20px;
+	text-align: center;
+	color: #6b7280;
+}
+
+.empty-icon {
+	margin-bottom: 16px;
+	color: #9ca3af;
+}
+
+.empty-state h3 {
+	font-size: 18px;
+	font-weight: 600;
+	margin: 12px 0 8px;
+	color: #374151;
+}
+
+.empty-state p {
+	font-size: 14px;
+	color: #6b7280;
+}
+
+/* Timeline de Versões */
+.versions-timeline {
+	margin-bottom: 32px;
+}
+
+.section-title {
+	font-size: 16px;
+	font-weight: 600;
+	color: #1f2937;
+	margin-bottom: 16px;
+}
+
+.versions-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.version-item {
+	display: flex;
+	flex-direction: column;
+	padding: 16px;
+	background: #ffffff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.version-item:hover {
+	border-color: #3b82f6;
+	box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+}
+
+.version-item.selected {
+	border-color: #3b82f6;
+	background: #eff6ff;
+	box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
+}
+
+.version-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-bottom: 8px;
+}
+
+.version-badge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 4px 10px;
+	background: #3b82f6;
+	color: #ffffff;
+	font-size: 12px;
+	font-weight: 600;
+	border-radius: 9999px;
+}
+
+.version-status {
+	padding: 4px 10px;
+	font-size: 11px;
+	font-weight: 600;
+	border-radius: 9999px;
+	text-transform: uppercase;
+}
+
+.version-meta {
+	display: flex;
+	gap: 16px;
+	margin-bottom: 8px;
+}
+
+.version-date {
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.version-title {
+	font-size: 14px;
+	font-weight: 500;
+	color: #1f2937;
+	margin: 0;
+}
+
+/* Detalhes da Versão */
+.version-detail {
+	background: #ffffff;
+	border: 1px solid #e5e7eb;
+	border-radius: 8px;
+	padding: 24px;
+}
+
+.detail-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 20px;
+	padding-bottom: 16px;
+	border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-title {
+	font-size: 18px;
+	font-weight: 600;
+	color: #1f2937;
+	margin: 0;
+}
+
+.detail-status {
+	padding: 6px 14px;
+	font-size: 12px;
+	font-weight: 600;
+	border-radius: 9999px;
+	text-transform: uppercase;
+}
+
+.detail-body {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.detail-row {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.detail-row label {
+	font-size: 12px;
+	font-weight: 600;
+	color: #6b7280;
+	text-transform: uppercase;
+}
+
+.detail-row span {
+	font-size: 14px;
+	color: #1f2937;
+}
+
+/* Validações */
+.validacoes-section {
+	margin-top: 24px;
+	padding-top: 24px;
+	border-top: 1px solid #e5e7eb;
+}
+
+.validacoes-title {
+	font-size: 14px;
+	font-weight: 600;
+	color: #374151;
+	margin-bottom: 16px;
+}
+
+.validacoes-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.validacao-card {
+	padding: 14px;
+	background: #f9fafb;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+}
+
+.validacao-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 10px;
+}
+
+.validacao-estado {
+	padding: 4px 10px;
+	font-size: 11px;
+	font-weight: 600;
+	border-radius: 9999px;
+	text-transform: uppercase;
+}
+
+.resultado-aprovado {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.resultado-rejeitado {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+.resultado-ressalva {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.validacao-data {
+	font-size: 12px;
+	color: #6b7280;
+}
+
+.validacao-comentario {
+	padding-top: 10px;
+	border-top: 1px solid #e5e7eb;
+}
+
+.validacao-comentario strong {
+	font-size: 11px;
+	font-weight: 600;
+	color: #6b7280;
+	text-transform: uppercase;
+	display: block;
+	margin-bottom: 6px;
+}
+
+.validacao-comentario p {
+	font-size: 13px;
+	color: #374151;
+	margin: 0;
+	line-height: 1.5;
+}
+
+/* Status colors (imported from helpers) */
+.aprovado {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+.em-revisao {
+	background: #fef3c7;
+	color: #92400e;
+}
+
+.pendente {
+	background: #e5e7eb;
+	color: #374151;
+}
+
+.rejeitado {
+	background: #fee2e2;
+	color: #991b1b;
+}
+
+.aprovado-com-ressalvas {
+	background: #fef3c7;
+	color: #92400e;
+}

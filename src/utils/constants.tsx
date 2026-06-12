@@ -1,4 +1,5 @@
 import React from 'react';
+import type { RequirementData } from '../services/api';
 
 /* ═══ Base Topics ═══ */
 export interface Topic {
@@ -35,6 +36,15 @@ export interface RequirementTopic {
 export const REQUIREMENT_TOPICS: RequirementTopic[] = BASE_TOPICS
   .filter(t => t.id in TOPIC_TYPE_MAP)
   .map(t => ({ id: t.id, name: t.nome, type: TOPIC_TYPE_MAP[t.id] }));
+
+/* ═══ Shared Types ═══ */
+export type Perfil = 'analista' | 'cliente' | 'gestor' | 'desenvolvedor';
+export type View = 'projetos' | 'itens' | 'validacao' | 'auditoria' | 'download';
+export interface TopicSelection {
+  topic: RequirementTopic & { count: number };
+  requirements: RequirementData[];
+}
+export type TopicInfo = RequirementTopic & { count: number };
 
 /* ═══ Audit: Action Type Colors ═══ */
 export const TYPE_COLORS: Record<string, { bg: string; text: string; dot: string; accent: string }> = {

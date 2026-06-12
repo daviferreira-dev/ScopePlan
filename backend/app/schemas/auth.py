@@ -1,11 +1,11 @@
-from marshmallow import Schema, fields, validate
+from marshmallow import Schema, fields, validate, RAISE
 
 
 class UserRegistrationSchema(Schema):
+    nome = fields.String(required=True, validate=validate.Length(min=2, max=120))
     email = fields.Email(required=True)
     senha = fields.String(required=True, validate=validate.Length(min=6, max=128))
-    nome = fields.String(required=True, validate=validate.Length(min=2, max=120))
-    perfil = fields.String(required=True, validate=validate.OneOf(['analista', 'desenvolvedor', 'cliente', 'gestor']))
+    perfil = fields.String(required=True, validate=validate.OneOf(['analista', 'desenvolvedor', 'cliente']))
 
 
 class UserLoginSchema(Schema):
@@ -14,17 +14,10 @@ class UserLoginSchema(Schema):
 
 
 class UserUpdateSchema(Schema):
+    class Meta:
+        unknown = RAISE
+
     nome = fields.String(validate=validate.Length(min=2, max=120))
-    senha_atual = fields.String(load_only=True, validate=validate.Length(min=1, max=128))
     senha = fields.String(validate=validate.Length(min=6, max=128))
+    senha_atual = fields.String(validate=validate.Length(min=1, max=128))
     ativo = fields.Boolean()
-
-
-class UserSchema(Schema):
-    id = fields.Integer(dump_only=True)
-    email = fields.Email()
-    nome = fields.String()
-    perfil = fields.String()
-    ativo = fields.Boolean()
-    criado_em = fields.DateTime(dump_only=True)
-    atualizado_em = fields.DateTime(dump_only=True)

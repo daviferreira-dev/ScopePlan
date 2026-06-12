@@ -28,15 +28,6 @@
   --progress-bg: #e6f5eb;
   --surface: #f7faf8;
   --surface-2: #eef5f0;
-
-  /* Version 1 aliases — same values or V1 names pointing to V2 colors */
-  --bg: #f0f5f1;           /* V1 bg — slightly different, kept for compat */
-  --forest: #0d3320;       /* alias for --green-deep */
-  --green-pale: #e8f3ea;   /* V1 only, not in V2 */
-  --text: #1a2e1f;         /* V1 text — close to --text-primary */
-  --border: #d4e5d8;       /* V1 border — close to --card-border */
-  --danger: #b91c1c;       /* V1 danger */
-  --radius: 12px;          /* V1 radius */
 }
 
 /* ── 4. html, body, #root Base Styles ── */

@@ -79,7 +79,8 @@ Todas as telas de conteúdo são componentes compartilhados em `src/pages/shared
 
 ### Versionamento de requisitos (RN003)
 
-- Se um requisito **aprovado** tem seu título ou descrição alterados, o status volta para `em_revisao` e a versão é incrementada.
+- Se um requisito **aprovado** ou **aprovado_com_ressalvas** tem seu título ou descrição alterados, o status volta para `em_revisao` e a versão é incrementada.
+- O histórico de versões é salvo no banco de dados (tabela `requirement_version`) e pode ser consultado via API (`GET /requirements/:id/version-history`) e UI ("Histórico de Versões" em `ValidacaoRequisitos.tsx`).
 
 ### Organização de requisitos por tipo
 
@@ -291,7 +292,6 @@ ScopePlan/
 │   │   │   ├── user.py           # Usuário (nome, email, senha, perfil)
 │   │   │   ├── project.py        # Projeto (nome, descricao, cliente_id)
 │   │   │   ├── requirement.py    # Requisito (titulo, descricao, tipo, prioridade, status)
-│   │   │   ├── requirement_version.py  # Versionamento de requisitos (RN003)
 │   │   │   ├── validacao.py      # Validação de requisito
 │   │   │   ├── audit_log.py      # Registro de auditoria (gravação automática)
 │   │   │   └── token_blocklist.py # Blocklist de tokens revogados
@@ -301,10 +301,7 @@ ScopePlan/
 │   │   │   ├── requirements.py   # CRUD de requisitos + validações + version history
 │   │   │   └── audit.py          # Consulta de registros de auditoria (com busca textual)
 │   │   ├── schemas/              # Schemas Marshmallow
-│   │   └── utils/                # Utilitários
-│   │       ├── decorators.py     # Decoradores de validação de perfil e acesso
-│   │       ├── access.py         # Funções de isolamento de dados por usuário
-│   │       └── ers_generator.py  # Geração de ERS (DOCX/PDF)
+│   │   └── utils/                # Decorators, access control, ERS generator
 │   ├── instance/                 # Banco SQLite
 │   ├── requirements.txt
 │   ├── run.py                    # Entry point do servidor

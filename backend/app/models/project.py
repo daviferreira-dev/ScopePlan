@@ -4,24 +4,31 @@ from app import db
 
 class Project(db.Model):
     __tablename__ = 'projetos'
+    __table_args__ = (
+        db.CheckConstraint(
+            "status IN ('planejamento', 'em_andamento', 'em_revisao', 'concluido', 'cancelado')",
+            name='ck_projetos_status'
+        ),
+        db.Index('ix_projetos_gestor_ativo', 'gestor_id', 'ativo'),
+    )
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     nome = db.Column(db.String(200), nullable=False)
     descricao = db.Column(db.Text)
-    status = db.Column(db.String(20), nullable=False, default='planejamento')  # planejamento, em_andamento, em_revisao, concluido, cancelado
+    status = db.Column(db.String(20), nullable=False, default='planejamento')
     custo_estimado = db.Column(db.Numeric(12, 2))
-    gestor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    cliente_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
-    nome_cliente = db.Column(db.String(200))  # client name for the project (denormalized for display)
-    ativo = db.Column(db.Boolean, nullable=False, default=True)  # RN004: deleção lógica
+    gestor_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False, index=True)
+    cliente_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True, index=True)
+    nome_cliente = db.Column(db.String(200))
+    ativo = db.Column(db.Boolean, nullable=False, default=True, index=True)
     criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     atualizado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     # Relationships
-    requisitos = db.relationship('Requirement', backref='projeto', lazy='dynamic', cascade='all, delete-orphan')
+    requisitos = db.relationship('Requirement', backref='projeto', lazy='select', cascade='all, delete-orphan')
     cliente = db.relationship('User', backref='projetos_como_cliente', lazy='select', foreign_keys=[cliente_id])
 
-    def to_dict(self, include_requisitos=False):
+    def to_dict(self):
         """Convert project to dictionary"""
         data = {
             'id': self.id,
@@ -34,13 +41,7 @@ class Project(db.Model):
             'cliente_id': self.cliente_id,
             'nome_cliente': self.nome_cliente or (self.cliente.nome if self.cliente else None),
             'ativo': self.ativo,
-            'requisitos_count': self.requisitos.filter_by(ativo=True).count(),
-            'aprovados_count': self.requisitos.filter_by(status='aprovado', ativo=True).count(),
             'criado_em': self.criado_em.isoformat() if self.criado_em else None,
-            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None
+            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None,
         }
-
-        if include_requisitos:
-            data['requisitos'] = [req.to_dict() for req in self.requisitos.filter_by(ativo=True).all()]
-
         return data

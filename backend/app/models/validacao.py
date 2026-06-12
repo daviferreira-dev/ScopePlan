@@ -4,11 +4,18 @@ from app import db
 
 class Validacao(db.Model):
     __tablename__ = 'validacoes'
+    __table_args__ = (
+        db.CheckConstraint(
+            "resultado IN ('aprovado', 'rejeitado', 'aprovado_com_ressalvas')",
+            name='ck_validacoes_resultado'
+        ),
+        db.UniqueConstraint('requisito_id', 'validador_id', name='uq_validacao_requisito_validador'),
+    )
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    requisito_id = db.Column(db.Integer, db.ForeignKey('requisitos.id'), nullable=False)
-    validador_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
-    resultado = db.Column(db.String(30), nullable=False, default='pendente')  # pendente, aprovado, aprovado_com_ressalvas, rejeitado
+    requisito_id = db.Column(db.Integer, db.ForeignKey('requisitos.id', ondelete='CASCADE'), nullable=False, index=True)
+    validador_id = db.Column(db.Integer, db.ForeignKey('usuarios.id', ondelete='SET NULL'), nullable=True, index=True)
+    resultado = db.Column(db.String(30), nullable=False)
     comentario = db.Column(db.Text)
     validado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 

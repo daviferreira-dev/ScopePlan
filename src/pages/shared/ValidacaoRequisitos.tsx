@@ -7,6 +7,8 @@ import { TOPIC_TYPE_MAP } from "../../utils/constants";
 import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/ToastContainer";
 import styles from './ValidacaoRequisitos.module.css';
+import RequirementHistory from "./RequirementHistory";
+import RequirementEditor from "../../components/RequirementEditor";
 
 interface Topic {
 	id: number;
@@ -20,6 +22,7 @@ interface Props {
 	topic: Topic;
 	onBack: () => void;
 	perfil: 'analista' | 'cliente' | 'gestor' | 'desenvolvedor';
+	currentUser?: { id: number; nome: string };
 }
 
 function normalizeStr(s: string): string {
@@ -38,29 +41,26 @@ function isRequirementTopic(name: string): boolean {
 	return normalizeStr(name).includes("requisitos");
 }
 
-const EMPTY_FORM = {
-	title: "",
-	description: "",
-	status: "Pendente" as string,
-};
+const EMPTY_TITLE = "";
 
 function AddRequirementModal({
 	topicName,
 	onClose,
 	onSave,
+	currentUser,
 }: {
 	topicName: string;
 	onClose: () => void;
-	onSave: (data: typeof EMPTY_FORM) => void;
+	onSave: (title: string, description: string) => void;
+	currentUser: { id: number; nome: string };
 }) {
-	const [form, setForm] = useState({ ...EMPTY_FORM });
+	const [title, setTitle] = useState(EMPTY_TITLE);
+	// We use a stable fake requirementId for the new-req editor room so it doesn't
+	// conflict with real rooms. Using 0 is safe since real IDs start at 1.
+	const [description, setDescription] = useState("");
+	const [useEditor, setUseEditor] = useState(false);
 
-	const set =
-		(field: keyof typeof EMPTY_FORM) =>
-		(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
-			setForm((prev) => ({ ...prev, [field]: e.target.value }));
-
-	const isValid = form.title.trim() !== "" && form.description.trim() !== "";
+	const isValid = title.trim() !== "" && description.trim() !== "";
 
 	return (
 		<div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -80,50 +80,65 @@ function AddRequirementModal({
 						<input
 							className="form-input"
 							placeholder="Ex: Autenticação Múltipla"
-							value={form.title}
-							onChange={set("title")}
+							value={title}
+							onChange={(e) => setTitle(e.target.value)}
 						/>
 					</div>
 
 					<div className="form-group">
-						<label className="form-label">Descrição *</label>
-						<textarea
-							className="form-textarea"
-							placeholder="Descreva o requisito em detalhe..."
-							value={form.description}
-							onChange={set("description")}
-						/>
-					</div>
-
-					<div className="form-group">
-						<label className="form-label">Status</label>
-						<select className="form-select" value={form.status} onChange={set("status")}>
-							<option value="Pendente">Pendente</option>
-							<option value="Em Revisão">Em Revisão</option>
-							<option value="Aprovado">Aprovado</option>
-						</select>
+						<label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+							Descrição *
+							<button
+								type="button"
+								style={{ fontSize: 11, padding: '1px 8px', borderRadius: 4, border: '1px solid #c9e8cf', background: useEditor ? '#c9e8cf' : 'transparent', cursor: 'pointer', color: '#2d6a3a' }}
+								onClick={() => setUseEditor(v => !v)}
+							>
+								{useEditor ? 'Texto simples' : 'Editor colaborativo'}
+							</button>
+						</label>
+						{useEditor ? (
+							<RequirementEditor
+								requirementId={0}
+								initialContent={description}
+								currentUser={currentUser}
+								onSave={(text) => { setDescription(text); setUseEditor(false); }}
+								onCancel={() => setUseEditor(false)}
+							/>
+						) : (
+							<textarea
+								className="form-textarea"
+								placeholder="Descreva o requisito em detalhe..."
+								value={description}
+								onChange={(e) => setDescription(e.target.value)}
+							/>
+						)}
 					</div>
 				</div>
 
-				<div className="modal-footer">
-					<button className="btn-cancel--outlined" onClick={onClose}>
-						Cancelar
-					</button>
-					<button className="btn-save" onClick={() => isValid && onSave(form)} disabled={!isValid}>
-						Salvar Requisito
-					</button>
-				</div>
+				{!useEditor && (
+					<div className="modal-footer">
+						<button className="btn-cancel--outlined" onClick={onClose}>
+							Cancelar
+						</button>
+						<button className="btn-save" onClick={() => isValid && onSave(title, description)} disabled={!isValid}>
+							Salvar Requisito
+						</button>
+					</div>
+				)}
 			</div>
 		</div>
 	);
 }
 
-export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: Props) {
+export default function ValidacaoRequisitos({ project, topic, onBack, perfil, currentUser }: Props) {
 	const { toasts, addToast, removeToast } = useToast();
 
 	const canAddRequirements = (perfil === 'analista' || perfil === 'desenvolvedor') && isRequirementTopic(topic.name);
 	const canValidate = perfil === 'cliente';
 	const showObservation = perfil === 'cliente';
+	const canEditInline = perfil === 'analista';
+
+	const safeUser = currentUser ?? { id: 0, nome: 'Usuário' };
 
 	const [requirements, setRequirements] = useState<RequirementData[]>(topic.requirements || []);
 	const [loading, setLoading] = useState(true);
@@ -132,6 +147,8 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 	const [showModal, setShowModal] = useState(false);
 	const [observationInputs, setObservationInputs] = useState<Record<string, string>>({});
 	const [showObservationFor, setShowObservationFor] = useState<Record<number, boolean>>({});
+	const [viewingHistory, setViewingHistory] = useState<{ id: number; title: string } | null>(null);
+	const [editingReqId, setEditingReqId] = useState<number | null>(null);
 
 	const refreshRequirements = async (signal?: AbortSignal) => {
 		const response = await requirementsApi.list(project.id, 1, 50, undefined, signal ? { signal } : undefined);
@@ -201,12 +218,12 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 		}
 	};
 
-	const handleSaveRequirement = async (data: typeof EMPTY_FORM) => {
+	const handleSaveRequirement = async (title: string, description: string) => {
 		try {
 			const tipo = TOPIC_TYPE_MAP[topic.id] || topic.type || "funcional";
 			await requirementsApi.create(project.id, {
-				titulo: data.title,
-				descricao: data.description,
+				titulo: title,
+				descricao: description,
 				tipo,
 			});
 			const res = await requirementsApi.list(project.id);
@@ -219,8 +236,30 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 		}
 	};
 
+	const handleUpdateRequirement = async (reqId: number, newDescription: string) => {
+		try {
+			await requirementsApi.update(project.id, reqId, { descricao: newDescription });
+			setRequirements(prev =>
+				prev.map(r => r.id === reqId ? { ...r, descricao: newDescription } : r)
+			);
+			setEditingReqId(null);
+			addToast("Requisito atualizado", "success");
+		} catch (err: unknown) {
+			const msg = err instanceof Error ? err.message : "Erro desconhecido";
+			addToast("Erro ao atualizar requisito: " + msg, "error");
+		}
+	};
+
 	return (
 		<>
+			{viewingHistory ? (
+				<RequirementHistory
+					requirementId={viewingHistory.id}
+					requirementTitle={viewingHistory.title}
+					onBack={() => setViewingHistory(null)}
+					perfil={perfil}
+				/>
+			) : (
 			<AppLayout
 				perfil={perfil}
 				activePage="projetos"
@@ -273,9 +312,34 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 							</div>
 
 							<h3 className={styles['req-title']}>{req.titulo}</h3>
-							<div className={styles['req-desc']}>
-								<p>{req.descricao}</p>
-							</div>
+							{editingReqId === req.id ? (
+								<div style={{ margin: '8px 0' }}>
+									<RequirementEditor
+										requirementId={req.id}
+										initialContent={req.descricao || ''}
+										currentUser={safeUser}
+										onSave={(text) => handleUpdateRequirement(req.id, text)}
+										onCancel={() => setEditingReqId(null)}
+									/>
+								</div>
+							) : (
+								<div className={styles['req-desc']}>
+									<p>{req.descricao}</p>
+									{canEditInline && (
+										<button
+											className={styles['req-meta-button']}
+											style={{ marginTop: 4 }}
+											onClick={() => setEditingReqId(req.id)}
+										>
+											<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+												<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+												<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+											</svg>
+											Editar colaborativamente
+										</button>
+									)}
+								</div>
+							)}
 
 							{showObservation && (
 								<div className={styles['req-meta-row']}>
@@ -285,12 +349,15 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 										</svg>
 										Comentarios ({req.validacoes_count})
 									</span>
-									<span className={styles['req-meta-item']}>
+									<button
+										className={styles['req-meta-button']}
+										onClick={() => setViewingHistory({ id: req.id, title: req.titulo || 'Requisito' })}
+									>
 										<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 											<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
 										</svg>
 										Historico de Versoes
-									</span>
+									</button>
 								</div>
 							)}
 
@@ -380,12 +447,14 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 				)}
 			</div>
 			</AppLayout>
+			)}
 
-			{showModal && (
+			{showModal && !viewingHistory && (
 				<AddRequirementModal
 					topicName={topic.name}
 					onClose={() => setShowModal(false)}
 					onSave={handleSaveRequirement}
+					currentUser={safeUser}
 				/>
 			)}
 

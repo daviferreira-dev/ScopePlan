@@ -1,15 +1,3 @@
 /* ScopePlan — Minimal global reset
    Design tokens and layout are defined in styles/app.css.
-   This file only provides base resets that app.css does not cover. */
-
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+   This file is intentionally minimal — app.css provides the full reset. */

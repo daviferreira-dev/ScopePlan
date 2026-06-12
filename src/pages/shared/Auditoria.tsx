@@ -22,6 +22,16 @@ const formatEventTime = (dateString: string): string => {
 
 const getTypeLabel = (type: string): string => ACTION_LABELS[type] || type;
 
+// detalhes vem como objeto JSON do backend (ex.: {"titulo": "...", "tipo": "..."})
+const formatDetalhes = (detalhes: AuditLogData['detalhes']): string => {
+	if (!detalhes) return '';
+	if (typeof detalhes === 'string') return detalhes;
+	return Object.entries(detalhes)
+		.filter(([key]) => key !== 'seed')
+		.map(([key, value]) => `${key}: ${String(value)}`)
+		.join(' · ');
+};
+
 export default function Auditoria({ perfil, onBack }: Props) {
 	const useServerPagination = perfil === 'analista' || perfil === 'gestor';
 
@@ -120,7 +130,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 			if (searchDebounced.trim()) {
 				const q = searchDebounced.toLowerCase();
 				const match =
-					ev.detalhes?.toLowerCase().includes(q) ||
+					formatDetalhes(ev.detalhes).toLowerCase().includes(q) ||
 					ev.acao.toLowerCase().includes(q) ||
 					ev.usuario?.nome.toLowerCase().includes(q) ||
 					ev.entidade_tipo.toLowerCase().includes(q);
@@ -275,7 +285,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 										<span className={styles['aud-event-title']}>{getTypeLabel(ev.acao)}</span>
 										<span className={styles['aud-event-time']}>{formatEventTime(ev.criado_em)}</span>
 									</div>
-									<div className={styles['aud-event-desc']}>{ev.detalhes || ev.acao}</div>
+									<div className={styles['aud-event-desc']}>{formatDetalhes(ev.detalhes) || ev.acao}</div>
 									<div className={styles['aud-event-bottom']}>
 										<span className={styles['aud-event-author']}>
 											<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -330,7 +340,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 							</div>
 							<div className={styles['aud-detail-row']}>
 								<span className={styles['aud-detail-label']}>Descricao</span>
-								<span className={styles['aud-detail-value']}>{selectedEvent.detalhes || selectedEvent.acao}</span>
+								<span className={styles['aud-detail-value']}>{formatDetalhes(selectedEvent.detalhes) || selectedEvent.acao}</span>
 							</div>
 							<div className={styles['aud-detail-row']}>
 								<span className={styles['aud-detail-label']}>Autor</span>

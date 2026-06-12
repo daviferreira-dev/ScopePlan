@@ -58,7 +58,8 @@ export interface AuditLogData {
   acao: string;
   entidade_tipo: string;
   entidade_id?: number;
-  detalhes?: string;
+  detalhes?: string | Record<string, unknown> | null;
+  projeto_id?: number | null;
   criado_em: string;
 }
 

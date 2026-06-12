@@ -28,6 +28,19 @@
   --progress-bg: #e6f5eb;
   --surface: #f7faf8;
   --surface-2: #eef5f0;
+
+  /* Auth page design tokens */
+  --gold: #d4a853;
+  --gold-lt: #e4c07a;
+  --glass-bg: rgba(10, 30, 18, 0.75);
+  --glass-border: rgba(255, 255, 255, 0.10);
+  --text-main: rgba(255, 255, 255, 0.92);
+  --text-soft: rgba(255, 255, 255, 0.52);
+  --sage: #4ade80;
+  --inp-bg: rgba(0, 0, 0, 0.25);
+  --inp-border: rgba(255, 255, 255, 0.13);
+  --inp-focus: rgba(74, 222, 128, 0.15);
+  --err: #f87171;
 }
 
 /* ── 4. html, body, #root Base Styles ── */

@@ -9,6 +9,7 @@ import Tela_Projetos_Analista from "./pages/analista/Tela_Projetos";
 import Tela_Projetos_Cliente from "./pages/cliente/Tela_Projetos";
 import Tela_Projetos_Gestor from "./pages/gestor/Tela_Projetos";
 import Tela_Projetos_Dev from "./pages/desenvolvedor/Tela_Projetos";
+import AceitarConvite from "./pages/AceitarConvite";
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -89,6 +90,9 @@ export default function App() {
               <Link to="/" style={{ color: "#2d7a40", textDecoration: "underline" }}>Voltar para Home</Link>
             </div>
           } />
+
+          {/* Convite — público, não precisa de auth */}
+          <Route path="/convite/:token" element={<AceitarConvite />} />
 
           {/* Rotas legadas */}
           <Route path="/Tela_Projetos" element={<Navigate to="/analista/projetos" replace />} />

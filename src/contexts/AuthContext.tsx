@@ -106,9 +106,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const registerFn = useCallback(async (nome: string, email: string, senha: string, perfil: string) => {
-    const data = await authApi.register(nome, email, senha, perfil);
-    setTokens(data.access_token);
-    setUser(data.user as User);
+    await authApi.register(nome, email, senha, perfil);
+    // Do NOT auto-login after registration — Cadastro.tsx shows success + redirects to /login
   }, []);
 
   const logoutFn = useCallback(async () => {

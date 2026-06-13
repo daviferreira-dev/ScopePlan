@@ -74,20 +74,16 @@ def create_nested_requirement(project_id):
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
-    if user.perfil not in ('analista', 'desenvolvedor'):
-        return {'message': 'Apenas analistas ou desenvolvedores podem criar requisitos'}, 403
+    if user.perfil != 'analista':
+        return {'message': 'Apenas analistas podem criar requisitos'}, 403
 
     project = db.session.get(Project, project_id)
     if not project or not project.ativo:
         return {'message': 'Projeto não encontrado'}, 404
 
-    # Developers get project access by authoring requirements — check differently for creation
-    if user.perfil == 'desenvolvedor':
-        pass  # any active project is accessible for creating the first requirement
-    else:
-        _, access_error = check_user_project_access(user, project_id)
-        if access_error:
-            return access_error
+    _, access_error = check_user_project_access(user, project_id)
+    if access_error:
+        return access_error
 
     # Inject project_id from URL so the schema can validate it
     json_data = request.get_json() or {}
@@ -200,8 +196,8 @@ def update_nested_requirement(project_id, req_id):
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
-    if user.perfil not in ('analista', 'desenvolvedor'):
-        return {'message': 'Apenas analistas ou desenvolvedores podem editar requisitos'}, 403
+    if user.perfil != 'analista':
+        return {'message': 'Apenas analistas podem editar requisitos'}, 403
 
     requirement = Requirement.query.filter_by(id=req_id, ativo=True).first()
     if not requirement or requirement.projeto_id != project_id:
@@ -267,8 +263,8 @@ def submit_review(requirement_id):
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
-    if user.perfil not in ('analista', 'desenvolvedor'):
-        return {'message': 'Apenas analistas ou desenvolvedores podem submeter para revisão'}, 403
+    if user.perfil != 'analista':
+        return {'message': 'Apenas analistas podem submeter requisitos para revisão'}, 403
 
     requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
     if not requirement:
@@ -299,8 +295,8 @@ def create_validacao(requirement_id):
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
-    if user.perfil not in ('cliente', 'analista', 'gestor'):
-        return {'message': 'Apenas clientes, analistas ou gestores podem validar requisitos'}, 403
+    if user.perfil != 'cliente':
+        return {'message': 'Apenas clientes podem aprovar ou reprovar requisitos'}, 403
 
     requirement = Requirement.query.filter_by(id=requirement_id, ativo=True).first()
     if not requirement:
@@ -311,29 +307,29 @@ def create_validacao(requirement_id):
         return access_error
 
     if requirement.status != 'em_revisao':
-        return {'message': 'Apenas requisitos em revisão podem ser validados'}, 400
+        return {'message': 'Apenas requisitos enviados para revisão podem ser avaliados'}, 400
 
-    if requirement.autor_id == user_id:
-        return {'message': 'Você não pode validar seu próprio requisito'}, 403
-
+    # Substitui validação anterior do mesmo cliente (permitindo reavaliar)
     existing = Validacao.query.filter_by(requisito_id=requirement_id, validador_id=user_id).first()
     if existing:
-        return {'message': 'Você já validou este requisito'}, 400
+        existing.resultado = data['resultado']
+        existing.comentario = data.get('comentario')
+    else:
+        validacao = Validacao(
+            requisito_id=requirement_id,
+            validador_id=user_id,
+            resultado=data['resultado'],
+            comentario=data.get('comentario'),
+        )
+        db.session.add(validacao)
 
-    validacao = Validacao(
-        requisito_id=requirement_id,
-        validador_id=user_id,
-        resultado=data['resultado'],
-        comentario=data.get('comentario'),
-    )
-    db.session.add(validacao)
-
+    # Voto do cliente define o status diretamente
     status_anterior = requirement.status
-    new_status = _compute_consensus(requirement_id, data['resultado'])
-    requirement.status = new_status
+    resultado = data['resultado']
+    requirement.status = resultado  # 'aprovado' | 'rejeitado' | 'aprovado_com_ressalvas'
 
     AuditLog.log(user_id, 'validacao', 'requisito', requirement.id, requirement.projeto_id,
-                 {'resultado': data['resultado'], 'status_anterior': status_anterior,
+                 {'resultado': resultado, 'status_anterior': status_anterior,
                   'status_atual': requirement.status})
     db.session.commit()
 

@@ -27,7 +27,7 @@ def init_limiter(app):
     limiter = Limiter(
         key_func=get_remote_address,
         storage_uri=app.config.get('RATE_LIMIT_STORAGE_URI', 'memory://'),
-        default_limits=['10/minute'],
+        default_limits=[],
     )
     limiter.init_app(app)
 

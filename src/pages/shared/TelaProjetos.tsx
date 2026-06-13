@@ -31,6 +31,7 @@ export default function TelaProjetos({
   const [newProjectClient, setNewProjectClient] = useState('');
   const [clientes, setClientes] = useState<{ id: number; nome: string; email: string }[]>([]);
   const [selectedClienteId, setSelectedClienteId] = useState<number | 'novo' | ''>('');
+  const [newProjectDesc, setNewProjectDesc] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -73,8 +74,9 @@ export default function TelaProjetos({
         const cli = clientes.find(c => c.id === selectedClienteId);
         nome_cliente = cli?.nome;
       }
-      await projectsApi.create({ nome: newProjectName.trim(), nome_cliente, cliente_id });
+      await projectsApi.create({ nome: newProjectName.trim(), descricao: newProjectDesc.trim() || undefined, nome_cliente, cliente_id });
       setNewProjectName('');
+      setNewProjectDesc('');
       setNewProjectClient('');
       setSelectedClienteId('');
       setShowModal(false);
@@ -90,6 +92,7 @@ export default function TelaProjetos({
 
   const openModal = () => {
     setNewProjectName('');
+    setNewProjectDesc('');
     setNewProjectClient('');
     setSelectedClienteId('');
     setShowModal(true);
@@ -242,6 +245,17 @@ export default function TelaProjetos({
                 value={newProjectName}
                 onChange={(e) => setNewProjectName(e.target.value)}
                 autoFocus
+              />
+            </div>
+            <div className="modal-field">
+              <label className="modal-label">Descrição / Texto Corporativo</label>
+              <textarea
+                className="modal-input"
+                placeholder="Descreva o projeto, contexto ou objetivos..."
+                value={newProjectDesc}
+                onChange={(e) => setNewProjectDesc(e.target.value)}
+                rows={3}
+                style={{ resize: 'vertical', minHeight: 72 }}
               />
             </div>
             <div className="modal-field">

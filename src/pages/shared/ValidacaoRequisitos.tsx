@@ -10,6 +10,7 @@ import styles from './ValidacaoRequisitos.module.css';
 import RequirementHistory from "./RequirementHistory";
 import RequirementEditor from "../../components/RequirementEditor";
 import Comentarios from "./Comentarios";
+import RequistoAnexos from "../../components/RequistoAnexos";
 
 interface Topic {
 	id: number;
@@ -26,21 +27,6 @@ interface Props {
 	currentUser?: { id: number; nome: string };
 }
 
-function normalizeStr(s: string): string {
-	const map: Record<string, string> = {
-		a: "a", á: "a", ã: "a", â: "a", à: "a",
-		e: "e", é: "e", ê: "e",
-		i: "i", í: "i",
-		o: "o", ó: "o", õ: "o", ô: "o",
-		u: "u", ú: "u", ü: "u",
-		c: "c", ç: "c", n: "n", ñ: "n",
-	};
-	return s.toLowerCase().split("").map((c) => map[c] ?? c).join("");
-}
-
-function isRequirementTopic(name: string): boolean {
-	return normalizeStr(name).includes("requisitos");
-}
 
 const EMPTY_TITLE = "";
 
@@ -134,7 +120,7 @@ function AddRequirementModal({
 export default function ValidacaoRequisitos({ project, topic, onBack, perfil, currentUser }: Props) {
 	const { toasts, addToast, removeToast } = useToast();
 
-	const canAddRequirements = (perfil === 'analista' || perfil === 'desenvolvedor') && isRequirementTopic(topic.name);
+	const canAddRequirements = perfil === 'analista';
 	const canValidate = perfil === 'cliente';
 	const showObservation = perfil === 'cliente';
 	const canEditInline = perfil === 'analista';
@@ -215,6 +201,19 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 		} catch (err) {
 			console.error('Erro ao adicionar observacao:', err);
 			addToast("Erro ao adicionar observação", "error");
+		} finally {
+			setLoadingAction(null);
+		}
+	};
+
+	const handleSubmitReview = async (reqId: number) => {
+		setLoadingAction(reqId);
+		try {
+			await requirementsApi.submitReview(reqId);
+			setRequirements(prev => prev.map(r => r.id === reqId ? { ...r, status: 'em_revisao' } : r));
+			addToast('Requisito enviado para aprovação do cliente', 'success');
+		} catch (err: unknown) {
+			addToast('Erro ao enviar para revisão: ' + (err instanceof Error ? err.message : ''), 'error');
 		} finally {
 			setLoadingAction(null);
 		}
@@ -343,19 +342,39 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 								</div>
 							)}
 
-							{(canValidate || canAddRequirements) && (
+							<RequistoAnexos reqId={req.id} canEdit={canAddRequirements || perfil === 'gestor'} />
+
+							{/* Analista: enviar para aprovação (só quando rascunho) */}
+							{canAddRequirements && req.status === 'rascunho' && (
+								<div className={styles['req-actions']}>
+									<button
+										className={styles['btn-approve']}
+										onClick={() => handleSubmitReview(req.id)}
+										disabled={loadingAction === req.id}
+										style={{ background: 'var(--blue-500, #3b82f6)', borderColor: 'var(--blue-500, #3b82f6)' }}
+									>
+										<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+											<path d="M5 12h14M12 5l7 7-7 7"/>
+										</svg>
+										{loadingAction === req.id ? 'Enviando...' : 'Enviar para aprovação'}
+									</button>
+								</div>
+							)}
+
+							{/* Cliente: aprovar ou reprovar (só quando em revisão) */}
+							{canValidate && req.status === 'em_revisao' && (
 								<div className={styles['req-actions']}>
 									<button className={styles['btn-reject']} onClick={() => handleReject(req.id)} disabled={loadingAction === req.id}>
 										<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
 											<path d="M18 6L6 18M6 6l12 12"/>
 										</svg>
-										{loadingAction === req.id ? "Rejeitando..." : "Reprovar"}
+										{loadingAction === req.id ? 'Reprovando...' : 'Reprovar'}
 									</button>
 									<button className={styles['btn-approve']} onClick={() => handleApprove(req.id)} disabled={loadingAction === req.id}>
 										<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
 											<path d="M5 13l4 4L19 7"/>
 										</svg>
-										{loadingAction === req.id ? "Aprovando..." : "Aprovar"}
+										{loadingAction === req.id ? 'Aprovando...' : 'Aprovar'}
 									</button>
 									{showObservation && (
 										<button

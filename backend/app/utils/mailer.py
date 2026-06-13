@@ -13,7 +13,7 @@ from flask import current_app
 
 
 class ConsoleMailer:
-    def send(self, to: str, subject: str, body: str) -> None:
+    def send(self, to: str, subject: str, body: str, html: str | None = None) -> None:
         current_app.logger.info(f"[MAIL→{to}] {subject}\n{body}")
 
 
@@ -27,12 +27,14 @@ class SmtpMailer:
         self.password = pwd.replace(' ', '') or None
         self.sender = os.environ.get('MAIL_FROM', 'no-reply@scopeplan.app')
 
-    def send(self, to: str, subject: str, body: str) -> None:
+    def send(self, to: str, subject: str, body: str, html: str | None = None) -> None:
         msg = EmailMessage()
         msg['From'] = self.sender
         msg['To'] = to
         msg['Subject'] = subject
         msg.set_content(body)
+        if html:
+            msg.add_alternative(html, subtype='html')
         with smtplib.SMTP(self.host, self.port) as server:
             server.starttls()
             if self.user and self.password:

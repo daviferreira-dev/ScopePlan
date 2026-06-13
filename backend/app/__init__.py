@@ -139,6 +139,10 @@ def create_app(config_name=None):
     from app.routes.requirements import requirements_bp, project_reqs_bp
     from app.routes.comments import req_comments_bp, comments_bp
     from app.routes.audit import audit_bp
+    from app.routes.diagramas import diagramas_bp
+    from app.routes.blocos import blocos_bp
+    from app.routes.anexos import anexos_bp
+    from app.routes.convites import convites_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(projects_bp)
@@ -147,6 +151,10 @@ def create_app(config_name=None):
     app.register_blueprint(req_comments_bp)
     app.register_blueprint(comments_bp)
     app.register_blueprint(audit_bp)
+    app.register_blueprint(diagramas_bp)
+    app.register_blueprint(blocos_bp)
+    app.register_blueprint(anexos_bp)
+    app.register_blueprint(convites_bp)
 
     # Health check endpoint — no auth required
     @app.route('/api/health')

@@ -272,6 +272,7 @@ def download_ers(project_id, formato):
     topic_ids = body.get('topic_ids') or body.get('topicIds') or []
     requirement_ids = body.get('requirement_ids') or body.get('requirementIds') or []
     incluir_nao_aprovados = bool(body.get('incluir_nao_aprovados') or body.get('includeNaoAprovados'))
+    incluir_diagramas = bool(body.get('incluir_diagramas', True))
     # formato comes from the URL path (ers.pdf / ers.docx)
 
     query = Requirement.query.filter_by(projeto_id=project_id, ativo=True)
@@ -296,16 +297,31 @@ def download_ers(project_id, formato):
         )
         return {'message': message}, 404
 
+    # Fetch diagrams if requested
+    diagramas_data = None
+    if incluir_diagramas:
+        from app.models.diagrama import Diagrama
+        diagramas_objs = Diagrama.query.filter_by(projeto_id=project_id).order_by(Diagrama.criado_em).all()
+        if diagramas_objs:
+            diagramas_data = [{'nome': d.nome, 'dados': d.dados, 'tipo_mime': d.tipo_mime} for d in diagramas_objs]
+
+    # Fetch custom blocks to build label map
+    from app.models.bloco_personalizado import BlocoPersonalizado
+    blocos = BlocoPersonalizado.query.filter_by(projeto_id=project_id).all()
+    custom_labels = {b.tipo_chave: b.nome for b in blocos}
+
     if formato == 'pdf':
         from app.utils.ers_generator import generate_ers_pdf
         _filename, content = generate_ers_pdf(
-            project.to_dict(), [r.to_dict(include_validacoes=True) for r in requirements])
+            project.to_dict(), [r.to_dict(include_validacoes=True) for r in requirements],
+            diagramas=diagramas_data, custom_labels=custom_labels)
         mimetype = 'application/pdf'
         filename = f'ERS_{project.nome.replace(" ", "_")}.pdf'
     else:
         from app.utils.ers_generator import generate_ers_docx
         _filename, content = generate_ers_docx(
-            project.to_dict(), [r.to_dict(include_validacoes=True) for r in requirements])
+            project.to_dict(), [r.to_dict(include_validacoes=True) for r in requirements],
+            diagramas=diagramas_data, custom_labels=custom_labels)
         mimetype = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
         filename = f'ERS_{project.nome.replace(" ", "_")}.docx'
 

@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import styles from './Login.module.css';
 import { EyeOpen, EyeOff } from '../components/EyeIcons';
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirect = searchParams.get('redirect');
   const { login, user, isAuthenticated } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -16,6 +18,10 @@ export default function LoginPage() {
   useEffect(() => {
     let mounted = true;
     if (mounted && isAuthenticated && user) {
+      if (redirect) {
+        navigate(redirect, { replace: true });
+        return;
+      }
       const routes: Record<string, string> = {
         analista: "/analista/projetos",
         cliente: "/cliente/projetos",
@@ -25,7 +31,7 @@ export default function LoginPage() {
       navigate(routes[user.perfil] || "/analista/projetos");
     }
     return () => { mounted = false; };
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

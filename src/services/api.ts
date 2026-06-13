@@ -10,6 +10,8 @@ export interface ProjectData {
   nome_cliente?: string;
   cliente_id?: number;
   descricao?: string;
+  gestor_id?: number;
+  gestor?: { id: number; nome: string; email: string; perfil: string };
   requisitos_count: number;
   aprovados_count: number;
   criado_em?: string;
@@ -432,6 +434,12 @@ export const requirementsApi = {
     return apiFetch(`/projetos/${projectId}/requisitos/${id}`, { method: 'DELETE' });
   },
 
+  submitReview(requirementId: number) {
+    return apiFetch<{ requisito: RequirementData }>(`/requisitos/${requirementId}/submit-review`, {
+      method: 'POST',
+    });
+  },
+
   createValidacao(requirementId: number, data: Record<string, unknown>) {
     return apiFetch<{ validacao: unknown }>(`/requisitos/${requirementId}/validacoes`, {
       method: 'POST',
@@ -530,6 +538,174 @@ export const commentsApi = {
     return apiFetch<{ comentario: CommentData }>(`/comentarios/${commentId}/ocultar`, {
       method: 'POST',
     });
+  },
+};
+
+export interface DiagramaData {
+  id: number;
+  projeto_id: number;
+  nome: string;
+  tipo_mime: string;
+  tamanho: number;
+  criado_em: string;
+}
+
+export const diagramasApi = {
+  list(projectId: number, options?: { signal?: AbortSignal }) {
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ diagramas: DiagramaData[] }>(`/projetos/${projectId}/diagramas`, init);
+  },
+
+  async upload(projectId: number, file: File, nome?: string): Promise<{ diagrama: DiagramaData }> {
+    const form = new FormData();
+    form.append('arquivo', file);
+    if (nome) form.append('nome', nome);
+    const token = getAccessToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const url = `${API_BASE}/projetos/${projectId}/diagramas`;
+    const response = await fetch(url, { method: 'POST', body: form, headers, credentials: 'include' });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(err.message || `Erro ${response.status}`);
+    }
+    return response.json();
+  },
+
+  getImageBlob(projectId: number, diagramaId: number) {
+    return apiFetchBlob(`/projetos/${projectId}/diagramas/${diagramaId}/imagem`);
+  },
+
+  delete(projectId: number, diagramaId: number) {
+    return apiFetch<{ message: string }>(`/projetos/${projectId}/diagramas/${diagramaId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+export interface BlocoPersonalizadoData {
+  id: number;
+  projeto_id: number;
+  nome: string;
+  tipo_chave: string;
+  ordem: number;
+}
+
+export const blocosApi = {
+  list(projectId: number, options?: { signal?: AbortSignal }) {
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ blocos: BlocoPersonalizadoData[] }>(`/projetos/${projectId}/blocos`, init);
+  },
+
+  create(projectId: number, nome: string) {
+    return apiFetch<{ bloco: BlocoPersonalizadoData }>(`/projetos/${projectId}/blocos`, {
+      method: 'POST',
+      body: JSON.stringify({ nome }),
+    });
+  },
+
+  delete(projectId: number, blocoId: number) {
+    return apiFetch<{ message: string }>(`/projetos/${projectId}/blocos/${blocoId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+export interface AnexoData {
+  id: number;
+  requisito_id: number;
+  projeto_id: number;
+  nome: string;
+  tipo_mime: string;
+  tamanho: number;
+  criado_em: string;
+}
+
+export const anexosApi = {
+  list(reqId: number, options?: { signal?: AbortSignal }) {
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ anexos: AnexoData[] }>(`/requisitos/${reqId}/anexos`, init);
+  },
+
+  async upload(reqId: number, file: File): Promise<{ anexo: AnexoData }> {
+    const form = new FormData();
+    form.append('arquivo', file);
+    const token = getAccessToken();
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const url = `${API_BASE}/requisitos/${reqId}/anexos`;
+    const response = await fetch(url, { method: 'POST', body: form, headers, credentials: 'include' });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(err.message || `Erro ${response.status}`);
+    }
+    return response.json();
+  },
+
+  getFileBlob(reqId: number, anexoId: number) {
+    return apiFetchBlob(`/requisitos/${reqId}/anexos/${anexoId}/arquivo`);
+  },
+
+  delete(reqId: number, anexoId: number) {
+    return apiFetch<{ message: string }>(`/requisitos/${reqId}/anexos/${anexoId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+export interface ConviteData {
+  id: number;
+  projeto_id: number;
+  email: string;
+  perfil: 'cliente' | 'desenvolvedor';
+  token: string;
+  status: 'pendente' | 'aceito' | 'cancelado';
+  expirado: boolean;
+  convidado_por?: User;
+  aceito_por?: User;
+  criado_em: string;
+  expira_em: string;
+}
+
+export const convitesApi = {
+  verificarEmail(email: string) {
+    return apiFetch<{ existe: false } | { existe: true; perfil: string; nome: string }>(
+      '/convites/verificar-email',
+      { method: 'POST', body: JSON.stringify({ email }) }
+    );
+  },
+
+  list(projectId: number) {
+    return apiFetch<{ convites: ConviteData[] }>(`/projetos/${projectId}/convites`);
+  },
+
+  criar(projectId: number, email: string, perfil: 'cliente' | 'desenvolvedor') {
+    return apiFetch<{ message: string; convite: ConviteData }>(`/projetos/${projectId}/convites`, {
+      method: 'POST',
+      body: JSON.stringify({ email, perfil }),
+    });
+  },
+
+  cancelar(projectId: number, conviteId: number) {
+    return apiFetch<{ message: string }>(`/projetos/${projectId}/convites/${conviteId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  info(token: string) {
+    return apiFetch<{ convite: ConviteData; projeto: { id: number; nome: string; descricao?: string } | null; email_existe: boolean }>(
+      `/convites/${token}`
+    );
+  },
+
+  aceitar(token: string) {
+    return apiFetch<{ message: string; projeto_id: number; perfil: string }>(
+      `/convites/${token}/aceitar`,
+      { method: 'POST' }
+    );
   },
 };
 

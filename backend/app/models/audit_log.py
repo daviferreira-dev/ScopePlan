@@ -55,6 +55,22 @@ class AuditLog(db.Model):
         except Exception:
             pass
 
+        # Deduplica: ignora se já existe entrada idêntica nos últimos 5 segundos
+        from datetime import timedelta
+        from sqlalchemy import and_
+        cutoff = datetime.now(timezone.utc) - timedelta(seconds=5)
+        duplicate = db.session.query(AuditLog).filter(
+            and_(
+                AuditLog.usuario_id == usuario_id,
+                AuditLog.acao == acao,
+                AuditLog.entidade_tipo == entidade_tipo,
+                AuditLog.entidade_id == entidade_id,
+                AuditLog.criado_em >= cutoff,
+            )
+        ).first()
+        if duplicate:
+            return duplicate
+
         entry = AuditLog(
             usuario_id=usuario_id,
             acao=acao,

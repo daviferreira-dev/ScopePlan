@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
-import { requirementsApi } from '../../services/api';
-import type { RequirementData, ProjectData } from '../../services/api';
+import { useState, useEffect, useRef } from 'react';
+import { requirementsApi, blocosApi } from '../../services/api';
+import type { RequirementData, ProjectData, BlocoPersonalizadoData } from '../../services/api';
 import AppLayout from '../../components/AppLayout';
 import { REQUIREMENT_TOPICS, type RequirementTopic, type Perfil } from '../../utils/constants';
 import Dashboard from './Dashboard';
+import Diagramas from '../../components/Diagramas';
+import ConvitesModal from '../../components/ConvitesModal';
 import styles from './TelaItens.module.css';
 
 interface Topic extends RequirementTopic {
@@ -21,11 +23,19 @@ interface Props {
 
 const BASE_TOPICS = REQUIREMENT_TOPICS;
 
+type Tab = 'lista' | 'painel' | 'diagramas';
+
 export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDownload, onAuditPage }: Props) {
 	const [requirements, setRequirements] = useState<RequirementData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [tab, setTab] = useState<'lista' | 'painel'>('lista');
+	const [tab, setTab] = useState<Tab>('lista');
+	const [blocos, setBlocos] = useState<BlocoPersonalizadoData[]>([]);
+	const [showNewBlocoInput, setShowNewBlocoInput] = useState(false);
+	const [newBlocoNome, setNewBlocoNome] = useState('');
+	const [blocoLoading, setBlocoLoading] = useState(false);
+	const [showConvites, setShowConvites] = useState(false);
+	const newBlocoInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		const controller = new AbortController();
@@ -33,9 +43,13 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 			try {
 				setLoading(true);
 				setError(null);
-				const response = await requirementsApi.list(project.id, 1, 50, undefined, { signal: controller.signal });
+				const [reqResp, blocoResp] = await Promise.all([
+					requirementsApi.list(project.id, 1, 50, undefined, { signal: controller.signal }),
+					blocosApi.list(project.id, { signal: controller.signal }),
+				]);
 				if (controller.signal.aborted) return;
-				setRequirements(response.requisitos);
+				setRequirements(reqResp.requisitos);
+				setBlocos(blocoResp.blocos);
 			} catch (err) {
 				if (controller.signal.aborted) return;
 				setError(err instanceof Error ? err.message : 'Erro ao carregar requisitos');
@@ -47,14 +61,54 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 		return () => controller.abort();
 	}, [project.id]);
 
+	useEffect(() => {
+		if (showNewBlocoInput) newBlocoInputRef.current?.focus();
+	}, [showNewBlocoInput]);
+
+	const handleCreateBloco = async () => {
+		const nome = newBlocoNome.trim();
+		if (!nome) return;
+		setBlocoLoading(true);
+		try {
+			const resp = await blocosApi.create(project.id, nome);
+			setBlocos(prev => [...prev, resp.bloco]);
+			setNewBlocoNome('');
+			setShowNewBlocoInput(false);
+		} catch {
+			// ignore for now
+		} finally {
+			setBlocoLoading(false);
+		}
+	};
+
+	const handleDeleteBloco = async (e: React.MouseEvent, blocoId: number) => {
+		e.stopPropagation();
+		try {
+			await blocosApi.delete(project.id, blocoId);
+			setBlocos(prev => prev.filter(b => b.id !== blocoId));
+		} catch {
+			// ignore
+		}
+	};
+
 	const topicsWithCount: Topic[] = BASE_TOPICS.map(t => ({
 		...t,
 		count: requirements.filter(r => r.tipo === t.type).length,
 	}));
 
+	const customTopics: Topic[] = blocos.map(b => ({
+		id: b.id + 1000,
+		name: b.nome,
+		type: b.tipo_chave,
+		count: requirements.filter(r => r.tipo === b.tipo_chave).length,
+	}));
+
+	const canEdit = perfil === 'analista' || perfil === 'gestor';
+
 	const topbarTitle = project.nome;
 
 	return (
+		<>
 		<AppLayout
 			perfil={perfil}
 			activePage="projetos"
@@ -68,12 +122,29 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 			topbarTitle={topbarTitle}
 			topbarSubtitle="Índice de Especificação"
 			topbarActions={
-				<button className="btn-download" onClick={onDownload}>
-					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-						<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
-					</svg>
-					Baixar ERS
-				</button>
+				<div style={{ display: 'flex', gap: 8 }}>
+					{canEdit && (
+						<button
+							className="btn-download"
+							onClick={() => setShowConvites(true)}
+							style={{ background: 'transparent', color: 'var(--green-bright)', border: '1.5px solid var(--green-bright)' }}
+						>
+							<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+								<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
+								<circle cx="9" cy="7" r="4" />
+								<line x1="19" y1="8" x2="19" y2="14" />
+								<line x1="22" y1="11" x2="16" y2="11" />
+							</svg>
+							Convidar
+						</button>
+					)}
+					<button className="btn-download" onClick={onDownload}>
+						<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+							<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
+						</svg>
+						Baixar ERS
+					</button>
+				</div>
 			}
 		>
 			<div className={styles['view-tabs']}>
@@ -96,10 +167,23 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 					</svg>
 					Painel
 				</button>
+				<button
+					className={`${styles['view-tab']} ${tab === 'diagramas' ? styles['view-tab-active'] : ''}`}
+					onClick={() => setTab('diagramas')}
+				>
+					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+						<rect x="3" y="3" width="18" height="18" rx="2" />
+						<circle cx="8.5" cy="8.5" r="1.5" />
+						<path d="M21 15l-5-5L5 21" />
+					</svg>
+					Diagramas
+				</button>
 			</div>
 
 			{tab === 'painel' ? (
 				<Dashboard projectId={project.id} />
+			) : tab === 'diagramas' ? (
+				<Diagramas projectId={project.id} canEdit={canEdit} />
 			) : loading ? (
 				<div className="empty-state">
 					<div className="empty-icon">
@@ -140,8 +224,74 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 							</div>
 						</div>
 					))}
+					{customTopics.map((t) => {
+						const bloco = blocos.find(b => b.tipo_chave === t.type);
+						return (
+							<div className={styles['topic-card']} key={t.id} onClick={() => onTopicSelect(t, requirements)} style={{ borderColor: 'rgba(99,102,241,0.25)' }}>
+								<div className={styles['topic-card-top']}>
+									<div className={styles['topic-icon']} style={{ background: 'rgba(99,102,241,0.08)', color: '#6366f1' }}>
+										<svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+											<rect x="3" y="3" width="18" height="18" rx="3" />
+											<path d="M9 12h6M12 9v6" />
+										</svg>
+									</div>
+									<div className={styles['topic-name']}>{t.name}</div>
+									{canEdit && bloco && (
+										<button
+											onClick={(e) => handleDeleteBloco(e, bloco.id)}
+											style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+											title="Excluir bloco"
+										>×</button>
+									)}
+								</div>
+								<div className={styles['topic-count']}>
+									{t.count === 0 ? '0 requisitos' : t.count === 1 ? '1 requisito' : `${t.count} requisitos`}
+								</div>
+							</div>
+						);
+					})}
+					{canEdit && (
+						showNewBlocoInput ? (
+							<div className={styles['topic-card']} style={{ borderStyle: 'dashed', cursor: 'default' }} onClick={e => e.stopPropagation()}>
+								<input
+									ref={newBlocoInputRef}
+									style={{ fontSize: 13, fontFamily: 'Sora,sans-serif', fontWeight: 600, border: 'none', outline: 'none', background: 'transparent', width: '100%', color: 'var(--text-primary)' }}
+									placeholder="Nome do bloco..."
+									value={newBlocoNome}
+									onChange={e => setNewBlocoNome(e.target.value)}
+									onKeyDown={e => { if (e.key === 'Enter') handleCreateBloco(); if (e.key === 'Escape') { setShowNewBlocoInput(false); setNewBlocoNome(''); } }}
+									disabled={blocoLoading}
+								/>
+								<div style={{ display: 'flex', gap: 6, marginTop: 'auto' }}>
+									<button onClick={handleCreateBloco} disabled={!newBlocoNome.trim() || blocoLoading} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 5, border: 'none', background: 'var(--green-bright)', color: '#fff', cursor: 'pointer', fontWeight: 600 }}>Criar</button>
+									<button onClick={() => { setShowNewBlocoInput(false); setNewBlocoNome(''); }} style={{ fontSize: 11, padding: '3px 10px', borderRadius: 5, border: '1px solid var(--card-border)', background: 'transparent', cursor: 'pointer' }}>Cancelar</button>
+								</div>
+							</div>
+						) : (
+							<div className={styles['topic-card']} style={{ borderStyle: 'dashed', cursor: 'pointer', opacity: 0.7 }} onClick={() => setShowNewBlocoInput(true)}>
+								<div className={styles['topic-card-top']}>
+									<div className={styles['topic-icon']} style={{ background: 'transparent' }}>
+										<svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+											<path d="M12 5v14M5 12h14" />
+										</svg>
+									</div>
+									<div className={styles['topic-name']}>Novo bloco</div>
+								</div>
+								<div className={styles['topic-count']}>bloco personalizado</div>
+							</div>
+						)
+					)}
 				</div>
 			)}
 		</AppLayout>
+
+		{showConvites && (
+			<ConvitesModal
+				projectId={project.id}
+				projectName={project.nome}
+				onClose={() => setShowConvites(false)}
+			/>
+		)}
+		</>
 	);
 }

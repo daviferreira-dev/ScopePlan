@@ -1,24 +1,31 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import styles from './Cadastro.module.css';
 import { EyeOpen, EyeOff } from '../components/EyeIcons';
 
 export default function CadastroPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const emailParam  = searchParams.get('email')  || '';
+  const perfilParam = searchParams.get('perfil') || '';
+  const redirect    = searchParams.get('redirect') || '';
+  const viaConvite  = !!emailParam && !!perfilParam && !!redirect;
+
   const { register, user, isAuthenticated } = useAuth();
   const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(emailParam);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
-  const [perfil, setPerfil] = useState<string>("analista");
+  const [perfil, setPerfil] = useState<string>(perfilParam || "analista");
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
-    let mounted = true;
-    if (mounted && isAuthenticated && user) {
+    if (isAuthenticated && user) {
+      if (redirect) { navigate(redirect, { replace: true }); return; }
       const routes: Record<string, string> = {
         analista: "/analista/projetos",
         cliente: "/cliente/projetos",
@@ -27,12 +34,10 @@ export default function CadastroPage() {
       };
       navigate(routes[user.perfil] || "/analista/projetos");
     }
-    return () => { mounted = false; };
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, navigate, redirect]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // RF01-A1: senha forte — mín. 8, 1 maiúscula, 1 número, 1 caractere especial
     const strongPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/;
     if (!strongPassword.test(password)) {
       setError("A senha deve ter no mínimo 8 caracteres, com 1 maiúscula, 1 número e 1 caractere especial.");
@@ -40,7 +45,11 @@ export default function CadastroPage() {
     }
     if (password !== confirmPassword) { setError("As senhas não coincidem"); return; }
     setError(""); setLoading(true);
-    try { await register(nome, email, password, perfil); }
+    try {
+      await register(nome, email, password, perfil);
+      setSuccess(true);
+      setTimeout(() => navigate(redirect || '/login', { replace: true }), 1500);
+    }
     catch (err: unknown) { setError((err instanceof Error ? err.message : String(err)) || "Erro ao criar conta. Tente novamente."); }
     finally { setLoading(false); }
   };
@@ -73,9 +82,21 @@ export default function CadastroPage() {
       {/* Right panel */}
       <main className={styles['sp-right']}>
         <div className={styles['sp-form-wrap']}>
-          <span className={styles['sp-eyebrow']}><span className={styles['sp-eyebrow-line']} />Nova conta</span>
+          <span className={styles['sp-eyebrow']}><span className={styles['sp-eyebrow-line']} />{viaConvite ? 'Convite recebido' : 'Nova conta'}</span>
           <h1 className={styles['sp-h1']}>Crie sua conta</h1>
-          <p className={styles['sp-sub']}>Preencha os dados abaixo para começar.</p>
+          <p className={styles['sp-sub']}>{viaConvite ? 'Complete o cadastro para aceitar o convite.' : 'Preencha os dados abaixo para começar.'}</p>
+
+          {viaConvite && (
+            <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 10, padding: '12px 16px', marginBottom: 4, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
+              Você foi convidado como <strong>{perfilParam === 'cliente' ? 'Cliente' : 'Desenvolvedor'}</strong>. Após criar a conta, o convite será aceito automaticamente.
+            </div>
+          )}
+
+          {success && (
+            <div style={{ background: 'rgba(34,197,94,0.12)', border: '1px solid #22c55e', borderRadius: 8, padding: '12px 16px', color: '#16a34a', fontWeight: 500, fontSize: 14, marginBottom: 16 }}>
+              {viaConvite ? 'Conta criada! Redirecionando para o convite...' : 'Conta criada com sucesso! Redirecionando para o login...'}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             {/* Nome */}
@@ -103,8 +124,10 @@ export default function CadastroPage() {
                   </svg>
                 </span>
                 <input className={styles['sp-inp']} type="email" placeholder="email@exemplo.com"
-                  value={email} onChange={e => setEmail(e.target.value)}
-                  autoComplete="email" required />
+                  value={email} onChange={e => !viaConvite && setEmail(e.target.value)}
+                  autoComplete="email" required
+                  readOnly={viaConvite}
+                  style={viaConvite ? { background: 'var(--sidebar-bg, #f1f5f9)', color: 'var(--text-muted)', cursor: 'not-allowed' } : undefined} />
               </div>
             </div>
 
@@ -166,7 +189,9 @@ export default function CadastroPage() {
               {(["analista", "cliente", "desenvolvedor"] as const).map(p => (
                 <button key={p} type="button"
                   className={`${styles['sp-prf']}${perfil === p ? ` ${styles.active}` : ""}`}
-                  onClick={() => setPerfil(p)}>
+                  onClick={() => !viaConvite && setPerfil(p)}
+                  disabled={viaConvite}
+                  style={viaConvite ? { opacity: p === perfil ? 1 : 0.35, cursor: 'not-allowed' } : undefined}>
                   {p.charAt(0).toUpperCase() + p.slice(1)}
                 </button>
               ))}

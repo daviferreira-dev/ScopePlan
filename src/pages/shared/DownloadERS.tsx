@@ -32,6 +32,8 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 
 	const [selectedIds, setSelectedIds] = useState<number[]>(BASE_TOPICS.map(t => t.id));
 	const [format, setFormat] = useState<Format>("pdf");
+	const [incluirDiagramas, setIncluirDiagramas] = useState(true);
+	const [incluirTodos, setIncluirTodos] = useState(true);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
@@ -59,10 +61,14 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 				blob = await projectsApi.downloadERS(
 					project.id,
 					format,
-					selectedTypes.length === BASE_TOPICS.length ? undefined : { topicIds: selectedTypes }
+					{
+						...(selectedTypes.length !== BASE_TOPICS.length ? { topicIds: selectedTypes } : {}),
+						incluir_diagramas: incluirDiagramas,
+						incluir_nao_aprovados: incluirTodos,
+					}
 				);
 			} else {
-				blob = await projectsApi.downloadERS(project.id, format);
+				blob = await projectsApi.downloadERS(project.id, format, { incluir_diagramas: incluirDiagramas, incluir_nao_aprovados: incluirTodos });
 			}
 
 			const blobUrl = URL.createObjectURL(blob);
@@ -114,6 +120,26 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 								</>
 							)}
 
+							<div className={styles['section-label']}>Opções</div>
+							<label className={`${styles['topic-checkbox']}${incluirTodos ? ` ${styles.selected}` : ''}`}>
+								<input
+									type="checkbox"
+									checked={incluirTodos}
+									onChange={e => setIncluirTodos(e.target.checked)}
+								/>
+								<span className={styles['topic-name']}>Incluir todos os requisitos</span>
+								<span className={styles['topic-count']}>não apenas aprovados</span>
+							</label>
+							<label className={`${styles['topic-checkbox']}${incluirDiagramas ? ` ${styles.selected}` : ''}`}>
+								<input
+									type="checkbox"
+									checked={incluirDiagramas}
+									onChange={e => setIncluirDiagramas(e.target.checked)}
+								/>
+								<span className={styles['topic-name']}>Incluir diagramas</span>
+								<span className={styles['topic-count']}>imagens do projeto</span>
+							</label>
+
 							<div className={styles['section-label']}>Formato</div>
 							<div className={styles['format-options']}>
 								<div className={`${styles['format-option']}${format === "pdf" ? ` ${styles.selected}` : ""}`} onClick={() => setFormat("pdf")}>
@@ -150,6 +176,9 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 								<div className="project-name">{project.nome}</div>
 								<div className="client">Cliente: {project.nome_cliente || "—"}</div>
 								<div className="date">{new Date().toLocaleDateString("pt-BR")}</div>
+								{project.gestor && (
+									<div className="gestor" style={{ fontSize: 12, color: 'inherit', marginTop: 4 }}>Gestor: {project.gestor.nome}</div>
+								)}
 							</div>
 
 							<div className={styles['abnt-toc']}>
@@ -162,6 +191,13 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 									</div>
 								))}
 							</div>
+
+							{project.descricao && (
+								<div className={styles['abnt-section']}>
+									<h2>1. Descrição do Projeto</h2>
+									<p>{project.descricao}</p>
+								</div>
+							)}
 
 							{previewTopics.map((topic, index) => (
 								<div className={styles['abnt-section']} key={topic.id}>

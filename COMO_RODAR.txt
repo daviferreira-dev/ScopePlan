@@ -1,0 +1,137 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║                    SCOPEPLAN — COMO RODAR O PROJETO                 ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+Estrutura:
+  /ScopePlan
+  ├── backend/          ← API Flask (Python)
+  ├── src/              ← Frontend React (Vite)
+  ├── venv/             ← Ambiente virtual Python (já criado)
+  └── node_modules/     ← Dependências JS (já instaladas)
+
+
+══════════════════════════════════════════════════════════════════════
+  1. BANCO DE DADOS
+══════════════════════════════════════════════════════════════════════
+
+Por padrão usa SQLite (sem precisar instalar nada).
+O arquivo do banco fica em:  backend/instance/scopeplan.db
+
+O banco é criado/atualizado AUTOMATICAMENTE quando o backend sobe.
+Não é necessário rodar nenhum comando manual no primeiro uso.
+
+  ► Caso queira usar PostgreSQL, edite backend/.env:
+    DATABASE_URL=postgresql://usuario:senha@localhost/scopeplan
+    (e crie o banco no PostgreSQL antes de subir o backend)
+
+  ► Para rodar as migrações manualmente (quando necessário):
+    cd backend
+    source ../venv/bin/activate          (Linux/Mac)
+    # ou: ..\venv\Scripts\activate       (Windows)
+    flask db upgrade
+
+
+══════════════════════════════════════════════════════════════════════
+  2. BACKEND (API Flask)
+══════════════════════════════════════════════════════════════════════
+
+PASSO 1 — Configurar variáveis de ambiente (primeira vez)
+  cd backend
+  cp .env.example .env
+  # Abra .env e gere chaves seguras:
+  #   SECRET_KEY  → python -c "import secrets; print(secrets.token_hex(32))"
+  #   JWT_SECRET_KEY → mesmo comando acima (valor diferente)
+
+PASSO 2 — Ativar o ambiente virtual Python
+  Linux/Mac:
+    source ../venv/bin/activate    ← execute na pasta backend/
+
+  Windows (cmd):
+    ..\venv\Scripts\activate
+
+  Windows (PowerShell):
+    ..\venv\Scripts\Activate.ps1
+
+  (O prompt fica com "(venv)" no início quando ativado)
+
+PASSO 3 — Instalar dependências (apenas na primeira vez)
+  pip install -r requirements.txt
+
+PASSO 4 — Rodar o servidor
+  python run.py
+
+  ✓ Servidor rodando em: http://127.0.0.1:5000
+  ✓ Banco criado/atualizado automaticamente
+  ✓ Ctrl+C para parar
+
+
+══════════════════════════════════════════════════════════════════════
+  3. FRONTEND (React + Vite)
+══════════════════════════════════════════════════════════════════════
+
+Abra um NOVO terminal (backend deve estar rodando).
+
+PASSO 1 — Instalar dependências (apenas na primeira vez)
+  cd /caminho/para/ScopePlan    ← pasta raiz do projeto
+  npm install
+
+PASSO 2 — Rodar o servidor de desenvolvimento
+  npm run dev
+
+  ✓ Frontend em: http://localhost:5173
+  ✓ Proxy automático para o backend (/api → http://127.0.0.1:5000)
+  ✓ Ctrl+C para parar
+
+
+══════════════════════════════════════════════════════════════════════
+  4. RESUMO RÁPIDO (dia a dia)
+══════════════════════════════════════════════════════════════════════
+
+  Terminal 1 — Backend:
+    cd /caminho/para/ScopePlan/backend
+    source ../venv/bin/activate
+    python run.py
+
+  Terminal 2 — Frontend:
+    cd /caminho/para/ScopePlan
+    npm run dev
+
+  Acesse: http://localhost:5173
+
+
+══════════════════════════════════════════════════════════════════════
+  5. SOLUÇÃO DE PROBLEMAS
+══════════════════════════════════════════════════════════════════════
+
+  "Module not found" ou ImportError no backend
+    → pip install -r requirements.txt    (venv ativado)
+
+  "Cannot find module" no frontend
+    → npm install
+
+  Porta 5000 em uso (Mac/Linux)
+    → kill $(lsof -ti:5000)
+    → ou altere PORT=5001 no backend/.env
+
+  Porta 5173 em uso
+    → npm run dev -- --port 5174
+
+  Banco com schema desatualizado
+    → cd backend && flask db upgrade
+
+  Erro de CORS no navegador
+    → Certifique-se que CORS_ORIGINS no backend/.env inclui http://localhost:5173
+
+  Resetar banco (apagar tudo e recomeçar)
+    → rm backend/instance/scopeplan.db
+    → python run.py     (recria automaticamente)
+
+
+══════════════════════════════════════════════════════════════════════
+  6. PORTAS USADAS
+══════════════════════════════════════════════════════════════════════
+
+  5000  ← Backend Flask (API)
+  5173  ← Frontend Vite (React)
+
+══════════════════════════════════════════════════════════════════════

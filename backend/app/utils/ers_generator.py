@@ -8,7 +8,6 @@ import io
 from datetime import datetime, timezone
 
 from docx import Document
-from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 
@@ -162,7 +161,6 @@ def _build_pdf(project, requirements, topic_ids=None, requirement_ids=None):
         from reportlab.lib.units import cm
         from reportlab.platypus import (
             SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
-            PageBreak,
         )
         from reportlab.lib import colors
     except ImportError:

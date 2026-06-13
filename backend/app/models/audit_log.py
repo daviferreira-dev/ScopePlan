@@ -17,6 +17,9 @@ class AuditLog(db.Model):
     entidade_id = db.Column(db.Integer, nullable=False)
     projeto_id = db.Column(db.Integer, db.ForeignKey('projetos.id', ondelete='SET NULL'), nullable=True, index=True)
     detalhes = db.Column(db.Text)
+    # RF09: rastreabilidade de origem da ação
+    ip = db.Column(db.String(45))           # IPv4/IPv6
+    user_agent = db.Column(db.String(300))
     criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
 
     usuario = db.relationship("User", backref="audit_logs", lazy="joined")
@@ -32,19 +35,35 @@ class AuditLog(db.Model):
             'entidade_id': self.entidade_id,
             'projeto_id': self.projeto_id,
             'detalhes': json.loads(self.detalhes) if self.detalhes else None,
+            'ip': self.ip,
+            'user_agent': self.user_agent,
             'criado_em': self.criado_em.isoformat() if self.criado_em else None,
         }
 
     @staticmethod
     def log(usuario_id, acao, entidade_tipo, entidade_id, projeto_id=None, detalhes=None):
-        """Create an audit log entry"""
+        """Create an audit log entry. Captura IP/user-agent quando há request HTTP (RF09)."""
+        ip = None
+        user_agent = None
+        try:
+            from flask import request, has_request_context
+            if has_request_context():
+                # respeita proxy reverso (Render/NGINX) via X-Forwarded-For
+                fwd = request.headers.get('X-Forwarded-For', '')
+                ip = (fwd.split(',')[0].strip() if fwd else request.remote_addr)
+                user_agent = (request.headers.get('User-Agent') or '')[:300]
+        except Exception:
+            pass
+
         entry = AuditLog(
             usuario_id=usuario_id,
             acao=acao,
             entidade_tipo=entidade_tipo,
             entidade_id=entidade_id,
             projeto_id=projeto_id,
-            detalhes=json.dumps(detalhes) if isinstance(detalhes, dict) else detalhes
+            detalhes=json.dumps(detalhes) if isinstance(detalhes, dict) else detalhes,
+            ip=ip,
+            user_agent=user_agent,
         )
         db.session.add(entry)
         return entry

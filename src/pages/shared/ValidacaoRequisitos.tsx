@@ -9,6 +9,7 @@ import ToastContainer from "../../components/ToastContainer";
 import styles from './ValidacaoRequisitos.module.css';
 import RequirementHistory from "./RequirementHistory";
 import RequirementEditor from "../../components/RequirementEditor";
+import Comentarios from "./Comentarios";
 
 interface Topic {
 	id: number;
@@ -149,6 +150,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 	const [showObservationFor, setShowObservationFor] = useState<Record<number, boolean>>({});
 	const [viewingHistory, setViewingHistory] = useState<{ id: number; title: string } | null>(null);
 	const [editingReqId, setEditingReqId] = useState<number | null>(null);
+	const [openComments, setOpenComments] = useState<Record<number, boolean>>({});
 
 	const refreshRequirements = async (signal?: AbortSignal) => {
 		const response = await requirementsApi.list(project.id, 1, 50, undefined, signal ? { signal } : undefined);
@@ -341,26 +343,6 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 								</div>
 							)}
 
-							{showObservation && (
-								<div className={styles['req-meta-row']}>
-									<span className={styles['req-meta-item']}>
-										<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-											<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-										</svg>
-										Comentarios ({req.validacoes_count})
-									</span>
-									<button
-										className={styles['req-meta-button']}
-										onClick={() => setViewingHistory({ id: req.id, title: req.titulo || 'Requisito' })}
-									>
-										<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-											<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-										</svg>
-										Historico de Versoes
-									</button>
-								</div>
-							)}
-
 							{(canValidate || canAddRequirements) && (
 								<div className={styles['req-actions']}>
 									<button className={styles['btn-reject']} onClick={() => handleReject(req.id)} disabled={loadingAction === req.id}>
@@ -390,6 +372,29 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 									)}
 								</div>
 							)}
+
+							<div className={styles['req-meta-row']} style={{ borderTop: '1px solid var(--card-border)', paddingTop: 10, marginTop: 4 }}>
+								<button
+									className={styles['req-meta-button']}
+									onClick={() => setOpenComments(prev => ({ ...prev, [req.id]: !prev[req.id] }))}
+								>
+									<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+										<path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+									</svg>
+									{openComments[req.id] ? 'Ocultar comentários' : 'Comentários'}
+								</button>
+								<button
+									className={styles['req-meta-button']}
+									onClick={() => setViewingHistory({ id: req.id, title: req.titulo || 'Requisito' })}
+								>
+									<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+										<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+									</svg>
+									Histórico de Versões
+								</button>
+							</div>
+
+							{openComments[req.id] && <Comentarios requirementId={req.id} />}
 
 							<div className={styles['req-footer']}>
 								<span>Modificado por: <strong>{req.autor?.nome || "Sistema"}</strong></span>

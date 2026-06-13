@@ -95,8 +95,8 @@ export default function TelaProjetos({
     setShowModal(true);
   };
 
-  const totalRequisitos = projects.reduce((s, p) => s + p.requisitos_count, 0);
-  const totalAprovados = projects.reduce((s, p) => s + p.aprovados_count, 0);
+  const totalRequisitos = projects.reduce((s, p) => s + (p.requisitos_count || 0), 0);
+  const totalAprovados = projects.reduce((s, p) => s + (p.aprovados_count || 0), 0);
 
   const topbarTitle = activePage === 'auditoria'
     ? 'Trilha de Auditoria'

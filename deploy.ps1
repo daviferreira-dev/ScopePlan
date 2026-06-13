@@ -1,11 +1,11 @@
-# Testa, builda e faz deploy para o 
+# Testa, builda e faz deploy para o Render (auto-deploy via push no origin)
 # Uso: .\deploy.ps1 -message "feat: descricao da feature"
 param(
     [Parameter(Mandatory)][string]$message
 )
 
 $root = $PSScriptRoot
-$python = "$root\env\Scripts\python.exe"
+$python = "$root\backend\venv\Scripts\python.exe"
 
 function Step($label) { Write-Host "`n=== $label ===" -ForegroundColor Cyan }
 function Fail($msg) { Write-Host "ERRO: $msg" -ForegroundColor Red; exit 1 }
@@ -28,7 +28,7 @@ Step "Commit e push"
 Set-Location $root
 git add .
 git commit -m $message
-git push heroku main
+git push origin HEAD
 
-if ($LASTEXITCODE -ne 0) { Fail "Push falhou. Verifique o remote 'heroku'." }
-Write-Host "`nDeploy concluido!" -ForegroundColor Green
+if ($LASTEXITCODE -ne 0) { Fail "Push falhou. Verifique o remote 'origin'." }
+Write-Host "`nPush concluido! O Render fara o deploy automaticamente." -ForegroundColor Green

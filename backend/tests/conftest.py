@@ -26,7 +26,7 @@ def auth_headers(client):
     resp = client.post('/api/auth/register', json={
         'nome': 'Test Analista',
         'email': 'analista@test.com',
-        'senha': 'senha123',
+        'senha': 'Senha@123',
         'perfil': 'analista'
     })
     data = resp.get_json()
@@ -40,7 +40,7 @@ def analista_user(client):
     resp = client.post('/api/auth/register', json={
         'nome': 'Analista Test',
         'email': 'analista@test.com',
-        'senha': 'senha123',
+        'senha': 'Senha@123',
         'perfil': 'analista'
     })
     data = resp.get_json()
@@ -57,7 +57,7 @@ def cliente_user(client):
     resp = client.post('/api/auth/register', json={
         'nome': 'Cliente Test',
         'email': 'cliente@test.com',
-        'senha': 'senha123',
+        'senha': 'Senha@123',
         'perfil': 'cliente'
     })
     data = resp.get_json()

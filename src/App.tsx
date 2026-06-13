@@ -4,6 +4,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import Cadastro from "./pages/Cadastro";
+import ResetSenha from "./pages/ResetSenha";
 import Tela_Projetos_Analista from "./pages/analista/Tela_Projetos";
 import Tela_Projetos_Cliente from "./pages/cliente/Tela_Projetos";
 import Tela_Projetos_Gestor from "./pages/gestor/Tela_Projetos";
@@ -50,6 +51,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/cadastro" element={<Cadastro />} />
+          <Route path="/reset-senha" element={<ResetSenha />} />
 
           {/* Rotas do Analista */}
           <Route path="/analista/projetos" element={

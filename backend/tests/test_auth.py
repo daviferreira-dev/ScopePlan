@@ -7,7 +7,7 @@ class TestAuthRegister:
     def test_register_success(self, client):
         resp = client.post('/api/auth/register', json={
             'nome': 'Novo Usuario', 'email': 'novo@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         assert resp.status_code == 201
         data = resp.get_json()
@@ -23,18 +23,18 @@ class TestAuthRegister:
         """P0 fix: gestor role must not be self-assignable."""
         resp = client.post('/api/auth/register', json={
             'nome': 'Gestor Fraud', 'email': 'gestor@test.com',
-            'senha': 'senha123', 'perfil': 'gestor'
+            'senha': 'Senha@123', 'perfil': 'gestor'
         })
         assert resp.status_code == 400
 
     def test_register_duplicate_email(self, client):
         client.post('/api/auth/register', json={
             'nome': 'User1', 'email': 'dup@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         resp = client.post('/api/auth/register', json={
             'nome': 'User2', 'email': 'dup@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         assert resp.status_code in (400, 409)
 
@@ -45,15 +45,23 @@ class TestAuthRegister:
         })
         assert resp.status_code == 400
 
+    def test_register_weak_password(self, client):
+        """RF01-A1: senha sem maiúscula/número/especial deve ser rejeitada."""
+        resp = client.post('/api/auth/register', json={
+            'nome': 'User', 'email': 'weak@test.com',
+            'senha': 'senhafraca', 'perfil': 'analista'
+        })
+        assert resp.status_code == 400
+
 
 class TestAuthLogin:
     def test_login_success(self, client):
         client.post('/api/auth/register', json={
             'nome': 'Login User', 'email': 'login@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         resp = client.post('/api/auth/login', json={
-            'email': 'login@test.com', 'senha': 'senha123'
+            'email': 'login@test.com', 'senha': 'Senha@123'
         })
         assert resp.status_code == 200
         assert 'access_token' in resp.get_json()
@@ -61,7 +69,7 @@ class TestAuthLogin:
     def test_login_wrong_password(self, client):
         client.post('/api/auth/register', json={
             'nome': 'Login User', 'email': 'wrong@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         resp = client.post('/api/auth/login', json={
             'email': 'wrong@test.com', 'senha': 'errada'
@@ -70,7 +78,7 @@ class TestAuthLogin:
 
     def test_login_nonexistent_user(self, client):
         resp = client.post('/api/auth/login', json={
-            'email': 'noone@test.com', 'senha': 'senha123'
+            'email': 'noone@test.com', 'senha': 'Senha@123'
         })
         assert resp.status_code == 401
 
@@ -79,7 +87,7 @@ class TestAuthRefresh:
     def test_refresh_active_user(self, client):
         resp = client.post('/api/auth/register', json={
             'nome': 'Refresh User', 'email': 'refresh@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         assert resp.status_code == 201
         # Refresh token is sent as httpOnly cookie, not in JSON body
@@ -92,7 +100,7 @@ class TestAuthRefresh:
         """P1 fix: deactivated users cannot refresh tokens."""
         resp = client.post('/api/auth/register', json={
             'nome': 'Deact User', 'email': 'deact@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         data = resp.get_json()
         uid = data['user']['id']
@@ -111,7 +119,7 @@ class TestAuthRefresh:
         """Old refresh token must be revoked after rotation."""
         resp = client.post('/api/auth/register', json={
             'nome': 'Rotate User', 'email': 'rotate@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         assert resp.status_code == 201
 
@@ -154,7 +162,7 @@ class TestAuthLogout:
         """Logout should revoke both access and refresh tokens."""
         resp = client.post('/api/auth/register', json={
             'nome': 'Logout User', 'email': 'logout@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         data = resp.get_json()
         access_token = data['access_token']
@@ -192,7 +200,7 @@ class TestAuthProfile:
         """Changing password requires senha_atual."""
         resp = client.post('/api/auth/register', json={
             'nome': 'Pw User', 'email': 'pw@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         token = resp.get_json()['access_token']
         user_id = resp.get_json()['user']['id']
@@ -200,25 +208,25 @@ class TestAuthProfile:
 
         # Without senha_atual — should fail
         resp2 = client.put(f'/api/auth/{user_id}', json={
-            'senha': 'nova_senha456'
+            'senha': 'NovaSenha@456'
         }, headers=headers)
         assert resp2.status_code == 400
 
         # With wrong senha_atual — should fail
         resp3 = client.put(f'/api/auth/{user_id}', json={
-            'senha': 'nova_senha456', 'senha_atual': 'wrong_password'
+            'senha': 'NovaSenha@456', 'senha_atual': 'wrong_password'
         }, headers=headers)
         assert resp3.status_code == 401
 
         # With correct senha_atual — should succeed
         resp4 = client.put(f'/api/auth/{user_id}', json={
-            'senha': 'nova_senha456', 'senha_atual': 'senha123'
+            'senha': 'NovaSenha@456', 'senha_atual': 'Senha@123'
         }, headers=headers)
         assert resp4.status_code == 200
 
         # Login with new password should work
         resp5 = client.post('/api/auth/login', json={
-            'email': 'pw@test.com', 'senha': 'nova_senha456'
+            'email': 'pw@test.com', 'senha': 'NovaSenha@456'
         })
         assert resp5.status_code == 200
 
@@ -226,7 +234,7 @@ class TestAuthProfile:
         """Users cannot deactivate their own account."""
         resp = client.post('/api/auth/register', json={
             'nome': 'Deact Self', 'email': 'deactself@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         token = resp.get_json()['access_token']
         user_id = resp.get_json()['user']['id']

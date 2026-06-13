@@ -121,6 +121,9 @@ export default function LoginPage() {
             </button>
           </form>
 
+          <p className={styles['sp-foot']} style={{ marginBottom: 4 }}>
+            <a onClick={() => navigate("/reset-senha")}>Esqueci minha senha</a>
+          </p>
           <p className={styles['sp-foot']}>Não possui uma conta? <a onClick={() => navigate("/cadastro")}>Criar agora</a></p>
           <div className={styles['sp-home']}>
             <button className={styles['sp-home-btn']} onClick={() => navigate("/")}>

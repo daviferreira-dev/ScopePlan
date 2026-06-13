@@ -28,8 +28,30 @@ class Project(db.Model):
     requisitos = db.relationship('Requirement', backref='projeto', lazy='select', cascade='all, delete-orphan')
     cliente = db.relationship('User', backref='projetos_como_cliente', lazy='select', foreign_keys=[cliente_id])
 
+    def _requisito_counts(self):
+        """(total, aprovados) de requisitos ativos — base do progresso da ERS.
+
+        'aprovados' inclui 'aprovado' e 'aprovado_com_ressalvas', consistente com
+        a métrica do projeto e a regra de exportação RN002.
+        """
+        from sqlalchemy import func
+        from app import db
+        from app.models.requirement import Requirement
+
+        total = db.session.query(func.count(Requirement.id)).filter(
+            Requirement.projeto_id == self.id,
+            Requirement.ativo.is_(True),
+        ).scalar() or 0
+        aprovados = db.session.query(func.count(Requirement.id)).filter(
+            Requirement.projeto_id == self.id,
+            Requirement.ativo.is_(True),
+            Requirement.status.in_(('aprovado', 'aprovado_com_ressalvas')),
+        ).scalar() or 0
+        return total, aprovados
+
     def to_dict(self):
         """Convert project to dictionary"""
+        total, aprovados = self._requisito_counts()
         data = {
             'id': self.id,
             'nome': self.nome,
@@ -40,6 +62,8 @@ class Project(db.Model):
             'gestor': self.gestor.to_dict() if self.gestor else None,
             'cliente_id': self.cliente_id,
             'nome_cliente': self.nome_cliente or (self.cliente.nome if self.cliente else None),
+            'requisitos_count': total,
+            'aprovados_count': aprovados,
             'ativo': self.ativo,
             'criado_em': self.criado_em.isoformat() if self.criado_em else None,
             'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None,

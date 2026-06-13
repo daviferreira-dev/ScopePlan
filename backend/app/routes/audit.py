@@ -23,6 +23,7 @@ def list_audit_logs():
     acao = request.args.get('acao', type=str)
     entidade_tipo = request.args.get('entidade_tipo', type=str)
     usuario_id = request.args.get('usuario_id', type=int)
+    ip = request.args.get('ip', type=str)
     data_inicio = request.args.get('data_inicio', type=str)
     data_fim = request.args.get('data_fim', type=str)
     search = request.args.get('search', type=str)
@@ -67,6 +68,8 @@ def list_audit_logs():
         query = query.filter(AuditLog.acao == acao)
     if entidade_tipo:
         query = query.filter(AuditLog.entidade_tipo == entidade_tipo)
+    if ip:
+        query = query.filter(AuditLog.ip == ip)
     if search:
         # Escape LIKE wildcards to prevent pattern injection
         escaped = search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')

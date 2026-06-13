@@ -63,3 +63,35 @@
   .topics-grid { grid-template-columns: 1fr !important; }
   .topic-card { padding: 14px 12px; }
 }
+
+/* ─── View tabs (Requisitos / Painel) ─── */
+.view-tabs {
+  display: inline-flex;
+  gap: 4px;
+  background: var(--progress-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 11px;
+  padding: 4px;
+  margin-bottom: 18px;
+}
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s;
+}
+.view-tab:hover { color: var(--green-mid); }
+.view-tab-active {
+  background: #fff;
+  color: var(--green-bright);
+  box-shadow: 0 1px 3px rgba(13,51,32,0.08);
+}

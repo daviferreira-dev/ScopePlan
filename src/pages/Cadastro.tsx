@@ -32,6 +32,12 @@ export default function CadastroPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // RF01-A1: senha forte — mín. 8, 1 maiúscula, 1 número, 1 caractere especial
+    const strongPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,128}$/;
+    if (!strongPassword.test(password)) {
+      setError("A senha deve ter no mínimo 8 caracteres, com 1 maiúscula, 1 número e 1 caractere especial.");
+      return;
+    }
     if (password !== confirmPassword) { setError("As senhas não coincidem"); return; }
     setError(""); setLoading(true);
     try { await register(nome, email, password, perfil); }
@@ -112,7 +118,7 @@ export default function CadastroPage() {
                   </svg>
                 </span>
                 <input className={styles['sp-inp']} type={showPassword ? "text" : "password"}
-                  placeholder="Mín. 6 caracteres" value={password}
+                  placeholder="Mín. 8: maiúscula, número e especial" value={password}
                   onChange={e => setPassword(e.target.value)}
                   autoComplete="new-password" required />
                 <button type="button" className={styles['sp-eye']}

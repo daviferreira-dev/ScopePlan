@@ -2,6 +2,13 @@ import os
 from datetime import timedelta
 
 
+def _env_bool(name, default):
+    val = os.environ.get(name)
+    if val is None:
+        return default
+    return val.strip().lower() in ('1', 'true', 'yes', 'on')
+
+
 def _get_database_uri():
     """Build the database URI, fixing postgres:// → postgresql:// for SQLAlchemy."""
     uri = os.environ.get('DATABASE_URL') or 'sqlite:///scopeplan.db'
@@ -50,9 +57,20 @@ class Config:
     RATE_LIMIT_REGISTER = os.environ.get('RATE_LIMIT_REGISTER', '3/minute')
     RATE_LIMIT_STORAGE_URI = os.environ.get('RATE_LIMIT_STORAGE_URI', 'memory://')
 
+    # Valida domínio (MX) do e-mail no cadastro — desligável p/ testes/offline
+    VALIDATE_EMAIL_DOMAIN = _env_bool('VALIDATE_EMAIL_DOMAIN', True)
+
+    # Password reset (RF01-A5)
+    FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
+    # EXPOSE_RESET_LINK retorna o link na resposta da API — APENAS em dev/teste
+    EXPOSE_RESET_LINK = False
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    # dev: por padrão expõe o código na resposta; defina EXPOSE_RESET_LINK=false
+    # no .env para testar o envio de e-mail real (o código só chega pela caixa de entrada).
+    EXPOSE_RESET_LINK = _env_bool('EXPOSE_RESET_LINK', True)
     # Dev requires .env — no hardcoded fallbacks
     SECRET_KEY = os.environ.get('SECRET_KEY')
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY')
@@ -111,6 +129,8 @@ class ProductionConfig(Config):
 
 class TestingConfig(Config):
     TESTING = True
+    VALIDATE_EMAIL_DOMAIN = False  # testes usam domínios fictícios (@test.com)
+    EXPOSE_RESET_LINK = True
     SECRET_KEY = 'test-secret-key'
     JWT_SECRET_KEY = 'test-jwt-secret-key'
     SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'

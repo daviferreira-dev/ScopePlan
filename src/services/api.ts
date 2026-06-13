@@ -80,7 +80,7 @@ export function getAccessToken(): string | null {
   return accessToken;
 }
 
-export function setTokens(access: string, _refresh?: string): void {
+export function setTokens(access: string): void {
   accessToken = access;
   // Refresh token is handled via HttpOnly cookie — no client-side storage needed
 }
@@ -297,7 +297,36 @@ export const authApi = {
       options?.signal ? { signal: options.signal } : {}
     );
   },
+
+  forgotPassword(email: string) {
+    return apiFetch<{ message: string; reset_code?: string }>('/auth/forgot-password', {
+      method: 'POST', body: JSON.stringify({ email }),
+    });
+  },
+
+  verifyResetCode(email: string, code: string) {
+    return apiFetch<{ message: string }>('/auth/verify-reset-code', {
+      method: 'POST', body: JSON.stringify({ email, code }),
+    });
+  },
+
+  resetPassword(email: string, code: string, senha: string) {
+    return apiFetch<{ message: string }>('/auth/reset-password', {
+      method: 'POST', body: JSON.stringify({ email, code, senha }),
+    });
+  },
 };
+
+export interface ProjectMetrics {
+  total: number;
+  aprovados: number;
+  taxa_aprovacao: number;
+  por_status: Record<string, number>;
+  por_tipo: Record<string, number>;
+  por_prioridade: Record<string, number>;
+  por_categoria: Record<string, number>;
+  evolucao_semanal: { semana: string; total: number }[];
+}
 
 export const projectsApi = {
   list(
@@ -350,6 +379,12 @@ export const projectsApi = {
       headers: { 'Content-Type': 'application/json' },
       body: body ? JSON.stringify(body) : undefined,
     });
+  },
+
+  metrics(projectId: number, options?: { signal?: AbortSignal }) {
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<ProjectMetrics>(`/projetos/${projectId}/metrics`, init);
   },
 };
 
@@ -452,6 +487,49 @@ export const validationApi = {
 
   delete(requirementId: number, id: number) {
     return apiFetch(`/requisitos/${requirementId}/validacoes/${id}`, { method: 'DELETE' });
+  },
+};
+
+export interface CommentData {
+  id: number;
+  requisito_id: number;
+  autor_id: number | null;
+  autor?: User;
+  parent_id: number | null;
+  texto: string;
+  oculto: boolean;
+  criado_em?: string;
+  editado_em?: string | null;
+}
+
+export const commentsApi = {
+  list(requirementId: number, options?: { signal?: AbortSignal }) {
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ comentarios: CommentData[]; total: number }>(
+      `/requisitos/${requirementId}/comentarios`,
+      init
+    );
+  },
+
+  create(requirementId: number, texto: string, parentId?: number) {
+    return apiFetch<{ comentario: CommentData }>(`/requisitos/${requirementId}/comentarios`, {
+      method: 'POST',
+      body: JSON.stringify({ texto, parent_id: parentId ?? null }),
+    });
+  },
+
+  update(commentId: number, texto: string) {
+    return apiFetch<{ comentario: CommentData }>(`/comentarios/${commentId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ texto }),
+    });
+  },
+
+  hide(commentId: number) {
+    return apiFetch<{ comentario: CommentData }>(`/comentarios/${commentId}/ocultar`, {
+      method: 'POST',
+    });
   },
 };
 

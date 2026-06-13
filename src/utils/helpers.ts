@@ -32,7 +32,9 @@ export function getRoleLabel(perfil?: string): string {
  * Format a date string as relative time in Portuguese.
  */
 export function formatRelativeTime(dateString: string): string {
+ if (!dateString) return 'data indisponível';
  const date = new Date(dateString);
+ if (isNaN(date.getTime())) return 'data indisponível';
  const now = new Date();
  const diffMs = now.getTime() - date.getTime();
  const diffSeconds = Math.floor(diffMs / 1000);
@@ -54,7 +56,9 @@ export function formatRelativeTime(dateString: string): string {
  * Format a date string as time only (HH:MM).
  */
 export function formatTime(dateString: string): string {
+ if (!dateString) return '';
  const date = new Date(dateString);
+ if (isNaN(date.getTime())) return '';
  return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 }
 

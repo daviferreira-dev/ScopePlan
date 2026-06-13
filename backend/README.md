@@ -307,12 +307,16 @@ Ao editar um requisito com `status = 'aprovado'`, se `titulo` ou `descricao` for
 
 Projetos e requisitos nunca são fisicamente deletados. O `DELETE` define `ativo = False` e o registro é excluído das listagens padrão.
 
-### RN005 — Validação por consenso
+### Validação por consenso (desvio consciente de RF06)
 
 O status do requisito muda quando 2+ validadores concordam no mesmo resultado:
 - 2+ `aprovado` → status = `aprovado`
 - 2+ `rejeitado` → status = `rejeitado`
 - 2+ `aprovado_com_ressalvas` → status = `aprovado_com_ressalvas`
+
+> **Nota:** A ERS (RF06) descreve aprovação **individual** do Cliente. A implementação
+> adota deliberadamente um modelo de **consenso por maioria** (mais robusto para validação
+> colaborativa). Ver "Desvios conscientes em relação à ERS" abaixo.
 
 ### Isolamento de dados por usuário
 
@@ -333,6 +337,22 @@ Tentativas de acessar recursos de outros projetos retornam 403.
 | **Version history sem UI** | Endpoint e dados existem; nenhuma página no frontend consome ainda |
 | **CRUD de projetos sem UI** | GET/PUT/DELETE de projetos individuais existem mas não têm frontend |
 | **Upload de arquivo** | UI presente mas sem lógica real de upload |
+
+## Desvios conscientes em relação à ERS
+
+Decisões de implementação que divergem da ERS v1.19 **por escolha da equipe**, registradas para rastreabilidade:
+
+| Item ERS | Especificação | Implementação | Justificativa |
+|----------|---------------|---------------|---------------|
+| **RF06** | Aprovação individual do Cliente | Consenso por maioria (2+ validadores) | Validação colaborativa mais robusta; evita aprovação unilateral |
+| **RF01-A6 / RN001** | Usuários criados só por convite de Analista/Gestor | Auto-cadastro público, com perfil `gestor` bloqueado | Onboarding self-service; papel privilegiado (gestor) protegido |
+
+> A ERS (PDF em `public/Docs`) deve ser atualizada para refletir estes dois pontos na próxima revisão do documento.
+
+## Conformidades de regra de negócio recentemente alinhadas
+
+- **RN002** — `POST /api/projetos/:id/ers.<formato>` agora exporta **apenas requisitos aprovados** (`aprovado` / `aprovado_com_ressalvas`) por padrão. Para incluir não-aprovados (RF05-A2), envie `{"incluir_nao_aprovados": true}` no corpo.
+- **RF01-A1** — Política de senha forte aplicada no cadastro e na troca de senha: mín. 8 caracteres, com ao menos 1 maiúscula, 1 número e 1 caractere especial (backend e frontend).
 
 ## Licença
 

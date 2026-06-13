@@ -137,12 +137,15 @@ def create_app(config_name=None):
     from app.routes.auth import auth_bp
     from app.routes.projects import projects_bp
     from app.routes.requirements import requirements_bp, project_reqs_bp
+    from app.routes.comments import req_comments_bp, comments_bp
     from app.routes.audit import audit_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(projects_bp)
     app.register_blueprint(project_reqs_bp)
     app.register_blueprint(requirements_bp)
+    app.register_blueprint(req_comments_bp)
+    app.register_blueprint(comments_bp)
     app.register_blueprint(audit_bp)
 
     # Health check endpoint — no auth required

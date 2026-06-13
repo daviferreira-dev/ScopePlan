@@ -10,6 +10,10 @@ from app import db
 from app.models import User, AuditLog, TokenBlocklist
 from sqlalchemy.exc import IntegrityError
 from app.schemas import UserRegistrationSchema, UserLoginSchema, UserUpdateSchema
+from app.schemas.auth import PASSWORD_REGEX, PASSWORD_MESSAGE
+from app.schemas.auth import ForgotPasswordSchema, ResetPasswordSchema, VerifyResetCodeSchema
+from app.models import PasswordResetToken
+from app.utils.mailer import get_mailer
 from app.utils.decorators import validate_json
 from app.utils.crypto import email_lookup_hash
 
@@ -32,6 +36,9 @@ def init_limiter(app):
 
     limiter.limit(register_limit)(register)
     limiter.limit(login_limit)(login)
+    limiter.limit('3/minute')(forgot_password)
+    limiter.limit('10/minute')(verify_reset_code)
+    limiter.limit('5/minute')(reset_password)
 
 
 def _set_refresh_cookie(response, refresh_token):
@@ -190,6 +197,84 @@ def logout():
     return response
 
 
+def _build_reset_email(code):
+    return (
+        f'Seu código de recuperação de senha do ScopePlan é:\n\n'
+        f'    {code}\n\n'
+        f'Digite-o na tela de recuperação para definir uma nova senha.\n'
+        f'O código expira em 15 minutos. Se não foi você, ignore este e-mail.'
+    )
+
+
+@auth_bp.route('/forgot-password', methods=['POST'])
+@validate_json(ForgotPasswordSchema)
+def forgot_password():
+    """RF01-A5: envia um código de 6 dígitos para o e-mail cadastrado.
+
+    Informa explicitamente quando o e-mail não está cadastrado e só envia o
+    código para contas existentes e ativas.
+    """
+    email = request.validated_data['email']
+    user = User.query.filter_by(email_lookup=email_lookup_hash(email)).first()
+
+    if not user or not user.ativo:
+        return {'message': 'E-mail não cadastrado no sistema.'}, 404
+
+    code, _ = PasswordResetToken.issue(user.id)
+    AuditLog.log(user.id, 'reset_solicitado', 'usuario', user.id, None, {'email': user.email})
+    db.session.commit()
+
+    try:
+        get_mailer().send(user.email, 'Código de recuperação de senha — ScopePlan',
+                          _build_reset_email(code))
+    except Exception:
+        current_app.logger.exception('Falha ao enviar e-mail de reset')
+        return {'message': 'Não foi possível enviar o e-mail de recuperação. Tente novamente.'}, 502
+
+    response = {'message': 'Enviamos um código de recuperação para o seu e-mail.'}
+    # Dev/teste: devolve o código direto na resposta (nunca em produção)
+    if current_app.config.get('EXPOSE_RESET_LINK'):
+        response['reset_code'] = code
+
+    return response, 200
+
+
+@auth_bp.route('/verify-reset-code', methods=['POST'])
+@validate_json(VerifyResetCodeSchema)
+def verify_reset_code():
+    """RF01-A5: confere o código sem consumi-lo (libera a etapa de nova senha)."""
+    data = request.validated_data
+    user = User.query.filter_by(email_lookup=email_lookup_hash(data['email'])).first()
+
+    prt = PasswordResetToken.verify(user.id, data['code']) if user and user.ativo else None
+    db.session.commit()  # persiste contagem de tentativas / queima do código
+
+    if not prt:
+        return {'message': 'Código inválido ou expirado.'}, 400
+    return {'message': 'Código verificado.'}, 200
+
+
+@auth_bp.route('/reset-password', methods=['POST'])
+@validate_json(ResetPasswordSchema)
+def reset_password():
+    """RF01-A5: valida o código e redefine a senha (single-use, expira em 15 min)."""
+    data = request.validated_data
+    user = User.query.filter_by(email_lookup=email_lookup_hash(data['email'])).first()
+
+    prt = PasswordResetToken.verify(user.id, data['code']) if user and user.ativo else None
+    if not prt:
+        db.session.commit()  # persiste tentativa malsucedida
+        return {'message': 'Código inválido ou expirado.'}, 400
+
+    user.set_password(data['senha'])
+    from datetime import datetime, timezone
+    prt.used_at = datetime.now(timezone.utc)
+    AuditLog.log(user.id, 'reset_concluido', 'usuario', user.id, None, {'email': user.email})
+    db.session.commit()
+
+    return {'message': 'Senha redefinida com sucesso'}, 200
+
+
 @auth_bp.route('/me', methods=['GET'])
 @jwt_required()
 def me():
@@ -265,6 +350,9 @@ def update_user(user_id):
                 return {'message': 'senha_atual é obrigatória para alterar a senha'}, 400
             if not user.check_password(senha_atual):
                 return {'message': 'senha_atual incorreta'}, 401
+        # RF01-A1: a nova senha também deve atender à política de senha forte
+        if not PASSWORD_REGEX.match(data['senha']):
+            return {'message': PASSWORD_MESSAGE}, 400
         user.set_password(data['senha'])
 
     AuditLog.log(identity, 'atualizacao', 'usuario', user_id, None, {'email': user.email})

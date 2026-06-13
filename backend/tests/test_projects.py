@@ -60,10 +60,10 @@ class TestProjectAccess:
     def test_access_other_user_project_blocked(self, client, app):
         """IDOR: user cannot access another user's project."""
         r1 = client.post('/api/auth/register', json={
-            'nome': 'Analista A', 'email': 'a@a.com', 'senha': 'senha123', 'perfil': 'analista'
+            'nome': 'Analista A', 'email': 'a@a.com', 'senha': 'Senha@123', 'perfil': 'analista'
         })
         r2 = client.post('/api/auth/register', json={
-            'nome': 'Analista B', 'email': 'b@b.com', 'senha': 'senha123', 'perfil': 'analista'
+            'nome': 'Analista B', 'email': 'b@b.com', 'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a = {'Authorization': f"Bearer {r1.get_json()['access_token']}"}
         headers_b = {'Authorization': f"Bearer {r2.get_json()['access_token']}"}

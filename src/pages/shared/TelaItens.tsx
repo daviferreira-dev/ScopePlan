@@ -3,6 +3,7 @@ import { requirementsApi } from '../../services/api';
 import type { RequirementData, ProjectData } from '../../services/api';
 import AppLayout from '../../components/AppLayout';
 import { REQUIREMENT_TOPICS, type RequirementTopic, type Perfil } from '../../utils/constants';
+import Dashboard from './Dashboard';
 import styles from './TelaItens.module.css';
 
 interface Topic extends RequirementTopic {
@@ -24,6 +25,7 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 	const [requirements, setRequirements] = useState<RequirementData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const [tab, setTab] = useState<'lista' | 'painel'>('lista');
 
 	useEffect(() => {
 		const controller = new AbortController();
@@ -74,7 +76,31 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 				</button>
 			}
 		>
-			{loading ? (
+			<div className={styles['view-tabs']}>
+				<button
+					className={`${styles['view-tab']} ${tab === 'lista' ? styles['view-tab-active'] : ''}`}
+					onClick={() => setTab('lista')}
+				>
+					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+						<line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
+						<line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
+					</svg>
+					Requisitos
+				</button>
+				<button
+					className={`${styles['view-tab']} ${tab === 'painel' ? styles['view-tab-active'] : ''}`}
+					onClick={() => setTab('painel')}
+				>
+					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+						<line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+					</svg>
+					Painel
+				</button>
+			</div>
+
+			{tab === 'painel' ? (
+				<Dashboard projectId={project.id} />
+			) : loading ? (
 				<div className="empty-state">
 					<div className="empty-icon">
 						<svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

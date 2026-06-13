@@ -50,7 +50,7 @@ class TestRequirementStateMachine:
         """Cannot submit already-approved requirement for review."""
         r_c = client.post('/api/auth/register', json={
             'nome': 'Cliente Val1', 'email': 'cli_val1_aprov@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c = {'Authorization': f"Bearer {r_c.get_json()['access_token']}"}
         c_id = r_c.get_json()['user']['id']
@@ -68,7 +68,7 @@ class TestRequirementStateMachine:
         client.post(f'/api/requisitos/{req_id}/validacoes', json={'resultado': 'aprovado'}, headers=headers_c)
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista Val2', 'email': 'analista_val2_aprov@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
         client.post(f'/api/requisitos/{req_id}/validacoes', json={'resultado': 'aprovado'}, headers=headers_a2)
@@ -80,7 +80,7 @@ class TestRequirementStateMachine:
         """Requirements in rascunho cannot receive validacoes."""
         r_c = client.post('/api/auth/register', json={
             'nome': 'Cliente RVal', 'email': 'cli_rval@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c = {'Authorization': f"Bearer {r_c.get_json()['access_token']}"}
         c_id = r_c.get_json()['user']['id']
@@ -104,7 +104,7 @@ class TestValidationConsensus:
         """With quorum=2, a single approval keeps requirement in em_revisao."""
         r_c = client.post('/api/auth/register', json={
             'nome': 'Cliente App', 'email': 'cli_app@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c = {'Authorization': f"Bearer {r_c.get_json()['access_token']}"}
         c_id = r_c.get_json()['user']['id']
@@ -130,14 +130,14 @@ class TestValidationConsensus:
         """Tie scenario: 1 approved + 1 rejected = stays in em_revisao (no majority)."""
         r_c1 = client.post('/api/auth/register', json={
             'nome': 'Cli Tie1', 'email': 'cli_tie1@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
         c_id = r_c1.get_json()['user']['id']
 
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista Tie2', 'email': 'analista_tie2@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
 
@@ -166,7 +166,7 @@ class TestValidationConsensus:
         """With quorum=2, a single rejection keeps requirement in em_revisao."""
         r_c = client.post('/api/auth/register', json={
             'nome': 'Cliente Rej', 'email': 'cli_rej@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c = {'Authorization': f"Bearer {r_c.get_json()['access_token']}"}
         c_id = r_c.get_json()['user']['id']
@@ -192,14 +192,14 @@ class TestValidationConsensus:
         """Two approvals with quorum=2 should set status to aprovado."""
         r_c1 = client.post('/api/auth/register', json={
             'nome': 'Cli Approv1', 'email': 'cli_approv1@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
         c_id = r_c1.get_json()['user']['id']
 
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista Approv2', 'email': 'analista_approv2@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
 
@@ -228,14 +228,14 @@ class TestValidationConsensus:
         """With majority-rules, majority rejections outvote approvals."""
         r_c1 = client.post('/api/auth/register', json={
             'nome': 'Cli Mix1', 'email': 'cli_mix1@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
         c_id = r_c1.get_json()['user']['id']
 
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista Mix2', 'email': 'analista_mix2@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
 
@@ -264,14 +264,14 @@ class TestValidationConsensus:
         """Two aprovado_com_ressalvas with quorum=2 = aprovado_com_ressalvas."""
         r_c1 = client.post('/api/auth/register', json={
             'nome': 'Cli Res1', 'email': 'cli_res1q@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
         c_id = r_c1.get_json()['user']['id']
 
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista Res2', 'email': 'analista_res2q@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
 
@@ -300,14 +300,14 @@ class TestValidationConsensus:
         """One aprovado + one aprovado_com_ressalvas = aprovado_com_ressalvas."""
         r_c1 = client.post('/api/auth/register', json={
             'nome': 'Cli MixR1', 'email': 'cli_mixr1@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
         c_id = r_c1.get_json()['user']['id']
 
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista MixR2', 'email': 'analista_mixr2@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
 
@@ -336,7 +336,7 @@ class TestValidationConsensus:
         """Same user cannot validate the same requirement twice."""
         r_c = client.post('/api/auth/register', json={
             'nome': 'Cliente Val', 'email': 'cli_val@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c = {'Authorization': f"Bearer {r_c.get_json()['access_token']}"}
         c_id = r_c.get_json()['user']['id']
@@ -369,14 +369,14 @@ class TestRN003Versioning:
         a version snapshot and reset status to em_revisao."""
         r_c1 = client.post('/api/auth/register', json={
             'nome': 'Cli RN3-1', 'email': 'cli_rn3_1@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
         c_id = r_c1.get_json()['user']['id']
 
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista RN3-2', 'email': 'analista_rn3_2@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
 
@@ -410,14 +410,14 @@ class TestRN003Versioning:
         """RN003: Editing aprovado_com_ressalvas should also create version and reset."""
         r_c1 = client.post('/api/auth/register', json={
             'nome': 'Cli RN3R-1', 'email': 'cli_rn3r_1@test.com',
-            'senha': 'senha123', 'perfil': 'cliente'
+            'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
         c_id = r_c1.get_json()['user']['id']
 
         r_a2 = client.post('/api/auth/register', json={
             'nome': 'Analista RN3R-2', 'email': 'analista_rn3r_2@test.com',
-            'senha': 'senha123', 'perfil': 'analista'
+            'senha': 'Senha@123', 'perfil': 'analista'
         })
         headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
 

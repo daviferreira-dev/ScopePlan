@@ -196,6 +196,61 @@ def delete_project(project_id):
     return {'message': 'Projeto removido com sucesso'}, 200
 
 
+@projects_bp.route('/<int:project_id>/metrics', methods=['GET'])
+@jwt_required()
+def project_metrics(project_id):
+    """RF07: métricas agregadas do projeto para o painel de monitoramento."""
+    from collections import Counter
+    from datetime import datetime, timezone, timedelta
+
+    user_id = int(get_jwt_identity())
+    user = db.session.get(User, user_id)
+    if not user:
+        return {'message': 'Usuario nao encontrado'}, 404
+
+    project = Project.query.filter_by(id=project_id, ativo=True).first()
+    if not project:
+        return {'message': 'Projeto nao encontrado'}, 404
+
+    _, access_error = check_user_project_access(user, project_id)
+    if access_error:
+        return access_error
+
+    requirements = Requirement.query.filter_by(projeto_id=project_id, ativo=True).all()
+
+    por_status = Counter(r.status for r in requirements)
+    por_tipo = Counter(r.tipo or 'indefinido' for r in requirements)
+    por_prioridade = Counter(r.prioridade or 'indefinida' for r in requirements)
+    por_categoria = Counter(r.categoria for r in requirements if r.categoria)
+
+    total = len(requirements)
+    aprovados = por_status.get('aprovado', 0) + por_status.get('aprovado_com_ressalvas', 0)
+
+    # Evolução: requisitos criados por semana nas últimas 8 semanas (ISO week)
+    hoje = datetime.now(timezone.utc).date()
+    inicio_semana_atual = hoje - timedelta(days=hoje.weekday())
+    semanas = [inicio_semana_atual - timedelta(weeks=i) for i in range(7, -1, -1)]
+    evolucao = []
+    for ini in semanas:
+        fim = ini + timedelta(days=7)
+        qtd = sum(
+            1 for r in requirements
+            if r.criado_em and ini <= r.criado_em.date() < fim
+        )
+        evolucao.append({'semana': ini.isoformat(), 'total': qtd})
+
+    return {
+        'total': total,
+        'aprovados': aprovados,
+        'taxa_aprovacao': round(aprovados / total * 100, 1) if total else 0,
+        'por_status': dict(por_status),
+        'por_tipo': dict(por_tipo),
+        'por_prioridade': dict(por_prioridade),
+        'por_categoria': dict(por_categoria.most_common(8)),
+        'evolucao_semanal': evolucao,
+    }, 200
+
+
 @projects_bp.route('/<int:project_id>/ers.<string:formato>', methods=['POST'])
 @jwt_required()
 def download_ers(project_id, formato):
@@ -216,6 +271,7 @@ def download_ers(project_id, formato):
     body = request.get_json(silent=True) or {}
     topic_ids = body.get('topic_ids') or body.get('topicIds') or []
     requirement_ids = body.get('requirement_ids') or body.get('requirementIds') or []
+    incluir_nao_aprovados = bool(body.get('incluir_nao_aprovados') or body.get('includeNaoAprovados'))
     # formato comes from the URL path (ers.pdf / ers.docx)
 
     query = Requirement.query.filter_by(projeto_id=project_id, ativo=True)
@@ -225,10 +281,20 @@ def download_ers(project_id, formato):
     elif requirement_ids:
         query = query.filter(Requirement.id.in_(requirement_ids))
 
+    # RN002: a ERS só inclui requisitos aprovados, salvo confirmação explícita (RF05-A2)
+    if not incluir_nao_aprovados:
+        query = query.filter(Requirement.status.in_(('aprovado', 'aprovado_com_ressalvas')))
+
     requirements = query.order_by(Requirement.tipo, Requirement.codigo).all()
 
     if not requirements:
-        return {'message': 'Nenhum requisito encontrado para os filtros selecionados'}, 404
+        message = (
+            'Nenhum requisito encontrado para os filtros selecionados'
+            if incluir_nao_aprovados
+            else 'Nenhum requisito aprovado encontrado. Aprove requisitos ou '
+                 'inclua não-aprovados explicitamente para exportar.'
+        )
+        return {'message': message}, 404
 
     if formato == 'pdf':
         from app.utils.ers_generator import generate_ers_pdf
@@ -244,7 +310,8 @@ def download_ers(project_id, formato):
         filename = f'ERS_{project.nome.replace(" ", "_")}.docx'
 
     AuditLog.log(user_id, 'download_ers', 'projeto', project.id, project.id,
-                 {'formato': formato, 'total_requisitos': len(requirements)})
+                 {'formato': formato, 'total_requisitos': len(requirements),
+                  'incluir_nao_aprovados': incluir_nao_aprovados})
 
     db.session.commit()
 

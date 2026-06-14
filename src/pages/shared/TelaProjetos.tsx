@@ -4,7 +4,7 @@ import { formatRelativeTime, formatTime, calculateProgress } from '../../utils/h
 import AppLayout from '../../components/AppLayout';
 import type { Perfil } from '../../utils/constants';
 import { SECTOR_TEMPLATES } from '../../utils/sectorTemplates';
-type Page = 'projetos' | 'auditoria';
+type Page = 'projetos' | 'auditoria' | 'gestao';
 
 interface Props {
   perfil: Perfil;
@@ -13,6 +13,7 @@ interface Props {
   showCreateButton?: boolean;
   onProjectSelect: (project: ProjectData) => void;
   auditoriaContent?: React.ReactNode;
+  gestaoContent?: React.ReactNode;
 }
 
 export default function TelaProjetos({
@@ -22,6 +23,7 @@ export default function TelaProjetos({
   showCreateButton = false,
   onProjectSelect,
   auditoriaContent,
+  gestaoContent,
 }: Props) {
   const [activePage, setActivePage] = useState<Page>('projetos');
   const [projects, setProjects] = useState<ProjectData[]>([]);
@@ -189,10 +191,14 @@ export default function TelaProjetos({
 
   const topbarTitle = activePage === 'auditoria'
     ? 'Trilha de Auditoria'
+    : activePage === 'gestao'
+    ? 'Painel de Gestão'
     : customTitle || `Painel de Projetos`;
 
   const topbarSubtitle = activePage === 'auditoria'
     ? 'Registro cronológico de todas as ações realizadas nos projetos da plataforma.'
+    : activePage === 'gestao'
+    ? 'Visão consolidada e detalhada dos dados de todos os projetos.'
     : customSubtitle || 'Visão geral dos documentos ativos.';
 
   return (
@@ -339,6 +345,7 @@ export default function TelaProjetos({
           </>
         )}
         {activePage === 'auditoria' && (auditoriaContent || null)}
+        {activePage === 'gestao' && (gestaoContent || null)}
       </AppLayout>
 
       {/* MODAL EDITAR PROJETO */}

@@ -88,7 +88,7 @@ export default function CadastroPage() {
 
           {viaConvite && (
             <div style={{ background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: 10, padding: '12px 16px', marginBottom: 4, fontSize: 13, color: '#166534', lineHeight: 1.5 }}>
-              Você foi convidado como <strong>{perfilParam === 'cliente' ? 'Cliente' : 'Desenvolvedor'}</strong>. Após criar a conta, o convite será aceito automaticamente.
+              Você foi convidado como <strong>{perfilParam === 'cliente' ? 'Cliente' : perfilParam === 'gestor' ? 'Gestor' : 'Desenvolvedor'}</strong>. Após criar a conta, o convite será aceito automaticamente.
             </div>
           )}
 

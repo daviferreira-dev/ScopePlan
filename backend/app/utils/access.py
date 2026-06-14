@@ -11,7 +11,15 @@ def get_user_project_ids(user):
 
     elif user.perfil in ('analista', 'gestor'):
         projects = Project.query.filter_by(gestor_id=user.id, ativo=True).with_entities(Project.id).all()
-        return [p[0] for p in projects]
+        ids = [p[0] for p in projects]
+        # Gestores convidados para um projeto acessam via vínculo de membro
+        if user.perfil == 'gestor':
+            from app.models.membro_projeto import MembroProjeto
+            membro_ids = [m[0] for m in db.session.query(MembroProjeto.projeto_id).filter_by(
+                usuario_id=user.id
+            ).all()]
+            ids = list(set(ids + membro_ids))
+        return ids
 
     elif user.perfil == 'desenvolvedor':
         from app.models.membro_projeto import MembroProjeto
@@ -41,6 +49,11 @@ def check_user_project_access(user, projeto_id):
 
     elif user.perfil in ('analista', 'gestor'):
         if project.gestor_id != user.id:
+            # Gestor convidado: acesso via vínculo de membro do projeto
+            if user.perfil == 'gestor':
+                from app.models.membro_projeto import MembroProjeto
+                if MembroProjeto.query.filter_by(projeto_id=projeto_id, usuario_id=user.id).first():
+                    return project, None
             return project, ({'message': 'Acesso não autorizado a este projeto'}, 403)
 
     elif user.perfil == 'desenvolvedor':
@@ -73,7 +86,9 @@ def check_user_requirement_access(user, requirement):
             return requirement, ({'message': 'Acesso não autorizado a este requisito'}, 403)
     elif user.perfil == 'gestor':
         if project.gestor_id != user.id:
-            return requirement, ({'message': 'Acesso não autorizado a este requisito'}, 403)
+            from app.models.membro_projeto import MembroProjeto
+            if not MembroProjeto.query.filter_by(projeto_id=project_id, usuario_id=user.id).first():
+                return requirement, ({'message': 'Acesso não autorizado a este requisito'}, 403)
     elif user.perfil == 'desenvolvedor':
         from app.models.membro_projeto import MembroProjeto
         is_member = MembroProjeto.query.filter_by(

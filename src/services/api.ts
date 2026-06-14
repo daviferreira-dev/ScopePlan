@@ -346,6 +346,8 @@ export interface ProjectMetrics {
   por_prioridade: Record<string, number>;
   por_categoria: Record<string, number>;
   evolucao_semanal: { semana: string; total: number }[];
+  tempo_medio_aprovacao_horas: number | null;
+  aprovacao_amostras: number;
 }
 
 export const projectsApi = {
@@ -696,7 +698,7 @@ export interface ConviteData {
   id: number;
   projeto_id: number;
   email: string;
-  perfil: 'cliente' | 'desenvolvedor';
+  perfil: 'cliente' | 'desenvolvedor' | 'gestor';
   token: string;
   status: 'pendente' | 'aceito' | 'cancelado';
   expirado: boolean;
@@ -718,7 +720,7 @@ export const convitesApi = {
     return apiFetch<{ convites: ConviteData[] }>(`/projetos/${projectId}/convites`);
   },
 
-  criar(projectId: number, email: string, perfil: 'cliente' | 'desenvolvedor') {
+  criar(projectId: number, email: string, perfil: 'cliente' | 'desenvolvedor' | 'gestor') {
     return apiFetch<{ message: string; convite: ConviteData }>(`/projetos/${projectId}/convites`, {
       method: 'POST',
       body: JSON.stringify({ email, perfil }),

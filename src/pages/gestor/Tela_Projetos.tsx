@@ -6,6 +6,7 @@ import TelaItens from '../shared/TelaItens';
 import ValidacaoRequisitos from '../shared/ValidacaoRequisitos';
 import Auditoria from '../shared/Auditoria';
 import DownloadERS from '../shared/DownloadERS';
+import GestaoDashboard from './GestaoDashboard';
 
 export default function GestorProjetos() {
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
@@ -87,6 +88,7 @@ export default function GestorProjetos() {
       showCreateButton
       onProjectSelect={handleProjectSelect}
       auditoriaContent={<Auditoria perfil="gestor" />}
+      gestaoContent={<GestaoDashboard onOpenProject={handleProjectSelect} />}
     />
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { requirementsApi } from "../../services/api";
+import { requirementsApi, commentsApi } from "../../services/api";
 import type { RequirementData, ProjectData, AssinaturaData } from "../../services/api";
 import AppLayout from "../../components/AppLayout";
 import { statusClass, statusLabel } from "../../utils/helpers";
@@ -30,6 +30,15 @@ interface Props {
 
 const EMPTY_TITLE = "";
 
+type Prioridade = 'baixa' | 'media' | 'alta' | 'critica';
+
+const PRIORIDADES: { key: Prioridade; label: string; color: string }[] = [
+	{ key: 'baixa', label: 'Baixa', color: '#6b7280' },
+	{ key: 'media', label: 'Média', color: '#3b82f6' },
+	{ key: 'alta', label: 'Alta', color: '#eab308' },
+	{ key: 'critica', label: 'Crítica', color: '#dc2626' },
+];
+
 function AddRequirementModal({
 	topicName,
 	onClose,
@@ -38,13 +47,14 @@ function AddRequirementModal({
 }: {
 	topicName: string;
 	onClose: () => void;
-	onSave: (title: string, description: string) => void;
+	onSave: (title: string, description: string, prioridade: Prioridade) => void;
 	currentUser: { id: number; nome: string };
 }) {
 	const [title, setTitle] = useState(EMPTY_TITLE);
 	// We use a stable fake requirementId for the new-req editor room so it doesn't
 	// conflict with real rooms. Using 0 is safe since real IDs start at 1.
 	const [description, setDescription] = useState("");
+	const [prioridade, setPrioridade] = useState<Prioridade>('media');
 	const [useEditor, setUseEditor] = useState(false);
 
 	const isValid = title.trim() !== "" && description.trim() !== "";
@@ -70,6 +80,29 @@ function AddRequirementModal({
 							value={title}
 							onChange={(e) => setTitle(e.target.value)}
 						/>
+					</div>
+
+					<div className="form-group">
+						<label className="form-label">Prioridade</label>
+						<div style={{ display: 'flex', gap: 8 }}>
+							{PRIORIDADES.map((p) => (
+								<button
+									key={p.key}
+									type="button"
+									onClick={() => setPrioridade(p.key)}
+									style={{
+										flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+										cursor: 'pointer', fontFamily: 'Sora, sans-serif',
+										border: `1.5px solid ${prioridade === p.key ? p.color : 'var(--card-border, #e2e8f0)'}`,
+										background: prioridade === p.key ? `${p.color}14` : 'transparent',
+										color: prioridade === p.key ? p.color : 'var(--text-muted)',
+										transition: 'all 0.15s',
+									}}
+								>
+									{p.label}
+								</button>
+							))}
+						</div>
 					</div>
 
 					<div className="form-group">
@@ -107,7 +140,7 @@ function AddRequirementModal({
 						<button className="btn-cancel--outlined" onClick={onClose}>
 							Cancelar
 						</button>
-						<button className="btn-save" onClick={() => isValid && onSave(title, description)} disabled={!isValid}>
+						<button className="btn-save" onClick={() => isValid && onSave(title, description, prioridade)} disabled={!isValid}>
 							Salvar Requisito
 						</button>
 					</div>
@@ -134,8 +167,15 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 	const [showModal, setShowModal] = useState(false);
 	const [observationInputs, setObservationInputs] = useState<Record<string, string>>({});
 	const [showObservationFor, setShowObservationFor] = useState<Record<number, boolean>>({});
+	const [rejectInputs, setRejectInputs] = useState<Record<number, string>>({});
+	const [showRejectFor, setShowRejectFor] = useState<Record<number, boolean>>({});
 	const [viewingHistory, setViewingHistory] = useState<{ id: number; title: string } | null>(null);
 	const [editingReqId, setEditingReqId] = useState<number | null>(null);
+	const [editTitulo, setEditTitulo] = useState('');
+	const [editDescricao, setEditDescricao] = useState('');
+	const [editPrioridade, setEditPrioridade] = useState<Prioridade>('media');
+	const [editCollab, setEditCollab] = useState(false);
+	const [editSaving, setEditSaving] = useState(false);
 	const [openComments, setOpenComments] = useState<Record<number, boolean>>({});
 	const [assinaturas, setAssinaturas] = useState<Record<number, AssinaturaData[]>>({});
 	const [jaAssinei, setJaAssinei] = useState<Set<number>>(new Set());
@@ -185,11 +225,22 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 	};
 
 	const handleReject = async (reqId: number) => {
+		const motivo = rejectInputs[reqId]?.trim();
+		if (!motivo) {
+			addToast("Descreva o motivo da reprovação para o analista ajustar.", "error");
+			return;
+		}
 		setLoadingAction(reqId);
 		try {
-			await requirementsApi.createValidacao(reqId, { resultado: "rejeitado" });
+			// Registra a reprovação com a devolutiva e publica o comentário do cliente
+			await requirementsApi.createValidacao(reqId, { resultado: "rejeitado", comentario: motivo });
+			await commentsApi.create(reqId, `Reprovação do cliente: ${motivo}`);
 			const topicReqs = await refreshRequirements();
 			setRequirements(topicReqs);
+			setRejectInputs(prev => ({ ...prev, [reqId]: "" }));
+			setShowRejectFor(prev => ({ ...prev, [reqId]: false }));
+			setOpenComments(prev => ({ ...prev, [reqId]: true }));
+			addToast("Requisito reprovado. Devolutiva enviada ao analista.", "success");
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : "Erro desconhecido";
 			console.error("Erro ao rejeitar:", msg);
@@ -204,11 +255,16 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 		if (!text) return;
 		try {
 			setLoadingAction(reqId);
-			await requirementsApi.createValidacao(reqId, { resultado: 'aprovado_com_ressalvas', comentario: text });
+			// Observação é um comentário ao analista — NÃO aprova/reprova nem muda o status,
+			// então o cliente continua podendo aprovar ou reprovar depois.
+			await commentsApi.create(reqId, `Observação do cliente: ${text}`);
 			setObservationInputs(prev => ({ ...prev, [reqId]: "" }));
+			setShowObservationFor(prev => ({ ...prev, [reqId]: false }));
+			setOpenComments(prev => ({ ...prev, [reqId]: true }));
+			addToast("Observação enviada ao analista.", "success");
 		} catch (err) {
 			console.error('Erro ao adicionar observacao:', err);
-			addToast("Erro ao adicionar observação", "error");
+			addToast("Erro ao enviar observação", "error");
 		} finally {
 			setLoadingAction(null);
 		}
@@ -227,13 +283,14 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 		}
 	};
 
-	const handleSaveRequirement = async (title: string, description: string) => {
+	const handleSaveRequirement = async (title: string, description: string, prioridade: string) => {
 		try {
 			const tipo = TOPIC_TYPE_MAP[topic.id] || topic.type || "funcional";
 			await requirementsApi.create(project.id, {
 				titulo: title,
 				descricao: description,
 				tipo,
+				prioridade,
 			});
 			const res = await requirementsApi.list(project.id);
 			setRequirements(res.requisitos.filter(r => r.tipo === tipo));
@@ -279,17 +336,32 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 		}
 	};
 
-	const handleUpdateRequirement = async (reqId: number, newDescription: string) => {
+	const startEdit = (req: RequirementData) => {
+		setEditingReqId(req.id);
+		setEditTitulo(req.titulo || '');
+		setEditDescricao(req.descricao || '');
+		setEditPrioridade((req.prioridade as Prioridade) || 'media');
+		setEditCollab(false);
+	};
+
+	const handleSaveEdit = async (reqId: number) => {
+		if (!editTitulo.trim()) { addToast("O título é obrigatório", "error"); return; }
+		setEditSaving(true);
 		try {
-			await requirementsApi.update(project.id, reqId, { descricao: newDescription });
-			setRequirements(prev =>
-				prev.map(r => r.id === reqId ? { ...r, descricao: newDescription } : r)
-			);
+			const resp = await requirementsApi.update(project.id, reqId, {
+				titulo: editTitulo.trim(),
+				descricao: editDescricao,
+				prioridade: editPrioridade,
+			});
+			const updated = resp.requisito;
+			setRequirements(prev => prev.map(r => r.id === reqId ? { ...r, ...updated } : r));
 			setEditingReqId(null);
 			addToast("Requisito atualizado", "success");
 		} catch (err: unknown) {
 			const msg = err instanceof Error ? err.message : "Erro desconhecido";
 			addToast("Erro ao atualizar requisito: " + msg, "error");
+		} finally {
+			setEditSaving(false);
 		}
 	};
 
@@ -357,14 +429,75 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 
 							<h3 className={styles['req-title']}>{req.titulo}</h3>
 							{editingReqId === req.id ? (
-								<div style={{ margin: '8px 0' }}>
-									<RequirementEditor
-										requirementId={req.id}
-										initialContent={req.descricao || ''}
-										currentUser={safeUser}
-										onSave={(text) => handleUpdateRequirement(req.id, text)}
-										onCancel={() => setEditingReqId(null)}
-									/>
+								<div style={{ margin: '8px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+									<div className="form-group">
+										<label className="form-label">Título *</label>
+										<input
+											className="form-input"
+											value={editTitulo}
+											onChange={(e) => setEditTitulo(e.target.value)}
+										/>
+									</div>
+									<div className="form-group">
+										<label className="form-label">Prioridade</label>
+										<div style={{ display: 'flex', gap: 8 }}>
+											{PRIORIDADES.map((p) => (
+												<button
+													key={p.key}
+													type="button"
+													onClick={() => setEditPrioridade(p.key)}
+													style={{
+														flex: 1, padding: '8px 0', borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+														cursor: 'pointer', fontFamily: 'Sora, sans-serif',
+														border: `1.5px solid ${editPrioridade === p.key ? p.color : 'var(--card-border, #e2e8f0)'}`,
+														background: editPrioridade === p.key ? `${p.color}14` : 'transparent',
+														color: editPrioridade === p.key ? p.color : 'var(--text-muted)',
+														transition: 'all 0.15s',
+													}}
+												>
+													{p.label}
+												</button>
+											))}
+										</div>
+									</div>
+									<div className="form-group">
+										<label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+											Descrição
+											<button
+												type="button"
+												style={{ fontSize: 11, padding: '1px 8px', borderRadius: 4, border: '1px solid #c9e8cf', background: editCollab ? '#c9e8cf' : 'transparent', cursor: 'pointer', color: '#2d6a3a' }}
+												onClick={() => setEditCollab(v => !v)}
+											>
+												{editCollab ? 'Texto simples' : 'Editor colaborativo'}
+											</button>
+										</label>
+										{editCollab ? (
+											<RequirementEditor
+												requirementId={req.id}
+												initialContent={editDescricao}
+												currentUser={safeUser}
+												onSave={(text) => { setEditDescricao(text); setEditCollab(false); }}
+												onCancel={() => setEditCollab(false)}
+											/>
+										) : (
+											<textarea
+												className="form-textarea"
+												value={editDescricao}
+												onChange={(e) => setEditDescricao(e.target.value)}
+												rows={4}
+											/>
+										)}
+									</div>
+									{!editCollab && (
+										<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+											<button className="btn-cancel--outlined" onClick={() => setEditingReqId(null)} disabled={editSaving}>
+												Cancelar
+											</button>
+											<button className="btn-save" onClick={() => handleSaveEdit(req.id)} disabled={editSaving || !editTitulo.trim()}>
+												{editSaving ? 'Salvando...' : 'Salvar alterações'}
+											</button>
+										</div>
+									)}
 								</div>
 							) : (
 								<div className={styles['req-desc']}>
@@ -373,19 +506,56 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 										<button
 											className={styles['req-meta-button']}
 											style={{ marginTop: 4 }}
-											onClick={() => setEditingReqId(req.id)}
+											onClick={() => startEdit(req)}
 										>
 											<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 												<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
 												<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
 											</svg>
-											Editar colaborativamente
+											Editar requisito
 										</button>
 									)}
 								</div>
 							)}
 
 							<RequistoAnexos reqId={req.id} canEdit={canAddRequirements || perfil === 'gestor'} />
+
+							{/* Devolutiva: requisito reprovado pelo cliente */}
+							{req.status === 'rejeitado' && (
+								<div
+									style={{
+										display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between',
+										gap: 10, margin: '10px 0', padding: '10px 14px', borderRadius: 10,
+										background: '#fef2f2', border: '1px solid #fecaca',
+									}}
+								>
+									<span style={{ fontSize: 13, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: 8 }}>
+										<svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+											<path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+										</svg>
+										Reprovado pelo cliente.&nbsp;
+										{canAddRequirements ? 'Ajuste o requisito e reenvie para aprovação.' : 'Aguardando ajuste do analista.'}
+									</span>
+									<span style={{ display: 'flex', gap: 8 }}>
+										<button
+											className={styles['req-meta-button']}
+											onClick={() => setOpenComments(prev => ({ ...prev, [req.id]: true }))}
+										>
+											Ver devolutiva
+										</button>
+										{canAddRequirements && (
+											<button
+												className={styles['btn-approve']}
+												onClick={() => handleSubmitReview(req.id)}
+												disabled={loadingAction === req.id}
+												style={{ background: 'var(--blue-500, #3b82f6)', borderColor: 'var(--blue-500, #3b82f6)' }}
+											>
+												{loadingAction === req.id ? 'Reenviando...' : 'Reenviar para aprovação'}
+											</button>
+										)}
+									</span>
+								</div>
+							)}
 
 							{/* Analista: enviar para aprovação (só quando rascunho) */}
 							{canAddRequirements && req.status === 'rascunho' && (
@@ -406,33 +576,65 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 
 							{/* Cliente: aprovar ou reprovar (só quando em revisão) */}
 							{canValidate && req.status === 'em_revisao' && (
-								<div className={styles['req-actions']}>
-									<button className={styles['btn-reject']} onClick={() => handleReject(req.id)} disabled={loadingAction === req.id}>
-										<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-											<path d="M18 6L6 18M6 6l12 12"/>
-										</svg>
-										{loadingAction === req.id ? 'Reprovando...' : 'Reprovar'}
-									</button>
-									<button className={styles['btn-approve']} onClick={() => handleApprove(req.id)} disabled={loadingAction === req.id}>
-										<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-											<path d="M5 13l4 4L19 7"/>
-										</svg>
-										{loadingAction === req.id ? 'Aprovando...' : 'Aprovar'}
-									</button>
-									{showObservation && (
+								<>
+									<div className={styles['req-actions']}>
 										<button
-											className={styles['btn-observe']}
-											onClick={() => setShowObservationFor(prev => ({ ...prev, [req.id]: !prev[req.id] }))}
+											className={styles['btn-reject']}
+											onClick={() => setShowRejectFor(prev => ({ ...prev, [req.id]: !prev[req.id] }))}
 											disabled={loadingAction === req.id}
 										>
 											<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
-												<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-												<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+												<path d="M18 6L6 18M6 6l12 12"/>
 											</svg>
-											Observar
+											Reprovar
 										</button>
+										<button className={styles['btn-approve']} onClick={() => handleApprove(req.id)} disabled={loadingAction === req.id}>
+											<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+												<path d="M5 13l4 4L19 7"/>
+											</svg>
+											{loadingAction === req.id ? 'Aprovando...' : 'Aprovar'}
+										</button>
+										{showObservation && (
+											<button
+												className={styles['btn-observe']}
+												onClick={() => setShowObservationFor(prev => ({ ...prev, [req.id]: !prev[req.id] }))}
+												disabled={loadingAction === req.id}
+											>
+												<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+													<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+													<path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+												</svg>
+												Observar
+											</button>
+										)}
+									</div>
+									{showRejectFor[req.id] && (
+										<div className={styles['req-observations']}>
+											<div className={styles['observations-title']}>
+												<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+													<path d="M18 6L6 18M6 6l12 12"/>
+												</svg>
+												Motivo da reprovação (devolutiva para o analista)
+											</div>
+											<div className={styles['observation-input-wrap']}>
+												<input
+													className={styles['observation-input']}
+													placeholder="Explique o que precisa ser ajustado..."
+													value={rejectInputs[req.id] || ""}
+													onChange={(e) => setRejectInputs(prev => ({ ...prev, [req.id]: e.target.value }))}
+													onKeyDown={(e) => { if (e.key === "Enter") handleReject(req.id); }}
+												/>
+												<button
+													className={styles['btn-send-obs']}
+													onClick={() => handleReject(req.id)}
+													disabled={!rejectInputs[req.id]?.trim() || loadingAction === req.id}
+												>
+													{loadingAction === req.id ? 'Reprovando...' : 'Confirmar reprovação'}
+												</button>
+											</div>
+										</div>
 									)}
-								</div>
+								</>
 							)}
 
 							<div className={styles['req-meta-row']} style={{ borderTop: '1px solid var(--card-border)', paddingTop: 10, marginTop: 4 }}>

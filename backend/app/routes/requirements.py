@@ -371,12 +371,14 @@ def submit_review(requirement_id):
     if access_error:
         return access_error
 
-    if requirement.status != 'rascunho':
-        return {'message': 'Apenas requisitos em rascunho podem ser submetidos para revisão'}, 400
+    # Rascunho (1ª submissão) ou rejeitado (reenvio após ajuste/devolutiva)
+    if requirement.status not in ('rascunho', 'rejeitado'):
+        return {'message': 'Apenas requisitos em rascunho ou reprovados podem ser submetidos para revisão'}, 400
 
+    status_anterior = requirement.status
     requirement.status = 'em_revisao'
     detalhes = {'codigo': requirement.codigo, 'titulo': requirement.titulo,
-                'status_anterior': 'rascunho', 'status_atual': 'em_revisao'}
+                'status_anterior': status_anterior, 'status_atual': 'em_revisao'}
     AuditLog.log(user_id, 'submissao_revisao', 'requisito', requirement.id, requirement.projeto_id,
                  {k: v for k, v in detalhes.items() if v is not None})
     db.session.commit()
@@ -413,6 +415,7 @@ def create_validacao(requirement_id):
     if existing:
         existing.resultado = data['resultado']
         existing.comentario = data.get('comentario')
+        validacao = existing
     else:
         validacao = Validacao(
             requisito_id=requirement_id,

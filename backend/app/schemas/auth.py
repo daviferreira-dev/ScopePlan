@@ -32,7 +32,7 @@ class UserRegistrationSchema(Schema):
     nome = fields.String(required=True, validate=validate.Length(min=2, max=120))
     email = fields.Email(required=True, validate=validate_email_domain)
     senha = fields.String(required=True, validate=validate_password_strength)
-    perfil = fields.String(required=True, validate=validate.OneOf(['analista', 'desenvolvedor', 'cliente']))
+    perfil = fields.String(required=True, validate=validate.OneOf(['analista', 'desenvolvedor', 'cliente', 'gestor']))
 
 
 class UserLoginSchema(Schema):

@@ -27,7 +27,8 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 // Perfis que podem ser convidados
-const PERFIS_CONVITE = ['desenvolvedor', 'cliente'] as const;
+const PERFIS_CONVITE = ['desenvolvedor', 'cliente', 'gestor'] as const;
+type PerfilConvite = typeof PERFIS_CONVITE[number];
 
 type UsuarioEncontrado = { nome: string; perfil: string } | null;
 
@@ -37,7 +38,7 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
   const [sending, setSending] = useState(false);
 
   const [email, setEmail] = useState('');
-  const [perfil, setPerfil] = useState<'cliente' | 'desenvolvedor'>('desenvolvedor');
+  const [perfil, setPerfil] = useState<PerfilConvite>('desenvolvedor');
   const [verificando, setVerificando] = useState(false);
   const [usuarioEncontrado, setUsuarioEncontrado] = useState<UsuarioEncontrado>(null);
   const [perfilBloqueado, setPerfilBloqueado] = useState(false);
@@ -69,8 +70,8 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
       try {
         const res = await convitesApi.verificarEmail(trimmed);
         if (res.existe) {
-          const pConvite = PERFIS_CONVITE.includes(res.perfil as 'cliente' | 'desenvolvedor')
-            ? res.perfil as 'cliente' | 'desenvolvedor'
+          const pConvite = PERFIS_CONVITE.includes(res.perfil as PerfilConvite)
+            ? res.perfil as PerfilConvite
             : null;
 
           setUsuarioEncontrado({ nome: res.nome, perfil: res.perfil });
@@ -100,7 +101,7 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
     if (!trimmed) return;
 
     // Bloqueia convite para perfis não permitidos
-    if (usuarioEncontrado && !PERFIS_CONVITE.includes(usuarioEncontrado.perfil as 'cliente' | 'desenvolvedor')) {
+    if (usuarioEncontrado && !PERFIS_CONVITE.includes(usuarioEncontrado.perfil as PerfilConvite)) {
       setError(`${usuarioEncontrado.nome} tem perfil "${PERFIL_LABELS[usuarioEncontrado.perfil] ?? usuarioEncontrado.perfil}" e não pode ser convidado para projetos.`);
       return;
     }
@@ -141,7 +142,7 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
   }
 
   const naoConvidavel = usuarioEncontrado &&
-    !PERFIS_CONVITE.includes(usuarioEncontrado.perfil as 'cliente' | 'desenvolvedor');
+    !PERFIS_CONVITE.includes(usuarioEncontrado.perfil as PerfilConvite);
 
   const pendentes = convites.filter(c => c.status === 'pendente' && !c.expirado);
   const outros    = convites.filter(c => c.status !== 'pendente' || c.expirado);

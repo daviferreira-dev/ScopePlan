@@ -6,11 +6,13 @@ import { useAuth } from '../contexts/AuthContext';
 const PERFIL_LABELS: Record<string, string> = {
   cliente: 'Cliente',
   desenvolvedor: 'Desenvolvedor',
+  gestor: 'Gestor',
 };
 
 const PERFIL_DESC: Record<string, string> = {
   cliente: 'Poderá visualizar os requisitos e o progresso do projeto.',
   desenvolvedor: 'Poderá criar e editar requisitos do projeto.',
+  gestor: 'Poderá acompanhar e gerir os requisitos e métricas do projeto.',
 };
 
 export default function AceitarConvite() {

@@ -1,7 +1,7 @@
 from flask import Blueprint, request, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from sqlalchemy.orm import joinedload
-from app.models import Project, User, Requirement, AuditLog
+from app.models import Project, User, Requirement, AuditLog, Validacao
 from app.schemas import ProjectCreateSchema, ProjectUpdateSchema
 from app.utils.decorators import validate_json
 from app.utils.access import check_user_project_access, get_user_project_ids
@@ -226,6 +226,35 @@ def project_metrics(project_id):
     total = len(requirements)
     aprovados = por_status.get('aprovado', 0) + por_status.get('aprovado_com_ressalvas', 0)
 
+    # Tempo médio até a aprovação: da criação do requisito à validação que o aprovou.
+    req_by_id = {r.id: r for r in requirements}
+    ultima_aprovacao = {}
+    if req_by_id:
+        validacoes = Validacao.query.filter(
+            Validacao.requisito_id.in_(list(req_by_id.keys())),
+            Validacao.resultado.in_(('aprovado', 'aprovado_com_ressalvas')),
+        ).all()
+        for v in validacoes:
+            if not v.validado_em:
+                continue
+            atual = ultima_aprovacao.get(v.requisito_id)
+            if atual is None or v.validado_em > atual:
+                ultima_aprovacao[v.requisito_id] = v.validado_em
+
+    def _naive(dt):
+        return dt.replace(tzinfo=None) if dt and dt.tzinfo else dt
+
+    duracoes = []
+    for rid, aprovado_em in ultima_aprovacao.items():
+        r = req_by_id.get(rid)
+        if not r or not r.criado_em:
+            continue
+        delta = (_naive(aprovado_em) - _naive(r.criado_em)).total_seconds()
+        if delta >= 0:
+            duracoes.append(delta)
+
+    tempo_medio_aprovacao_horas = round(sum(duracoes) / len(duracoes) / 3600, 1) if duracoes else None
+
     # Evolução: requisitos criados por semana nas últimas 8 semanas (ISO week)
     hoje = datetime.now(timezone.utc).date()
     inicio_semana_atual = hoje - timedelta(days=hoje.weekday())
@@ -248,6 +277,8 @@ def project_metrics(project_id):
         'por_prioridade': dict(por_prioridade),
         'por_categoria': dict(por_categoria.most_common(8)),
         'evolucao_semanal': evolucao,
+        'tempo_medio_aprovacao_horas': tempo_medio_aprovacao_horas,
+        'aprovacao_amostras': len(duracoes),
     }, 200
 
 

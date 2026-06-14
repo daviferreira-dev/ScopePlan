@@ -164,6 +164,15 @@ const AuditIcon = (
   </svg>
 );
 
+const GestaoIcon = (
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+    <path d="M3 3v18h18" />
+    <rect x="7" y="11" width="3" height="6" rx="0.5" />
+    <rect x="12" y="7" width="3" height="10" rx="0.5" />
+    <rect x="17" y="13" width="3" height="4" rx="0.5" />
+  </svg>
+);
+
 export const NAV_ITEMS: Record<string, NavItem[]> = {
   analista: [
     { key: 'projetos', label: 'Projetos', icon: ProjectsIcon },
@@ -177,6 +186,8 @@ export const NAV_ITEMS: Record<string, NavItem[]> = {
     { key: 'projetos', label: 'Meus Projetos', icon: ProjectsIcon },
   ],
   gestor: [
-    { key: 'projetos', label: 'Painel Gerencial', icon: ProjectsIcon },
+    { key: 'projetos', label: 'Projetos', icon: ProjectsIcon },
+    { key: 'auditoria', label: 'Auditoria', icon: AuditIcon },
+    { key: 'gestao', label: 'Gestão', icon: GestaoIcon },
   ],
 };

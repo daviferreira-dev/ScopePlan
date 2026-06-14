@@ -8,7 +8,6 @@ import { useToast } from "../../hooks/useToast";
 import ToastContainer from "../../components/ToastContainer";
 import styles from './ValidacaoRequisitos.module.css';
 import RequirementHistory from "./RequirementHistory";
-import RequirementEditor from "../../components/RequirementEditor";
 import Comentarios from "./Comentarios";
 import RequistoAnexos from "../../components/RequistoAnexos";
 
@@ -43,19 +42,14 @@ function AddRequirementModal({
 	topicName,
 	onClose,
 	onSave,
-	currentUser,
 }: {
 	topicName: string;
 	onClose: () => void;
 	onSave: (title: string, description: string, prioridade: Prioridade) => void;
-	currentUser: { id: number; nome: string };
 }) {
 	const [title, setTitle] = useState(EMPTY_TITLE);
-	// We use a stable fake requirementId for the new-req editor room so it doesn't
-	// conflict with real rooms. Using 0 is safe since real IDs start at 1.
 	const [description, setDescription] = useState("");
 	const [prioridade, setPrioridade] = useState<Prioridade>('media');
-	const [useEditor, setUseEditor] = useState(false);
 
 	const isValid = title.trim() !== "" && description.trim() !== "";
 
@@ -106,59 +100,36 @@ function AddRequirementModal({
 					</div>
 
 					<div className="form-group">
-						<label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-							Descrição *
-							<button
-								type="button"
-								style={{ fontSize: 11, padding: '1px 8px', borderRadius: 4, border: '1px solid #c9e8cf', background: useEditor ? '#c9e8cf' : 'transparent', cursor: 'pointer', color: '#2d6a3a' }}
-								onClick={() => setUseEditor(v => !v)}
-							>
-								{useEditor ? 'Texto simples' : 'Editor colaborativo'}
-							</button>
-						</label>
-						{useEditor ? (
-							<RequirementEditor
-								requirementId={0}
-								initialContent={description}
-								currentUser={currentUser}
-								onSave={(text) => { setDescription(text); setUseEditor(false); }}
-								onCancel={() => setUseEditor(false)}
-							/>
-						) : (
-							<textarea
-								className="form-textarea"
-								placeholder="Descreva o requisito em detalhe..."
-								value={description}
-								onChange={(e) => setDescription(e.target.value)}
-							/>
-						)}
+						<label className="form-label">Descrição *</label>
+						<textarea
+							className="form-textarea"
+							placeholder="Descreva o requisito em detalhe..."
+							value={description}
+							onChange={(e) => setDescription(e.target.value)}
+						/>
 					</div>
 				</div>
 
-				{!useEditor && (
-					<div className="modal-footer">
-						<button className="btn-cancel--outlined" onClick={onClose}>
-							Cancelar
-						</button>
-						<button className="btn-save" onClick={() => isValid && onSave(title, description, prioridade)} disabled={!isValid}>
-							Salvar Requisito
-						</button>
-					</div>
-				)}
+				<div className="modal-footer">
+					<button className="btn-cancel--outlined" onClick={onClose}>
+						Cancelar
+					</button>
+					<button className="btn-save" onClick={() => isValid && onSave(title, description, prioridade)} disabled={!isValid}>
+						Salvar Requisito
+					</button>
+				</div>
 			</div>
 		</div>
 	);
 }
 
-export default function ValidacaoRequisitos({ project, topic, onBack, perfil, currentUser }: Props) {
+export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: Props) {
 	const { toasts, addToast, removeToast } = useToast();
 
 	const canAddRequirements = perfil === 'analista';
 	const canValidate = perfil === 'cliente';
 	const showObservation = perfil === 'cliente';
 	const canEditInline = perfil === 'analista';
-
-	const safeUser = currentUser ?? { id: 0, nome: 'Usuário' };
 
 	const [requirements, setRequirements] = useState<RequirementData[]>(topic.requirements || []);
 	const [loading, setLoading] = useState(true);
@@ -174,7 +145,6 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 	const [editTitulo, setEditTitulo] = useState('');
 	const [editDescricao, setEditDescricao] = useState('');
 	const [editPrioridade, setEditPrioridade] = useState<Prioridade>('media');
-	const [editCollab, setEditCollab] = useState(false);
 	const [editSaving, setEditSaving] = useState(false);
 	const [openComments, setOpenComments] = useState<Record<number, boolean>>({});
 	const [assinaturas, setAssinaturas] = useState<Record<number, AssinaturaData[]>>({});
@@ -341,7 +311,6 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 		setEditTitulo(req.titulo || '');
 		setEditDescricao(req.descricao || '');
 		setEditPrioridade((req.prioridade as Prioridade) || 'media');
-		setEditCollab(false);
 	};
 
 	const handleSaveEdit = async (reqId: number) => {
@@ -461,43 +430,22 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 										</div>
 									</div>
 									<div className="form-group">
-										<label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-											Descrição
-											<button
-												type="button"
-												style={{ fontSize: 11, padding: '1px 8px', borderRadius: 4, border: '1px solid #c9e8cf', background: editCollab ? '#c9e8cf' : 'transparent', cursor: 'pointer', color: '#2d6a3a' }}
-												onClick={() => setEditCollab(v => !v)}
-											>
-												{editCollab ? 'Texto simples' : 'Editor colaborativo'}
-											</button>
-										</label>
-										{editCollab ? (
-											<RequirementEditor
-												requirementId={req.id}
-												initialContent={editDescricao}
-												currentUser={safeUser}
-												onSave={(text) => { setEditDescricao(text); setEditCollab(false); }}
-												onCancel={() => setEditCollab(false)}
-											/>
-										) : (
-											<textarea
-												className="form-textarea"
-												value={editDescricao}
-												onChange={(e) => setEditDescricao(e.target.value)}
-												rows={4}
-											/>
-										)}
+										<label className="form-label">Descrição</label>
+										<textarea
+											className="form-textarea"
+											value={editDescricao}
+											onChange={(e) => setEditDescricao(e.target.value)}
+											rows={4}
+										/>
 									</div>
-									{!editCollab && (
-										<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-											<button className="btn-cancel--outlined" onClick={() => setEditingReqId(null)} disabled={editSaving}>
-												Cancelar
-											</button>
-											<button className="btn-save" onClick={() => handleSaveEdit(req.id)} disabled={editSaving || !editTitulo.trim()}>
-												{editSaving ? 'Salvando...' : 'Salvar alterações'}
-											</button>
-										</div>
-									)}
+									<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+										<button className="btn-cancel--outlined" onClick={() => setEditingReqId(null)} disabled={editSaving}>
+											Cancelar
+										</button>
+										<button className="btn-save" onClick={() => handleSaveEdit(req.id)} disabled={editSaving || !editTitulo.trim()}>
+											{editSaving ? 'Salvando...' : 'Salvar alterações'}
+										</button>
+									</div>
 								</div>
 							) : (
 								<div className={styles['req-desc']}>
@@ -764,7 +712,6 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 					topicName={topic.name}
 					onClose={() => setShowModal(false)}
 					onSave={handleSaveRequirement}
-					currentUser={safeUser}
 				/>
 			)}
 

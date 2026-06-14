@@ -36,13 +36,18 @@ _WEAK_SECRETS = {
 }
 
 
+def _get_engine_options():
+    uri = _get_database_uri()
+    opts = {'pool_pre_ping': True, 'pool_recycle': 3600}
+    if uri.startswith('sqlite'):
+        opts['connect_args'] = {'timeout': 20}
+    return opts
+
+
 class Config:
     SQLALCHEMY_DATABASE_URI = _get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_pre_ping': True,
-        'pool_recycle': 3600,
-    }
+    SQLALCHEMY_ENGINE_OPTIONS = _get_engine_options()
 
     # JWT Configuration
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=2)

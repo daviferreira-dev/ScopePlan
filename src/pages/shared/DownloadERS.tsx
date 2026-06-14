@@ -21,6 +21,23 @@ interface Props {
 
 type Format = "pdf" | "docx";
 
+// Espelham os rótulos/cores usados na geração do PDF (ers_generator.py)
+const STATUS_LABELS: Record<string, string> = {
+	rascunho: 'Rascunho', em_revisao: 'Em Revisão', aprovado: 'Aprovado',
+	aprovado_com_ressalvas: 'Aprovado c/ Ressalvas', rejeitado: 'Rejeitado',
+};
+const PRIORITY_LABELS: Record<string, string> = {
+	baixa: 'Baixa', media: 'Média', alta: 'Alta', critica: 'Crítica',
+};
+const STATUS_COLORS: Record<string, string> = {
+	aprovado: '#16a34a', aprovado_com_ressalvas: '#eab308', rejeitado: '#dc2626',
+	em_revisao: '#3b82f6', rascunho: '#6b7280',
+};
+const PRIORITY_COLORS: Record<string, string> = {
+	critica: '#dc2626', alta: '#eab308', media: '#3b82f6', baixa: '#6b7280',
+};
+const APPROVED = new Set(['aprovado', 'aprovado_com_ressalvas']);
+
 export default function DownloadERS({ project, requirements, onBack, perfil }: Props) {
 	const canFilterTopics = perfil === 'analista' || perfil === 'gestor';
 
@@ -43,6 +60,29 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 
 	const selectedTopics = topicsWithCount.filter((t) => selectedIds.includes(t.id));
 	const previewTopics = canFilterTopics ? selectedTopics : topicsWithCount;
+
+	// ── Espelha exatamente o que o PDF gera: aplica o filtro "incluir não aprovados"
+	//    e mantém só seções com requisitos (igual a _group_by_topic no backend) ──
+	const previewGroups = previewTopics
+		.map((t) => ({
+			...t,
+			reqs: incluirTodos ? t.requirements : t.requirements.filter((r) => APPROVED.has(r.status)),
+		}))
+		.filter((g) => g.reqs.length > 0);
+
+	const totalReqs = previewGroups.reduce((acc, g) => acc + g.reqs.length, 0);
+	const totalAprov = previewGroups.reduce((acc, g) => acc + g.reqs.filter((r) => APPROVED.has(r.status)).length, 0);
+
+	// Numeração das seções (igual section_num no gerador)
+	let n = 0;
+	const descNum = project.descricao ? ++n : null;
+	const numberedGroups = previewGroups.map((g) => ({ ...g, num: ++n }));
+	const diagNum = incluirDiagramas ? ++n : null;
+	const resumoNum = ++n;
+
+	const now = new Date();
+	const dataHoje = now.toLocaleDateString("pt-BR");
+	const geradoEm = `${dataHoje} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
 
 	const handleDownload = async () => {
 		if (selectedIds.length === 0) {
@@ -170,68 +210,141 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 					</div>
 
 					<div className={styles['download-right']}>
-						<div className={styles['preview-panel']}>
-							<div className={styles['abnt-cover']}>
-								<h1>Especificação de Requisitos de Software</h1>
-								<div className="subtitle">ERS</div>
-								<div className="project-name">{project.nome}</div>
-								<div className="client">Cliente: {project.nome_cliente || "—"}</div>
-								<div className="date">{new Date().toLocaleDateString("pt-BR")}</div>
-								{project.gestor && (
-									<div className="gestor" style={{ fontSize: 12, color: 'inherit', marginTop: 4 }}>Gestor: {project.gestor.nome}</div>
-								)}
+						{/* ── CAPA (espelha _on_first_page) ── */}
+						<div className={styles['doc-sheet']}>
+							<div className={styles['doc-cover']}>
+								<div className={styles['doc-cover-label']}>ESPECIFICAÇÃO DE REQUISITOS DE SOFTWARE</div>
+								<div className={styles['doc-cover-title']}>{project.nome}</div>
+								<div className={styles['doc-cover-rule']} />
+								<div className={styles['doc-cover-sub']}>Cliente: {project.nome_cliente || "—"}</div>
+								<div className={styles['doc-cover-sub']}>Gestor: {project.gestor?.nome || "N/A"}</div>
+								<div className={styles['doc-cover-sub']}>Data: {dataHoje}</div>
+								<table className={styles['doc-stats']}>
+									<thead>
+										<tr><th>Requisitos</th><th>Aprovados</th><th>Seções</th></tr>
+									</thead>
+									<tbody>
+										<tr><td>{totalReqs}</td><td>{totalAprov}</td><td>{previewGroups.length}</td></tr>
+									</tbody>
+								</table>
+							</div>
+						</div>
+
+						{/* ── PÁGINA DE CONTEÚDO (espelha _on_page + corpo) ── */}
+						<div className={styles['doc-sheet']}>
+							<div className={styles['doc-header']}>
+								<b>ERS — Especificação de Requisitos de Software</b>
+								<span>{project.nome}</span>
 							</div>
 
-							<div className={styles['abnt-toc']}>
-								<h2>Sumário</h2>
-								{previewTopics.map((topic, index) => (
-									<div className={styles['abnt-toc-item']} key={topic.id}>
-										<span>{index + 1}. {topic.name}</span>
-										<span className={styles['abnt-toc-dots']}></span>
-										<span>{topic.count}</span>
+							<div className={styles['doc-content']}>
+								{/* Sumário */}
+								<div className={styles['doc-toc-title']}>Sumário</div>
+								<div className={styles['doc-rule-strong']} />
+								{descNum && (
+									<div className={styles['doc-toc-item']}>
+										<span>{descNum}. Descrição do Projeto</span>
+										<span className={styles['doc-toc-dots']} />
+										<span className={styles['doc-toc-count']} />
+									</div>
+								)}
+								{numberedGroups.map((g) => (
+									<div className={styles['doc-toc-item']} key={g.id}>
+										<span>{g.num}. {g.name}</span>
+										<span className={styles['doc-toc-dots']} />
+										<span className={styles['doc-toc-count']}>{g.reqs.length} item(s)</span>
 									</div>
 								))}
+								{diagNum && (
+									<div className={styles['doc-toc-item']}>
+										<span>{diagNum}. Diagramas</span>
+										<span className={styles['doc-toc-dots']} />
+										<span className={styles['doc-toc-count']} />
+									</div>
+								)}
+								<div className={styles['doc-toc-item']}>
+									<span>{resumoNum}. Resumo</span>
+									<span className={styles['doc-toc-dots']} />
+									<span className={styles['doc-toc-count']} />
+								</div>
+
+								{/* Descrição do Projeto */}
+								{descNum && (
+									<div className={styles['doc-section']}>
+										<div className={styles['doc-h1']}>{descNum}. Descrição do Projeto</div>
+										<div className={styles['doc-rule-light']} />
+										<p className={styles['doc-desc']}>{project.descricao}</p>
+									</div>
+								)}
+
+								{/* Seções de requisitos */}
+								{numberedGroups.map((g) => (
+									<div className={styles['doc-section']} key={g.id}>
+										<div className={styles['doc-h1']}>{g.num}. {g.name}</div>
+										<div className={styles['doc-rule-light']} />
+										<p className={styles['doc-intro']}>
+											Esta seção contém {g.reqs.length} item(s) do tipo <i>{g.name}</i>.
+										</p>
+										{g.reqs.map((req, idx) => {
+											const prio = req.prioridade || 'media';
+											const status = req.status || 'rascunho';
+											const codigo = req.codigo || `${g.num}.${String(idx + 1).padStart(3, '0')}`;
+											return (
+												<div className={styles['doc-card']} key={req.id}>
+													<div className={styles['doc-card-head']}>
+														<span className={styles['doc-card-code']}>{codigo}</span>{'  '}
+														<strong>{req.titulo}</strong>
+													</div>
+													<div className={styles['doc-card-desc']}>
+														{req.descricao || <i>Sem descrição.</i>}
+													</div>
+													<div className={styles['doc-card-meta']}>
+														<span style={{ color: PRIORITY_COLORS[prio] }}>
+															<strong>Prioridade:</strong> {PRIORITY_LABELS[prio] || prio}
+														</span>
+														<span style={{ color: STATUS_COLORS[status] }}>
+															<strong>Status:</strong> {STATUS_LABELS[status] || status}
+														</span>
+														<span><strong>Categoria:</strong> {req.categoria || '—'}</span>
+													</div>
+												</div>
+											);
+										})}
+									</div>
+								))}
+
+								{/* Diagramas */}
+								{diagNum && (
+									<div className={styles['doc-section']}>
+										<div className={styles['doc-h1']}>{diagNum}. Diagramas</div>
+										<div className={styles['doc-rule-light']} />
+										<p className={styles['doc-intro']}>
+											As imagens e diagramas anexados ao projeto são incluídos nesta seção do documento exportado.
+										</p>
+									</div>
+								)}
+
+								{/* Resumo */}
+								<div className={styles['doc-section']}>
+									<div className={styles['doc-h1']}>{resumoNum}. Resumo</div>
+									<div className={styles['doc-rule-light']} />
+									<table className={styles['doc-summary']}>
+										<thead>
+											<tr><th>Seção</th><th>Quantidade</th></tr>
+										</thead>
+										<tbody>
+											{numberedGroups.map((g) => (
+												<tr key={g.id}><td>{g.name}</td><td>{g.reqs.length}</td></tr>
+											))}
+											<tr className={styles['doc-summary-total']}><td>Total</td><td>{totalReqs}</td></tr>
+										</tbody>
+									</table>
+								</div>
 							</div>
 
-							{project.descricao && (
-								<div className={styles['abnt-section']}>
-									<h2>1. Descrição do Projeto</h2>
-									<p>{project.descricao}</p>
-								</div>
-							)}
-
-							{previewTopics.map((topic, index) => (
-								<div className={styles['abnt-section']} key={topic.id}>
-									<h2>{index + 1}. {topic.name}</h2>
-									{topic.requirements.length === 0 ? (
-										<p className={styles['abnt-no-reqs']}>Nenhum requisito documentado neste tópico.</p>
-									) : (
-										<ul className={styles['abnt-req-list']}>
-											{topic.requirements.map((req) => (
-												<li className={styles['abnt-req-item']} key={req.id}>
-													<span className={styles['abnt-req-code']}>{req.codigo || `REQ-${req.id}`}</span>
-													<span className={styles['abnt-req-title']}>{req.titulo}</span>
-													<div className={styles['abnt-req-desc']}>{req.descricao}</div>
-												</li>
-											))}
-										</ul>
-									)}
-								</div>
-							))}
-
-							<div className={styles['abnt-section']} style={{ marginTop: 24 }}>
-								<h2>Assinaturas Digitais</h2>
-								<p style={{ fontSize: 11, color: '#64748b', lineHeight: 1.6, margin: '6px 0 12px' }}>
-									As assinaturas eletrônicas registradas no sistema confirmam a revisão e aprovação deste documento pelos responsáveis.
-								</p>
-								<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-									{(['Analista Responsável', 'Gestor do Projeto']).map((role) => (
-										<div key={role} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
-											<div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 24 }}>{role}</div>
-											<div style={{ borderTop: '1px solid #cbd5e1', paddingTop: 6, fontSize: 10, color: '#94a3b8' }}>Assinatura / Data</div>
-										</div>
-									))}
-								</div>
+							<div className={styles['doc-footer']}>
+								<span>Gerado em {geradoEm} · ScopePlan</span>
+								<span>Página 1</span>
 							</div>
 						</div>
 					</div>

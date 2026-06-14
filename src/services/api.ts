@@ -45,6 +45,8 @@ export interface RequirementData {
   titulo?: string;
   descricao?: string;
   status: string;
+  prioridade?: string;
+  categoria?: string;
   criado_em?: string;
   atualizado_em?: string;
   autor?: User;
@@ -166,6 +168,13 @@ export async function apiFetch<T = unknown>(
   });
 
   if (response.status === 401) {
+    // Auth endpoints (login/register) return 401 for bad credentials — don't treat as session expiry
+    const isAuthEndpoint = path.includes('/auth/login') || path.includes('/auth/register');
+    if (isAuthEndpoint) {
+      const err = await response.json().catch(() => ({ message: response.statusText }));
+      throw new Error(err.message || `Erro ${response.status}`);
+    }
+
     const refreshed = await tryRefreshToken();
     if (refreshed) {
       const retryHeaders = mergeHeaders(buildAuthHeaders(), callerHeaders);

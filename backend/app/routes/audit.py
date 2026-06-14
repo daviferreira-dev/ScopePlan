@@ -33,8 +33,20 @@ def list_audit_logs():
     # Limit per_page
     per_page = min(per_page, 100)
 
-    # Filter by user's accessible projects
+    # A auditoria é EXCLUSIVAMENTE sobre projetos: logs sem projeto
+    # (login, logout, reset de senha, criação/edição de usuário) nunca aparecem.
     user_project_ids = get_user_project_ids(user)
+
+    # Sem projetos acessíveis → nenhuma entrada de auditoria
+    if not user_project_ids:
+        return {
+            'audit_logs': [],
+            'total': 0,
+            'page': page,
+            'per_page': per_page,
+            'pages': 0,
+        }
+
     query = AuditLog.query
 
     if projeto_id:
@@ -43,25 +55,8 @@ def list_audit_logs():
             return {'message': 'Acesso negado a este projeto'}, 403
         query = query.filter(AuditLog.projeto_id == projeto_id)
     else:
-        if user_project_ids:
-            # Include logs for user's projects AND user's own logs without projeto_id
-            # (login, logout, user creation, etc. have projeto_id=NULL)
-            # Security: only show NULL-project logs belonging to the current user
-            query = query.filter(
-                db.or_(
-                    AuditLog.projeto_id.in_(user_project_ids),
-                    db.and_(
-                        AuditLog.projeto_id.is_(None),
-                        AuditLog.usuario_id == current_user_id
-                    )
-                )
-            )
-        else:
-            # No projects — only show own non-project logs
-            query = query.filter(
-                AuditLog.usuario_id == current_user_id,
-                AuditLog.projeto_id.is_(None)
-            )
+        # Apenas logs vinculados aos projetos acessíveis (IN nunca casa com NULL)
+        query = query.filter(AuditLog.projeto_id.in_(user_project_ids))
 
     # Apply additional filters
     if acao:

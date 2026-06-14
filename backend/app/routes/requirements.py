@@ -279,8 +279,10 @@ def move_kanban_requirement(project_id, req_id):
         return {'message': f'Status inválido. Use: {", ".join(valid_statuses)}'}, 400
 
     requirement.status = new_status
+    detalhes = {'codigo': requirement.codigo, 'titulo': requirement.titulo,
+                'status': new_status, 'acao': 'kanban_move'}
     AuditLog.log(user_id, 'atualizacao', 'requisito', requirement.id, requirement.projeto_id,
-                 {'status': new_status, 'acao': 'kanban_move'})
+                 {k: v for k, v in detalhes.items() if v is not None})
     db.session.commit()
 
     return {'message': 'Status atualizado', 'requisito': requirement.to_dict()}
@@ -373,8 +375,10 @@ def submit_review(requirement_id):
         return {'message': 'Apenas requisitos em rascunho podem ser submetidos para revisão'}, 400
 
     requirement.status = 'em_revisao'
+    detalhes = {'codigo': requirement.codigo, 'titulo': requirement.titulo,
+                'status_anterior': 'rascunho', 'status_atual': 'em_revisao'}
     AuditLog.log(user_id, 'submissao_revisao', 'requisito', requirement.id, requirement.projeto_id,
-                 {'status_anterior': 'rascunho', 'status_atual': 'em_revisao'})
+                 {k: v for k, v in detalhes.items() if v is not None})
     db.session.commit()
 
     return {'message': 'Requisito submetido para revisão', 'requisito': requirement.to_dict()}
@@ -423,9 +427,11 @@ def create_validacao(requirement_id):
     resultado = data['resultado']
     requirement.status = resultado  # 'aprovado' | 'rejeitado' | 'aprovado_com_ressalvas'
 
+    detalhes = {'codigo': requirement.codigo, 'titulo': requirement.titulo,
+                'resultado': resultado, 'status_anterior': status_anterior,
+                'status_atual': requirement.status}
     AuditLog.log(user_id, 'validacao', 'requisito', requirement.id, requirement.projeto_id,
-                 {'resultado': resultado, 'status_anterior': status_anterior,
-                  'status_atual': requirement.status})
+                 {k: v for k, v in detalhes.items() if v is not None})
     db.session.commit()
 
     return {

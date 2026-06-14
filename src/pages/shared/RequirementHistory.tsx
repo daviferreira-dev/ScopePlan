@@ -107,6 +107,7 @@ export default function RequirementHistory({ requirementId, requirementTitle, on
 			<AppLayout
 				perfil={perfil}
 				activePage="projetos"
+				onBack={onBack}
 				onPageChange={onBack}
 				topbarTitle={`Historico: ${requirementTitle}`}
 				topbarSubtitle="Visualizar versoes"

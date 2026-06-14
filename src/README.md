@@ -1,6 +1,6 @@
 # ScopePlan Frontend
 
-Interface web do ScopePlan — plataforma de Engenharia de Requisitos com workflows baseados em papéis (analista, desenvolvedor, cliente, gestor).
+Interface web do ScopePlan — plataforma colaborativa de engenharia de requisitos com workflows baseados em papéis (analista, desenvolvedor, cliente, gestor).
 
 ## Tecnologias
 
@@ -11,32 +11,23 @@ Interface web do ScopePlan — plataforma de Engenharia de Requisitos com workfl
 | React Router DOM | 7.14.2 | Roteamento SPA |
 | TypeScript | 6.0 | Tipagem estática |
 | Vite | 8.0 | Build e dev server |
+| TipTap | — | Editor de rich text (requisitos) |
+| Y.js | — | CRDT para edição colaborativa |
+| Socket.IO Client | — | WebSocket (tempo real) |
 | ESLint | 10.2 | Linting |
 
-> **Styling**: Estilos inline via template literals (sem CSS framework). Fontes Google (Fraunces + DM Sans) carregadas via `@import` em `<style>` tags.
+> **Styling:** Estilos inline via template literals (sem CSS framework). Fontes Google (Fraunces + DM Sans + Sora) carregadas via `@import`.
 
 ## Instalação
 
-### 1. Instalar dependências
-
 ```bash
 npm install
-```
-
-### 2. Configurar proxy
-
-O Vite já está configurado para fazer proxy de `/api` → `http://localhost:5000`. Certifique-se de que o backend está rodando na porta 5000.
-
-### 3. Executar em desenvolvimento
-
-```bash
 npm run dev
 ```
 
-A aplicação estará disponível em `http://localhost:5173`
+O Vite já tem proxy configurado: `/api` → `http://localhost:5000` e `/socket.io` → `http://localhost:5000`. Certifique-se de que o backend está rodando na porta 5000.
 
-### 4. Build de produção
-
+**Build de produção:**
 ```bash
 npm run build
 npm run preview
@@ -48,41 +39,64 @@ npm run preview
 
 ```
 src/
-├── App.tsx                   # Rotas, ProtectedRoute inline, ErrorBoundary
-├── main.tsx                  # Entry point (StrictMode + BrowserRouter)
-├── index.css                 # Estilos globais mínimos
-├── assets/                   # Imagens e logos
+├── App.tsx                       # Rotas, ProtectedRoute, NotFound
+├── main.tsx                      # Entry point (StrictMode + BrowserRouter)
+├── index.css                     # Reset global mínimo
+├── assets/                       # logo_scope_plan.svg, hero.png, scopeplan.png, icons.svg
+│
 ├── components/
-│   ├── AppLayout.tsx         # Layout com sidebar/topbar (recebe perfil prop)
-│   └── ErrorBoundary.tsx     # Captura erros de renderização
+│   ├── AppLayout.tsx             # Sidebar + topbar (recebe perfil prop)
+│   ├── ErrorBoundary.tsx         # Captura erros de renderização
+│   ├── RequirementEditor.tsx     # Editor TipTap (rich text + colaborativo via Y.js)
+│   ├── Diagramas.tsx             # Upload e visualização de diagramas
+│   ├── RequistoAnexos.tsx        # Gestão de anexos de requisitos
+│   ├── ConvitesModal.tsx         # Modal para envio de convites (analista/gestor)
+│   ├── ToastContainer.tsx        # Sistema de notificações toast
+│   └── EyeIcons.tsx              # Ícones de visibilidade de senha
+│
+├── hooks/
+│   └── useToast.tsx              # Hook para disparar toasts
+│
 ├── contexts/
-│   └── AuthContext.tsx       # Provider de autenticação + hook useAuth()
+│   └── AuthContext.tsx           # Provider global de auth + hook useAuth()
+│
 ├── services/
-│   └── api.ts                # Cliente HTTP (axios) — authApi, projectsApi, requirementsApi, auditApi
+│   ├── api.ts                    # Cliente HTTP — authApi, projectsApi, requirementsApi, auditApi
+│   └── socket.ts                 # Cliente WebSocket (Socket.IO)
+│
 ├── utils/
-│   ├── helpers.ts            # Funções utilitárias (formatação, status, useLogout)
-│   └── constants.tsx         # Tópicos, cores, ícones, labels, mapeamentos
-├── pages/
-│   ├── Home.tsx              # Landing page (pública)
-│   ├── Login.tsx             # Login (integrado com API via useAuth)
-│   ├── Cadastro.tsx          # Cadastro de usuário (integrado com API via useAuth)
-│   ├── shared/               # Componentes compartilhados (recebem perfil prop)
-│   │   ├── TelaProjetos.tsx  # Lista de projetos (showCreateButton por perfil)
-│   │   ├── TelaItens.tsx     # Requisitos do projeto (tópicos por tipo)
-│   │   ├── ValidacaoRequisitos.tsx # Validação + add requisito + observação
-│   │   ├── DownloadERS.tsx   # Download da ERS (DOCX/PDF, topicIds por perfil)
-│   │   └── Auditoria.tsx     # Auditoria (paginação servidor/client-side por perfil)
-│   ├── analista/             # Wrapper do perfil Analista
-│   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="analista"
-│   ├── cliente/              # Wrapper do perfil Cliente
-│   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="cliente"
-│   ├── desenvolvedor/        # Wrapper do perfil Desenvolvedor
-│   │   └── Tela_Projetos.tsx # Importa de shared/ com perfil="desenvolvedor"
-│   └── gestor/               # Wrapper do perfil Gestor
-│       └── Tela_Projetos.tsx # Importa de shared/ com perfil="gestor"
+│   ├── constants.tsx             # Tópicos, cores, ícones de tipo, labels, nav sidebar
+│   ├── helpers.ts                # Formatação de data, status, useLogout
+│   └── socketYjsProvider.ts      # Y.js CRDT provider para edição colaborativa
+│
+└── pages/
+    ├── Home.tsx                  # Landing page (pública)
+    ├── Login.tsx                 # Login (via useAuth)
+    ├── Cadastro.tsx              # Cadastro (via useAuth)
+    ├── ResetSenha.tsx            # Redefinição de senha por e-mail
+    ├── AceitarConvite.tsx        # Aceitar convite por token (pública)
+    │
+    ├── shared/                   # Componentes compartilhados — recebem `perfil` prop
+    │   ├── TelaProjetos.tsx      # Lista de projetos
+    │   ├── TelaItens.tsx         # Requisitos por tipo (tópicos)
+    │   ├── ValidacaoRequisitos.tsx # Fluxo de validação
+    │   ├── DownloadERS.tsx       # Geração de ERS (DOCX/PDF)
+    │   ├── Auditoria.tsx         # Log de auditoria
+    │   ├── Comentarios.tsx       # Comentários aninhados em requisito
+    │   ├── Dashboard.tsx         # Visão geral do projeto
+    │   └── RequirementHistory.tsx # Histórico de versões do requisito
+    │
+    ├── analista/Tela_Projetos.tsx      # Wrapper → shared/ com perfil="analista"
+    ├── cliente/Tela_Projetos.tsx       # Wrapper → shared/ com perfil="cliente"
+    ├── desenvolvedor/Tela_Projetos.tsx # Wrapper → shared/ com perfil="desenvolvedor"
+    └── gestor/Tela_Projetos.tsx        # Wrapper → shared/ com perfil="gestor"
 ```
 
-> **Nota:** Os wrappers em `analista/`, `cliente/`, `desenvolvedor/` e `gestor/` são thin components que importam de `shared/` e passam `perfil`. Toda a lógica de UI e comportamento está nos componentes compartilhados.
+---
+
+## Arquitetura Shared + Props
+
+Os wrappers em `analista/`, `cliente/`, `desenvolvedor/` e `gestor/` são thin components que importam de `shared/` e passam `perfil`. Toda a lógica de UI e permissões está nos componentes compartilhados, que adaptam o comportamento pelo valor de `perfil`.
 
 ---
 
@@ -92,15 +106,18 @@ Todos os 4 portais estão **100% integrados com a API backend**. Não há dados 
 
 ### Componentes Shared
 
-| Componente | Arquivo | Comportamento por perfil |
-|------------|---------|--------------------------|
-| Projetos | `shared/TelaProjetos.tsx` | `showCreateButton` para analista/gestor |
-| Itens | `shared/TelaItens.tsx` | `perfil` passado adiante |
-| Validação | `shared/ValidacaoRequisitos.tsx` | Analista/dev: add requisito; Cliente: aprovar/rejeitar/observar |
-| Download ERS | `shared/DownloadERS.tsx` | Analista/gestor: filtro tópicos (`topicIds`); outros: download completo |
-| Auditoria | `shared/Auditoria.tsx` | Analista/gestor: paginação servidor + filtros data + busca textual; outros: filtro client-side |
+| Componente | Comportamento por perfil |
+|------------|--------------------------|
+| `TelaProjetos.tsx` | Botão "Criar projeto" visível para analista/gestor |
+| `TelaItens.tsx` | Controles de edição/exclusão por permissão |
+| `ValidacaoRequisitos.tsx` | Analista/dev: criar requisito; Cliente: aprovar/rejeitar/observar |
+| `DownloadERS.tsx` | Analista/gestor: filtro de tópicos (`topicIds`); outros: download completo |
+| `Auditoria.tsx` | Analista/gestor: paginação servidor + filtros data/busca; outros: filtro client-side |
+| `Comentarios.tsx` | Todos leem; autor edita (15 min); analista/gestor ocultam |
+| `Dashboard.tsx` | Métricas do projeto |
+| `RequirementHistory.tsx` | Lista de versões com diff visual |
 
-### Perfis
+### Portais
 
 | Perfil | Wrapper | Status |
 |--------|---------|--------|
@@ -117,32 +134,35 @@ Todos os 4 portais estão **100% integrados com a API backend**. Não há dados 
 |---------|----------|---------|---------------|--------|
 | Criar projeto | ✅ | ❌ | ❌ | ✅ |
 | Criar requisito | ✅ | ❌ | ✅ | ❌ |
+| Editar requisito | ✅ | ❌ | ✅ | ❌ |
+| Excluir requisito | ✅ | ❌ | ❌ | ✅ |
 | Observação em validação | ❌ | ✅ | ❌ | ❌ |
-| Filtro tópicos no download ERS | ✅ `topicIds` | ❌ | ❌ | ✅ `topicIds` |
-| Auditoria | Paginação servidor + filtros + busca | Filtro client-side | Filtro client-side | Paginação servidor + filtros + busca |
+| Enviar convite | ✅ | ❌ | ❌ | ✅ |
+| Ocultar comentário | ✅ | ❌ | ❌ | ✅ |
+| Filtro tópicos ERS | ✅ `topicIds` | ❌ | ❌ | ✅ `topicIds` |
+| Auditoria | Paginação servidor + filtros | Filtro client-side | Filtro client-side | Paginação servidor + filtros |
 
 ---
 
 ## AuthContext — Fluxo de autenticação
 
-O `AuthContext` gerencia o estado de autenticação global:
+O `AuthContext` gerencia o estado global de autenticação:
 
 | Ação | Comportamento |
 |------|---------------|
-| `login(email, senha)` | Chama `authApi.login()`, salva access token em memória; refresh via cookie HttpOnly |
-| `register(nome, email, senha, perfil)` | Chama `authApi.register()` + `authApi.login()` (auto-login) |
-| `logout()` | Chama `authApi.logout()` para revogar tokens no servidor + limpar cookie, depois limpa access token da memória |
-| Restaurar sessão | No mount, se token existe, chama `authApi.me()` |
-
-> **Token revogação:** O `logout()` chama `POST /api/auth/logout` com access token no header. O backend revoga ambos os tokens (access + refresh) na `TokenBlocklist` e limpa o cookie de refresh.
+| `login(email, senha)` | `authApi.login()` → salva access token in-memory; refresh via cookie HttpOnly |
+| `register(nome, email, senha, perfil)` | `authApi.register()` + auto-login |
+| `logout()` | `authApi.logout()` revoga tokens no servidor + limpa cookie + limpa estado local |
+| Restaurar sessão | No mount: tenta `authApi.me()` com token existente; se falhar, tenta `authApi.refreshToken()` |
 
 ---
 
 ## Cliente API (`src/services/api.ts`)
 
-O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
+Exporta 4 namespaces com todas as chamadas ao backend:
 
 ### `authApi`
+
 | Função | Endpoint |
 |--------|----------|
 | `login(email, senha)` | `POST /api/auth/login` |
@@ -154,6 +174,7 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 | `refreshToken()` | `POST /api/auth/refresh` |
 
 ### `projectsApi`
+
 | Função | Endpoint |
 |--------|----------|
 | `list()` | `GET /api/projects` |
@@ -161,6 +182,7 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 | `downloadERS(projectId, format, topicIds?)` | `POST /api/projects/:id/download-ers` |
 
 ### `requirementsApi`
+
 | Função | Endpoint |
 |--------|----------|
 | `list(projectId)` | `GET /api/requirements?projeto_id=X` |
@@ -174,9 +196,18 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 | `versionHistory(id)` | `GET /api/requirements/:id/version-history` |
 
 ### `auditApi`
+
 | Função | Endpoint |
 |--------|----------|
 | `list(page?, perPage?, filters?)` | `GET /api/audit` |
+
+---
+
+## WebSocket e edição colaborativa
+
+`src/services/socket.ts` mantém uma conexão Socket.IO com o backend (Flask-SocketIO + eventlet).
+
+`src/utils/socketYjsProvider.ts` implementa um provider Y.js que sincroniza o estado do editor TipTap entre múltiplos usuários via WebSocket. O `RequirementEditor.tsx` usa esse provider para habilitar edição simultânea de um requisito com reconciliação automática de conflitos (CRDT).
 
 ---
 
@@ -187,19 +218,17 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 | `/` | Home | Pública | ❌ |
 | `/login` | Login | Pública | ❌ |
 | `/cadastro` | Cadastro | Pública | ❌ |
+| `/reset-senha` | Redefinir senha | Pública | ❌ |
+| `/convite/:token` | Aceitar convite | Pública | ❌ |
 | `/analista/projetos` | Tela_Projetos | analista | ✅ |
-| `/analista/projetos/:id/itens` | Tela_Itens | analista | ✅ |
-| `/analista/projetos/:id/validacao` | ValidacaoRequisitos | analista | ✅ |
-| `/analista/projetos/:id/ers` | DownloadERS | analista | ✅ |
-| `/analista/projetos/:id/auditoria` | Auditoria | analista | ✅ |
 | `/cliente/projetos` | Tela_Projetos | cliente | ✅ |
 | `/desenvolvedor/projetos` | Tela_Projetos | desenvolvedor | ✅ |
 | `/gestor/projetos` | Tela_Projetos | gestor | ✅ |
 | `/acesso-negado` | Acesso negado | Pública | ❌ |
 
-> **Nota:** As sub-páginas (tópicos, validação, download, auditoria) são controladas por estado (`activePage`, `selectedProject`, `activeTopic`) dentro dos componentes pai, não por rotas aninhadas separadas.
+> Sub-páginas (tópicos, validação, download, auditoria, comentários, histórico) são controladas por estado interno (`activePage`, `selectedProject`, `activeTopic`) dentro dos componentes pai, não por rotas aninhadas separadas.
 
-### Redirecionamentos de compatibilidade
+### Redirecionamentos legados
 
 - `/Tela_Projetos` → `/analista/projetos`
 - `/Tela_Itens` → `/analista/projetos`
@@ -210,8 +239,8 @@ O arquivo `api.ts` exporta 4 namespaces com todas as chamadas ao backend:
 
 | Issue | Detalhes |
 |-------|----------|
-| **Upload de arquivo** | UI presente mas sem lógica real de upload |
-| **Version history sem UI** | `requirementsApi.versionHistory()` existe mas nenhuma página consome os dados |
+| **CRUD de projetos sem UI** | Endpoints `PUT`/`DELETE` de projetos individuais existem no backend mas não há tela de edição/exclusão no frontend |
+| **SMTP obrigatório** | Reset de senha e aceite de convite requerem configuração SMTP no backend |
 
 ## Licença
 

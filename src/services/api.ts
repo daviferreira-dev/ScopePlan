@@ -28,6 +28,15 @@ export interface Validacao {
   validador?: User;
 }
 
+export interface AssinaturaData {
+  id: number;
+  requisito_id: number;
+  signatario_id: number;
+  signatario?: User;
+  declaracao?: string;
+  assinado_em: string;
+}
+
 export interface RequirementData {
   id: number;
   projeto_id: number;
@@ -432,6 +441,24 @@ export const requirementsApi = {
 
   delete(projectId: number, id: number) {
     return apiFetch(`/projetos/${projectId}/requisitos/${id}`, { method: 'DELETE' });
+  },
+
+  moveStatus(projectId: number, id: number, status: string) {
+    return apiFetch<{ requisito: RequirementData }>(`/projetos/${projectId}/requisitos/${id}/mover`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+  },
+
+  listarAssinaturas(projectId: number, reqId: number) {
+    return apiFetch<{ assinaturas: AssinaturaData[] }>(`/projetos/${projectId}/requisitos/${reqId}/assinaturas`);
+  },
+
+  assinar(projectId: number, reqId: number, declaracao?: string) {
+    return apiFetch<{ assinatura: AssinaturaData }>(`/projetos/${projectId}/requisitos/${reqId}/assinar`, {
+      method: 'POST',
+      body: JSON.stringify({ declaracao: declaracao ?? '' }),
+    });
   },
 
   submitReview(requirementId: number) {

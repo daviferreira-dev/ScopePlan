@@ -1,6 +1,6 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models import Requirement, RequirementVersion, Project, User, Validacao, AuditLog
+from app.models import Requirement, RequirementVersion, Project, User, Validacao, Assinatura, AuditLog
 from sqlalchemy.orm import joinedload
 from app.schemas import RequirementCreateSchema, RequirementUpdateSchema, ValidacaoCreateSchema
 from app.utils.decorators import validate_json
@@ -74,8 +74,8 @@ def create_nested_requirement(project_id):
 
     if not user:
         return {'message': 'Usuário não encontrado'}, 404
-    if user.perfil != 'analista':
-        return {'message': 'Apenas analistas podem criar requisitos'}, 403
+    if user.perfil not in ('analista', 'gestor'):
+        return {'message': 'Apenas analistas e gestores podem criar requisitos'}, 403
 
     project = db.session.get(Project, project_id)
     if not project or not project.ativo:
@@ -251,6 +251,101 @@ def delete_nested_requirement(project_id, req_id):
     db.session.commit()
 
     return {'message': 'Requisito removido com sucesso'}
+
+
+@project_reqs_bp.route('/<int:project_id>/requisitos/<int:req_id>/mover', methods=['PATCH'])
+@jwt_required()
+def move_kanban_requirement(project_id, req_id):
+    user_id = int(get_jwt_identity())
+    user = db.session.get(User, user_id)
+
+    if not user:
+        return {'message': 'Usuário não encontrado'}, 404
+    if user.perfil not in ('analista', 'gestor'):
+        return {'message': 'Apenas analistas e gestores podem mover requisitos'}, 403
+
+    requirement = Requirement.query.filter_by(id=req_id, ativo=True).first()
+    if not requirement or requirement.projeto_id != project_id:
+        return {'message': 'Requisito não encontrado'}, 404
+
+    _, access_error = check_user_requirement_access(user, requirement)
+    if access_error:
+        return access_error
+
+    data = request.get_json() or {}
+    new_status = data.get('status')
+    valid_statuses = ('rascunho', 'em_revisao', 'aprovado', 'aprovado_com_ressalvas', 'rejeitado')
+    if new_status not in valid_statuses:
+        return {'message': f'Status inválido. Use: {", ".join(valid_statuses)}'}, 400
+
+    requirement.status = new_status
+    AuditLog.log(user_id, 'atualizacao', 'requisito', requirement.id, requirement.projeto_id,
+                 {'status': new_status, 'acao': 'kanban_move'})
+    db.session.commit()
+
+    return {'message': 'Status atualizado', 'requisito': requirement.to_dict()}
+
+
+@project_reqs_bp.route('/<int:project_id>/requisitos/<int:req_id>/assinaturas', methods=['GET'])
+@jwt_required()
+def list_assinaturas(project_id, req_id):
+    user_id = int(get_jwt_identity())
+    user = db.session.get(User, user_id)
+
+    requirement = Requirement.query.filter_by(id=req_id, ativo=True).first()
+    if not requirement or requirement.projeto_id != project_id:
+        return {'message': 'Requisito não encontrado'}, 404
+
+    _, access_error = check_user_requirement_access(user, requirement)
+    if access_error:
+        return access_error
+
+    assinaturas = Assinatura.query.filter_by(requisito_id=req_id).order_by(Assinatura.assinado_em).all()
+    return {'assinaturas': [a.to_dict() for a in assinaturas]}
+
+
+@project_reqs_bp.route('/<int:project_id>/requisitos/<int:req_id>/assinar', methods=['POST'])
+@jwt_required()
+def assinar_requisito(project_id, req_id):
+    user_id = int(get_jwt_identity())
+    user = db.session.get(User, user_id)
+
+    if not user:
+        return {'message': 'Usuário não encontrado'}, 404
+    if user.perfil not in ('analista', 'gestor'):
+        return {'message': 'Apenas analistas e gestores podem assinar requisitos'}, 403
+
+    requirement = Requirement.query.filter_by(id=req_id, ativo=True).first()
+    if not requirement or requirement.projeto_id != project_id:
+        return {'message': 'Requisito não encontrado'}, 404
+
+    _, access_error = check_user_requirement_access(user, requirement)
+    if access_error:
+        return access_error
+
+    if requirement.status not in ('aprovado', 'aprovado_com_ressalvas'):
+        return {'message': 'Apenas requisitos aprovados podem ser assinados'}, 400
+
+    existing = Assinatura.query.filter_by(requisito_id=req_id, signatario_id=user_id).first()
+    if existing:
+        return {'message': 'Você já assinou este requisito'}, 409
+
+    data = request.get_json() or {}
+    declaracao = (data.get('declaracao') or '').strip() or None
+
+    assinatura = Assinatura(
+        requisito_id=req_id,
+        signatario_id=user_id,
+        declaracao=declaracao,
+    )
+    db.session.add(assinatura)
+
+    AuditLog.log(user_id, 'assinatura', 'requisito', requirement.id, requirement.projeto_id,
+                 {'titulo': requirement.titulo, 'declaracao': declaracao})
+
+    db.session.commit()
+
+    return {'message': 'Requisito assinado com sucesso', 'assinatura': assinatura.to_dict()}, 201
 
 
 # ── Flat endpoints under /api/requisitos ──────────────────────────────────────

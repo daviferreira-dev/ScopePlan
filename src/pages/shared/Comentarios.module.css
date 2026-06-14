@@ -99,3 +99,10 @@
 
 /* nesting connector */
 .node .node { border-left: 2px solid var(--progress-bg); padding-left: 4px; }
+
+@media (max-width: 480px) {
+  .newBox { flex-direction: column; align-items: stretch; }
+  .btnPrimary { width: 100%; }
+  .editActions { flex-direction: column-reverse; }
+  .editActions button { width: 100%; }
+}

@@ -6,6 +6,7 @@ import { REQUIREMENT_TOPICS, type RequirementTopic, type Perfil } from '../../ut
 import Dashboard from './Dashboard';
 import Diagramas from '../../components/Diagramas';
 import ConvitesModal from '../../components/ConvitesModal';
+import KanbanBoard from '../../components/KanbanBoard';
 import styles from './TelaItens.module.css';
 
 interface Topic extends RequirementTopic {
@@ -23,7 +24,7 @@ interface Props {
 
 const BASE_TOPICS = REQUIREMENT_TOPICS;
 
-type Tab = 'lista' | 'painel' | 'diagramas';
+type Tab = 'lista' | 'kanban' | 'painel' | 'diagramas';
 
 export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDownload, onAuditPage }: Props) {
 	const [requirements, setRequirements] = useState<RequirementData[]>([]);
@@ -105,6 +106,21 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 
 	const canEdit = perfil === 'analista' || perfil === 'gestor';
 
+	const handleKanbanStatusChange = async (id: number, oldStatus: string, newStatus: string) => {
+		setRequirements(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+		try {
+			await requirementsApi.moveStatus(project.id, id, newStatus);
+		} catch {
+			setRequirements(prev => prev.map(r => r.id === id ? { ...r, status: oldStatus } : r));
+		}
+	};
+
+	const handleKanbanCardClick = (req: RequirementData) => {
+		const allTopics = [...topicsWithCount, ...customTopics];
+		const topic = allTopics.find(t => t.type === req.tipo);
+		if (topic) onTopicSelect(topic, requirements);
+	};
+
 	const topbarTitle = project.nome;
 
 	return (
@@ -112,6 +128,7 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 		<AppLayout
 			perfil={perfil}
 			activePage="projetos"
+			onBack={onBack}
 			onPageChange={(p) => {
 				if (p === 'auditoria' && onAuditPage) {
 					onAuditPage();
@@ -159,6 +176,17 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 					Requisitos
 				</button>
 				<button
+					className={`${styles['view-tab']} ${tab === 'kanban' ? styles['view-tab-active'] : ''}`}
+					onClick={() => setTab('kanban')}
+				>
+					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+						<rect x="3" y="3" width="5" height="18" rx="1.5" />
+						<rect x="10" y="3" width="5" height="12" rx="1.5" />
+						<rect x="17" y="3" width="5" height="15" rx="1.5" />
+					</svg>
+					Kanban
+				</button>
+				<button
 					className={`${styles['view-tab']} ${tab === 'painel' ? styles['view-tab-active'] : ''}`}
 					onClick={() => setTab('painel')}
 				>
@@ -184,6 +212,25 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 				<Dashboard projectId={project.id} />
 			) : tab === 'diagramas' ? (
 				<Diagramas projectId={project.id} canEdit={canEdit} />
+			) : tab === 'kanban' ? (
+				loading ? (
+					<div className="empty-state">
+						<div className="empty-icon">
+							<svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+								<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+								<polyline points="14 2 14 8 20 8" />
+							</svg>
+						</div>
+						<div className="empty-title">Carregando...</div>
+					</div>
+				) : (
+					<KanbanBoard
+						requirements={requirements}
+						canEdit={canEdit}
+						onCardClick={handleKanbanCardClick}
+						onStatusChange={handleKanbanStatusChange}
+					/>
+				)
 			) : loading ? (
 				<div className="empty-state">
 					<div className="empty-icon">

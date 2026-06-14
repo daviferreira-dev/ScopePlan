@@ -55,7 +55,7 @@ def create_project():
 
     db.session.commit()
 
-    return {'message': 'Projeto criado com sucesso', 'project': project.to_dict()}, 201
+    return {'message': 'Projeto criado com sucesso', 'projeto': project.to_dict()}, 201
 
 
 @projects_bp.route('', methods=['GET'])

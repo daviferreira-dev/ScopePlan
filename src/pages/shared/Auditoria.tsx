@@ -147,6 +147,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 		<AppLayout
 			perfil={perfil}
 			activePage="auditoria"
+			onBack={onBack}
 			onPageChange={(p) => { if (p === "projetos" && onBack) onBack(); }}
 			topbarTitle="Trilha de Auditoria"
 			topbarSubtitle="Registro de todas as acoes realizadas nos projetos."

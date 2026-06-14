@@ -20,7 +20,7 @@ function ProtectedRoute({ children, allowedProfiles }: ProtectedRouteProps) {
   const { user, isLoading } = useAuth();
   if (isLoading) {
     return (
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", background: "var(--surface)" }}>
         <p>Carregando...</p>
       </div>
     );

@@ -90,6 +90,7 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 		<AppLayout
 			perfil={perfil}
 			activePage="projetos"
+			onBack={onBack}
 			onPageChange={() => onBack()}
 			topbarTitle="Download da ERS"
 			topbarSubtitle={project.nome}
@@ -217,6 +218,21 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 									)}
 								</div>
 							))}
+
+							<div className={styles['abnt-section']} style={{ marginTop: 24 }}>
+								<h2>Assinaturas Digitais</h2>
+								<p style={{ fontSize: 11, color: '#64748b', lineHeight: 1.6, margin: '6px 0 12px' }}>
+									As assinaturas eletrônicas registradas no sistema confirmam a revisão e aprovação deste documento pelos responsáveis.
+								</p>
+								<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+									{(['Analista Responsável', 'Gestor do Projeto']).map((role) => (
+										<div key={role} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '10px 12px' }}>
+											<div style={{ fontSize: 10, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 24 }}>{role}</div>
+											<div style={{ borderTop: '1px solid #cbd5e1', paddingTop: 6, fontSize: 10, color: '#94a3b8' }}>Assinatura / Data</div>
+										</div>
+									))}
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>

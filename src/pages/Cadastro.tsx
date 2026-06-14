@@ -186,7 +186,7 @@ export default function CadastroPage() {
               <div className={styles['sp-div-line']} />
             </div>
             <div className={styles['sp-profiles']}>
-              {(["analista", "cliente", "desenvolvedor"] as const).map(p => (
+              {(["analista", "desenvolvedor", "cliente", "gestor"] as const).map(p => (
                 <button key={p} type="button"
                   className={`${styles['sp-prf']}${perfil === p ? ` ${styles.active}` : ""}`}
                   onClick={() => !viaConvite && setPerfil(p)}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { requirementsApi } from "../../services/api";
-import type { RequirementData, ProjectData } from "../../services/api";
+import type { RequirementData, ProjectData, AssinaturaData } from "../../services/api";
 import AppLayout from "../../components/AppLayout";
 import { statusClass, statusLabel } from "../../utils/helpers";
 import { TOPIC_TYPE_MAP } from "../../utils/constants";
@@ -137,6 +137,13 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 	const [viewingHistory, setViewingHistory] = useState<{ id: number; title: string } | null>(null);
 	const [editingReqId, setEditingReqId] = useState<number | null>(null);
 	const [openComments, setOpenComments] = useState<Record<number, boolean>>({});
+	const [assinaturas, setAssinaturas] = useState<Record<number, AssinaturaData[]>>({});
+	const [jaAssinei, setJaAssinei] = useState<Set<number>>(new Set());
+	const [signingReqId, setSigningReqId] = useState<number | null>(null);
+	const [signDeclaracao, setSignDeclaracao] = useState('');
+	const [signLoading, setSignLoading] = useState(false);
+
+	const canSign = perfil === 'analista' || perfil === 'gestor';
 
 	const refreshRequirements = async (signal?: AbortSignal) => {
 		const response = await requirementsApi.list(project.id, 1, 50, undefined, signal ? { signal } : undefined);
@@ -152,6 +159,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 				const topicReqs = await refreshRequirements(controller.signal);
 				if (controller.signal.aborted) return;
 				setRequirements(topicReqs);
+				loadAssinaturas(topicReqs);
 			} catch (err) {
 				if (controller.signal.aborted) return;
 				setError(err instanceof Error ? err.message : 'Erro ao carregar requisitos');
@@ -237,6 +245,40 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 		}
 	};
 
+	const loadAssinaturas = async (reqs: RequirementData[]) => {
+		const aprovados = reqs.filter(r => r.status === 'aprovado' || r.status === 'aprovado_com_ressalvas');
+		if (aprovados.length === 0) return;
+		const results = await Promise.allSettled(
+			aprovados.map(r => requirementsApi.listarAssinaturas(project.id, r.id))
+		);
+		const map: Record<number, AssinaturaData[]> = {};
+		aprovados.forEach((r, i) => {
+			const res = results[i];
+			if (res.status === 'fulfilled') map[r.id] = res.value.assinaturas;
+		});
+		setAssinaturas(map);
+	};
+
+	const handleAssinar = async () => {
+		if (signingReqId === null) return;
+		setSignLoading(true);
+		try {
+			const resp = await requirementsApi.assinar(project.id, signingReqId, signDeclaracao.trim() || undefined);
+			setAssinaturas(prev => ({
+				...prev,
+				[signingReqId]: [...(prev[signingReqId] || []), resp.assinatura],
+			}));
+			setJaAssinei(prev => new Set([...prev, signingReqId]));
+			addToast('Requisito assinado com sucesso', 'success');
+			setSigningReqId(null);
+			setSignDeclaracao('');
+		} catch (err: unknown) {
+			addToast((err instanceof Error ? err.message : 'Erro ao assinar requisito'), 'error');
+		} finally {
+			setSignLoading(false);
+		}
+	};
+
 	const handleUpdateRequirement = async (reqId: number, newDescription: string) => {
 		try {
 			await requirementsApi.update(project.id, reqId, { descricao: newDescription });
@@ -264,6 +306,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 			<AppLayout
 				perfil={perfil}
 				activePage="projetos"
+				onBack={onBack}
 				onPageChange={() => onBack()}
 				topbarTitle={topic.name}
 				topbarSubtitle={project.nome_cliente || "Sem cliente"}
@@ -415,6 +458,47 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 
 							{openComments[req.id] && <Comentarios requirementId={req.id} />}
 
+							{/* Assinaturas digitais */}
+							{(req.status === 'aprovado' || req.status === 'aprovado_com_ressalvas') && (
+								<div className={styles['assinaturas-block']}>
+									<div className={styles['assinaturas-header']}>
+										<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+											<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+										</svg>
+										<span>Assinaturas digitais</span>
+										{canSign && !jaAssinei.has(req.id) && (
+											<button
+												className={styles['btn-assinar']}
+												onClick={() => { setSigningReqId(req.id); setSignDeclaracao(''); }}
+											>
+												+ Assinar
+											</button>
+										)}
+									</div>
+									{(assinaturas[req.id] || []).length === 0 ? (
+										<p className={styles['assinaturas-empty']}>Nenhuma assinatura ainda.</p>
+									) : (
+										<ul className={styles['assinaturas-list']}>
+											{(assinaturas[req.id] || []).map(a => (
+												<li key={a.id} className={styles['assinatura-item']}>
+													<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+														<path d="M9 12l2 2 4-4"/>
+														<circle cx="12" cy="12" r="10"/>
+													</svg>
+													<div className={styles['assinatura-info']}>
+														<span className={styles['assinatura-nome']}>{a.signatario?.nome || 'Usuário'}</span>
+														{a.declaracao && <span className={styles['assinatura-decl']}>"{a.declaracao}"</span>}
+														<span className={styles['assinatura-data']}>
+															{new Date(a.assinado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+														</span>
+													</div>
+												</li>
+											))}
+										</ul>
+									)}
+								</div>
+							)}
+
 							<div className={styles['req-footer']}>
 								<span>Modificado por: <strong>{req.autor?.nome || "Sistema"}</strong></span>
 								<span>
@@ -480,6 +564,50 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 					onSave={handleSaveRequirement}
 					currentUser={safeUser}
 				/>
+			)}
+
+			{signingReqId !== null && (
+				<div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && !signLoading && setSigningReqId(null)}>
+					<div className="modal" style={{ maxWidth: 440 }}>
+						<div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+							<svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+								<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+							</svg>
+							Assinar Requisito Digitalmente
+						</div>
+						<div className="modal-subtitle" style={{ marginBottom: 16 }}>
+							Sua assinatura confirma que você revisou e concorda com este requisito. O registro ficará permanente na trilha de auditoria.
+						</div>
+						<div className="modal-field">
+							<label className="modal-label">Declaração <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>(opcional)</span></label>
+							<textarea
+								className="modal-input"
+								placeholder="Ex: Declaro que revisei e aprovo este requisito conforme especificado."
+								value={signDeclaracao}
+								onChange={(e) => setSignDeclaracao(e.target.value)}
+								rows={3}
+								style={{ resize: 'vertical', minHeight: 68 }}
+								disabled={signLoading}
+							/>
+						</div>
+						<div className="modal-actions">
+							<button className="btn-cancel" onClick={() => setSigningReqId(null)} disabled={signLoading}>
+								Cancelar
+							</button>
+							<button
+								className="btn-confirm"
+								onClick={handleAssinar}
+								disabled={signLoading}
+								style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+							>
+								<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+									<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+								</svg>
+								{signLoading ? 'Assinando…' : 'Assinar'}
+							</button>
+						</div>
+					</div>
+				</div>
 			)}
 
 			<ToastContainer toasts={toasts} onRemove={removeToast} />

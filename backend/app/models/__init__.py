@@ -3,6 +3,7 @@ from .project import Project
 from .requirement import Requirement
 from .requirement_version import RequirementVersion
 from .validacao import Validacao
+from .assinatura import Assinatura
 from .comentario import Comentario
 from .audit_log import AuditLog
 from .token_blocklist import TokenBlocklist
@@ -13,4 +14,4 @@ from .anexo import Anexo
 from .convite_projeto import ConviteProjeto
 from .membro_projeto import MembroProjeto
 
-__all__ = ['User', 'Project', 'Requirement', 'RequirementVersion', 'Validacao', 'Comentario', 'AuditLog', 'TokenBlocklist', 'PasswordResetToken', 'Diagrama', 'BlocoPersonalizado', 'Anexo', 'ConviteProjeto', 'MembroProjeto']
+__all__ = ['User', 'Project', 'Requirement', 'RequirementVersion', 'Validacao', 'Assinatura', 'Comentario', 'AuditLog', 'TokenBlocklist', 'PasswordResetToken', 'Diagrama', 'BlocoPersonalizado', 'Anexo', 'ConviteProjeto', 'MembroProjeto']

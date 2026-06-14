@@ -118,3 +118,9 @@
   .kpiGrid { grid-template-columns: repeat(2, 1fr); }
   .chartsGrid { grid-template-columns: 1fr; }
 }
+
+@media (max-width: 480px) {
+  .kpiGrid { grid-template-columns: 1fr; }
+  .donutWrap { flex-direction: column; align-items: center; }
+  .barRow { grid-template-columns: 90px 1fr 28px; }
+}

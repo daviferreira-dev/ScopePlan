@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useState, useCallback, type ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLogout } from '../utils/helpers';
 import { getInitials, getRoleLabel } from '../utils/helpers';
@@ -10,6 +10,7 @@ interface AppLayoutProps {
   perfil: string;
   activePage: string;
   onPageChange: (page: string) => void;
+  onBack?: () => void;
   topbarTitle: string;
   topbarSubtitle?: string;
   topbarActions?: ReactNode;
@@ -20,6 +21,7 @@ export default function AppLayout({
   perfil,
   activePage,
   onPageChange,
+  onBack,
   topbarTitle,
   topbarSubtitle,
   topbarActions,
@@ -28,6 +30,11 @@ export default function AppLayout({
   const { user } = useAuth();
   const handleLogout = useLogout();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  const handleContentScroll = useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    setScrolled(e.currentTarget.scrollTop > 30);
+  }, []);
 
   const navItems: NavItem[] = NAV_ITEMS[perfil] || [];
 
@@ -79,20 +86,29 @@ export default function AppLayout({
 
       {/* ── MAIN ── */}
       <div className="main">
-        <header className="topbar">
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6" />
-              <line x1="3" y1="12" x2="21" y2="12" />
-              <line x1="3" y1="18" x2="21" y2="18" />
-            </svg>
-          </button>
-          <div className="topbar-left">
-            <div className="topbar-title-wrap">
-              <div className="topbar-title">{topbarTitle}</div>
-              <div className="title-accent-line" />
+        <header className={`topbar${scrolled ? ' topbar--scrolled' : ''}`}>
+          <div className="topbar-leading">
+            <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+            {onBack && (
+              <button className="topbar-back-btn" onClick={onBack} aria-label="Voltar">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            <div className="topbar-left">
+              <div className="topbar-title-wrap">
+                <div className="topbar-title">{topbarTitle}</div>
+                <div className="title-accent-line" />
+              </div>
+              {topbarSubtitle && <div className="topbar-subtitle">{topbarSubtitle}</div>}
             </div>
-            {topbarSubtitle && <div className="topbar-subtitle">{topbarSubtitle}</div>}
           </div>
           <div className="topbar-right">
             {topbarActions}
@@ -100,7 +116,7 @@ export default function AppLayout({
           </div>
         </header>
 
-        <div className="content">
+        <div className="content" onScroll={handleContentScroll}>
           {children}
         </div>
       </div>

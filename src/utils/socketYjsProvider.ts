@@ -35,11 +35,13 @@ export class SocketIoYjsProvider {
 
   private _onYjsUpdate = ({ roomId, update }: { roomId: string; update: string }) => {
     if (roomId !== this.roomId) return;
-    Y.applyUpdate(this.ydoc, base64ToUint8(update));
+    console.debug('[Yjs] received update for', roomId);
+    Y.applyUpdate(this.ydoc, base64ToUint8(update), 'socket');
   };
 
   private _onRoomSynced = ({ roomId, hasHistory }: { roomId: string; hasHistory: boolean }) => {
     if (roomId !== this.roomId) return;
+    console.debug('[Yjs] room-synced', roomId, 'hasHistory=', hasHistory);
     this.syncCallbacks.forEach(cb => cb(hasHistory));
     this.syncCallbacks = [];
   };
@@ -49,7 +51,9 @@ export class SocketIoYjsProvider {
     this.presenceCallback?.(users);
   };
 
-  private _onYdocUpdate = (update: Uint8Array) => {
+  private _onYdocUpdate = (update: Uint8Array, origin: unknown) => {
+    if (origin === 'socket') return; // don't re-broadcast received updates
+    console.debug('[Yjs] sending update for', this.roomId, 'connected=', this.socket.connected);
     this.socket.emit('yjs-update', {
       roomId: this.roomId,
       update: uint8ToBase64(update),
@@ -64,6 +68,7 @@ export class SocketIoYjsProvider {
   }
 
   join(user: PresenceUser): void {
+    console.debug('[Yjs] joining room', this.roomId, 'socket.id=', this.socket.id);
     this.socket.emit('join-room', { roomId: this.roomId, user });
   }
 

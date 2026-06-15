@@ -12,8 +12,8 @@ from app.utils.mailer import get_mailer
 
 convites_bp = Blueprint('convites', __name__)
 
-PERFIS_PERMITIDOS = ('cliente', 'desenvolvedor', 'gestor')
-PERFIL_LABELS = {'cliente': 'Cliente', 'desenvolvedor': 'Desenvolvedor', 'gestor': 'Gestor'}
+PERFIS_PERMITIDOS = ('analista', 'cliente', 'desenvolvedor', 'gestor')
+PERFIL_LABELS = {'analista': 'Analista', 'cliente': 'Cliente', 'desenvolvedor': 'Desenvolvedor', 'gestor': 'Gestor'}
 
 
 def _frontend_url():
@@ -93,6 +93,10 @@ def criar_convite(project_id):
         return {'message': 'E-mail obrigatório'}, 400
     if perfil not in PERFIS_PERMITIDOS:
         return {'message': f'Perfil deve ser: {", ".join(PERFIS_PERMITIDOS)}'}, 400
+
+    from app.utils.crypto import email_lookup_hash
+    if user.email_lookup == email_lookup_hash(email):
+        return {'message': 'Você não pode convidar a si mesmo.'}, 400
 
     # Cancela convite pendente anterior para o mesmo email/projeto/perfil
     existing = ConviteProjeto.query.filter_by(
@@ -303,8 +307,7 @@ def aceitar_convite(token):
     if not project or not project.ativo:
         return {'message': 'Projeto não encontrado'}, 404
 
-    if convite.perfil in ('desenvolvedor', 'gestor'):
-        # Gestor convidado entra como membro do projeto (não substitui o dono/gestor_id)
+    if convite.perfil in ('analista', 'desenvolvedor', 'gestor'):
         already = MembroProjeto.query.filter_by(
             projeto_id=convite.projeto_id, usuario_id=user_id
         ).first()

@@ -20,6 +20,8 @@ interface Props {
   onSave: (text: string) => void;
   onCancel: () => void;
   currentUser: CurrentUser;
+  hideActions?: boolean;
+  onContentChange?: (text: string) => void;
 }
 
 function initials(name: string): string {
@@ -37,14 +39,17 @@ export default function RequirementEditor({
   onSave,
   onCancel,
   currentUser,
+  hideActions = false,
+  onContentChange,
 }: Props) {
   const ydocRef = useRef<Y.Doc | null>(null);
   const providerRef = useRef<SocketIoYjsProvider | null>(null);
   const [synced, setSynced] = useState(false);
+  const [hasHistory, setHasHistory] = useState(false);
   const [presenceUsers, setPresenceUsers] = useState<PresenceUser[]>([]);
   const roomId = `req-${requirementId}`;
 
-  // Initialize Y.Doc once
+  // Initialize Y.Doc once per component lifetime
   if (!ydocRef.current) {
     ydocRef.current = new Y.Doc();
   }
@@ -61,8 +66,12 @@ export default function RequirementEditor({
         'data-placeholder': 'Descreva o requisito em detalhe...',
       },
     },
+    onUpdate: ({ editor: e }) => {
+      onContentChange?.(e.getText());
+    },
   });
 
+  // Provider setup — runs once per requirementId
   useEffect(() => {
     const ydoc = ydocRef.current!;
     const socket = getSocket();
@@ -70,12 +79,9 @@ export default function RequirementEditor({
     providerRef.current = provider;
 
     provider.onPresence(setPresenceUsers);
-
-    provider.onSynced((hasHistory) => {
+    provider.onSynced((serverHasHistory) => {
+      setHasHistory(serverHasHistory);
       setSynced(true);
-      if (!hasHistory && editor && initialContent) {
-        editor.commands.setContent(`<p>${initialContent}</p>`);
-      }
     });
 
     const userColor = presenceColor(currentUser.id);
@@ -88,10 +94,16 @@ export default function RequirementEditor({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [requirementId]);
 
-  // Seed content once editor and initial-sync both ready
+  // Seed initial content once both editor and sync are ready
+  // Runs whenever editor or synced changes — avoids stale closure on editor
   useEffect(() => {
-    if (synced) return; // provider onSynced handles the seeding
-  }, [editor, synced]);
+    if (!synced || !editor || hasHistory || !initialContent) return;
+    const html = initialContent.trimStart().startsWith('<')
+      ? initialContent
+      : `<p>${initialContent}</p>`;
+    editor.commands.setContent(html);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [synced, editor]);
 
   const handleSave = () => {
     if (!editor) return;
@@ -156,7 +168,7 @@ export default function RequirementEditor({
         <EditorContent editor={editor} />
       </div>
 
-      {!readOnly && (
+      {!readOnly && !hideActions && (
         <div className="modal-footer" style={{ padding: '10px 14px', borderTop: '1px solid #e8f0e9' }}>
           <button className="btn-cancel--outlined" onClick={onCancel}>
             Cancelar

@@ -9,6 +9,7 @@ export interface ProjectData {
   nome: string;
   nome_cliente?: string;
   cliente_id?: number;
+  cliente_email?: string;
   descricao?: string;
   gestor_id?: number;
   gestor?: { id: number; nome: string; email: string; perfil: string };
@@ -60,6 +61,14 @@ export interface User {
   email: string;
   perfil: string;
   ativo?: boolean;
+}
+
+export interface MembroData {
+  id: number;
+  nome: string;
+  email: string;
+  perfil: string;
+  origem: 'gestor' | 'cliente' | 'convite';
 }
 
 export interface AuditLogData {
@@ -407,6 +416,12 @@ export const projectsApi = {
     const init: RequestInit = {};
     if (options?.signal) init.signal = options.signal;
     return apiFetch<ProjectMetrics>(`/projetos/${projectId}/metrics`, init);
+  },
+
+  membros(projectId: number, options?: { signal?: AbortSignal }) {
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ membros: MembroData[] }>(`/projetos/${projectId}/membros`, init);
   },
 };
 

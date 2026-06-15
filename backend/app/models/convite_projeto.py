@@ -7,7 +7,7 @@ class ConviteProjeto(db.Model):
     __tablename__ = 'convites_projeto'
     __table_args__ = (
         db.CheckConstraint(
-            "perfil IN ('cliente', 'desenvolvedor', 'gestor')",
+            "perfil IN ('analista', 'cliente', 'desenvolvedor', 'gestor')",
             name='ck_convites_perfil'
         ),
         db.CheckConstraint(

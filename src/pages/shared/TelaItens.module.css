@@ -56,23 +56,28 @@
   to { opacity: 1; transform: translateY(0); }
 }
 @media (max-width: 768px) {
-  .topics-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important; gap: 14px; }
-  .topic-card { padding: 16px 14px; }
+  .topics-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 12px; }
+  .topic-card { padding: 16px 14px; min-height: 90px; }
 }
 @media (max-width: 480px) {
-  .topics-grid { grid-template-columns: 1fr !important; }
-  .topic-card { padding: 14px 12px; }
+  .topics-grid { grid-template-columns: 1fr !important; gap: 10px; }
+  .topic-card { padding: 14px 12px; min-height: auto; }
 }
 
-/* ─── View tabs (Requisitos / Painel) ─── */
+/* ─── Botões do topbar ─── */
+.topbar-btn { white-space: nowrap; }
+.btn-label { display: inline; }
+
+/* ─── View tabs (desktop: pill bar / mobile: bottom nav) ─── */
 .view-tabs {
-  display: inline-flex;
+  display: flex;
   gap: 4px;
   background: var(--progress-bg);
   border: 1px solid var(--card-border);
   border-radius: 11px;
   padding: 4px;
   margin-bottom: 18px;
+  flex-shrink: 0;
 }
 .view-tab {
   display: inline-flex;
@@ -88,10 +93,56 @@
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.18s, color 0.18s;
+  white-space: nowrap;
 }
 .view-tab:hover { color: var(--green-mid); }
 .view-tab-active {
   background: #fff;
   color: var(--green-bright);
   box-shadow: 0 1px 3px rgba(13,51,32,0.08);
+}
+.tab-label { display: inline; }
+
+@media (max-width: 768px) {
+  /* Bottom navigation bar */
+  .view-tabs {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: #fff;
+    border: none;
+    border-top: 1px solid var(--card-border);
+    border-radius: 0;
+    padding: 6px 8px env(safe-area-inset-bottom, 6px);
+    margin-bottom: 0;
+    gap: 2px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.08);
+    justify-content: space-around;
+  }
+  .view-tab {
+    flex: 1;
+    flex-direction: column;
+    gap: 3px;
+    padding: 6px 4px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    align-items: center;
+    justify-content: center;
+  }
+  .view-tab svg { width: 20px; height: 20px; }
+  .view-tab-active {
+    background: var(--progress-bg);
+    color: var(--green-bright);
+    box-shadow: none;
+  }
+
+  /* Compensate content for bottom nav height */
+  .bottom-nav-spacer { display: block; height: 72px; }
+
+  /* Topbar buttons: icon only */
+  .btn-label { display: none; }
+  .topbar-btn { padding: 9px 10px !important; min-width: 38px; justify-content: center; }
 }

@@ -54,6 +54,12 @@
 .req-status.pendente { background: #f1f5f9; color: #64748b; }
 .req-status.rejeitado { background: #fce4e4; color: #7f1d1d; }
 
+.req-prioridade { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 6px; }
+.req-prioridade.prio-critica { background: #4c0519; color: #fecdd3; }
+.req-prioridade.prio-alta { background: #fee2e2; color: #991b1b; }
+.req-prioridade.prio-media { background: #fef3c7; color: #92400e; }
+.req-prioridade.prio-baixa { background: #dbeafe; color: #1e40af; }
+
 .req-title {
   font-family: 'Sora', sans-serif; font-size: 16px; font-weight: 700;
   color: var(--text-primary); margin-bottom: 12px;
@@ -246,6 +252,8 @@
   .req-header { flex-wrap: wrap; gap: 6px; }
   .req-title { font-size: 14px; }
   .req-desc { font-size: 12.5px; }
+  .req-status, .req-prioridade { font-size: 10px; padding: 2px 8px; }
+  .req-id { font-size: 10px; }
   .modal--structured { border-radius: 14px; }
   .modal-title { font-size: 18px; }
 }

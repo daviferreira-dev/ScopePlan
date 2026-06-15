@@ -12,7 +12,7 @@ const SOCKET_URL: string =
 let _socket: Socket | null = null;
 
 export function getSocket(): Socket {
-  if (!_socket || !_socket.connected) {
+  if (!_socket) {
     _socket = io(SOCKET_URL, {
       withCredentials: true,
       auth: () => ({ token: getAccessToken() }),

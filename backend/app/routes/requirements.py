@@ -1,6 +1,7 @@
 from flask import Blueprint, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from app.models import Requirement, RequirementVersion, Project, User, Validacao, Assinatura, AuditLog
+from app.utils.notificacoes import notificar_cliente_revisao, notificar_analista_validacao
 from sqlalchemy.orm import joinedload
 from app.schemas import RequirementCreateSchema, RequirementUpdateSchema, ValidacaoCreateSchema
 from app.utils.decorators import validate_json
@@ -383,6 +384,14 @@ def submit_review(requirement_id):
                  {k: v for k, v in detalhes.items() if v is not None})
     db.session.commit()
 
+    from flask import current_app
+    projeto = db.session.get(Project, requirement.projeto_id)
+    current_app.logger.info(f'[NOTIF] projeto={projeto}, cliente_id={projeto.cliente_id if projeto else None}')
+    if projeto and projeto.cliente_id:
+        cliente = db.session.get(User, projeto.cliente_id)
+        current_app.logger.info(f'[NOTIF] cliente={cliente}, email={cliente.email if cliente else None}')
+        notificar_cliente_revisao(requirement, projeto, cliente)
+
     return {'message': 'Requisito submetido para revisão', 'requisito': requirement.to_dict()}
 
 
@@ -436,6 +445,16 @@ def create_validacao(requirement_id):
     AuditLog.log(user_id, 'validacao', 'requisito', requirement.id, requirement.projeto_id,
                  {k: v for k, v in detalhes.items() if v is not None})
     db.session.commit()
+
+    projeto = db.session.get(Project, requirement.projeto_id)
+    if projeto and requirement.autor_id:
+        autor = db.session.get(User, requirement.autor_id)
+        notificar_analista_validacao(
+            requirement, projeto, autor,
+            resultado=resultado,
+            comentario=data.get('comentario'),
+            cliente_nome=user.nome,
+        )
 
     return {
         'message': 'Validação registrada com sucesso',

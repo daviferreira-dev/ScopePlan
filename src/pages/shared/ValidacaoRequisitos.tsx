@@ -10,6 +10,7 @@ import styles from './ValidacaoRequisitos.module.css';
 import RequirementHistory from "./RequirementHistory";
 import Comentarios from "./Comentarios";
 import RequistoAnexos from "../../components/RequistoAnexos";
+import RequirementEditor from "../../components/RequirementEditor";
 
 interface Topic {
 	id: number;
@@ -123,7 +124,7 @@ function AddRequirementModal({
 	);
 }
 
-export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: Props) {
+export default function ValidacaoRequisitos({ project, topic, onBack, perfil, currentUser }: Props) {
 	const { toasts, addToast, removeToast } = useToast();
 
 	const canAddRequirements = perfil === 'analista';
@@ -394,6 +395,11 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 								<span className={`${styles['req-status']} ${styles[statusClass(req.status)]}`}>
 									{statusLabel(req.status)}
 								</span>
+								{req.prioridade && (
+									<span className={`${styles['req-prioridade']} ${styles[`prio-${req.prioridade}`]}`}>
+										{req.prioridade === 'critica' ? 'Crítica' : req.prioridade === 'alta' ? 'Alta' : req.prioridade === 'media' ? 'Média' : 'Baixa'}
+									</span>
+								)}
 							</div>
 
 							<h3 className={styles['req-title']}>{req.titulo}</h3>
@@ -431,12 +437,24 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil }: 
 									</div>
 									<div className="form-group">
 										<label className="form-label">Descrição</label>
-										<textarea
-											className="form-textarea"
-											value={editDescricao}
-											onChange={(e) => setEditDescricao(e.target.value)}
-											rows={4}
-										/>
+										{currentUser ? (
+											<RequirementEditor
+												requirementId={req.id}
+												initialContent={editDescricao}
+												currentUser={currentUser}
+												hideActions
+												onContentChange={setEditDescricao}
+												onSave={() => {}}
+												onCancel={() => setEditingReqId(null)}
+											/>
+										) : (
+											<textarea
+												className="form-textarea"
+												value={editDescricao}
+												onChange={(e) => setEditDescricao(e.target.value)}
+												rows={4}
+											/>
+										)}
 									</div>
 									<div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
 										<button className="btn-cancel--outlined" onClick={() => setEditingReqId(null)} disabled={editSaving}>

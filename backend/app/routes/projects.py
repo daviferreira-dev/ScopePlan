@@ -282,6 +282,65 @@ def project_metrics(project_id):
     }, 200
 
 
+@projects_bp.route('/<int:project_id>/membros', methods=['GET'])
+@jwt_required()
+def list_membros(project_id):
+    user_id = int(get_jwt_identity())
+    user = db.session.get(User, user_id)
+    if not user:
+        return {'message': 'Usuario nao encontrado'}, 404
+
+    project = Project.query.filter_by(id=project_id, ativo=True).first()
+    if not project:
+        return {'message': 'Projeto nao encontrado'}, 404
+
+    _, access_error = check_user_project_access(user, project_id)
+    if access_error:
+        return access_error
+
+    from app.models.membro_projeto import MembroProjeto
+
+    membros = []
+
+    # Gestor (criador do projeto)
+    if project.gestor:
+        membros.append({
+            'id': project.gestor.id,
+            'nome': project.gestor.nome,
+            'email': project.gestor.email,
+            'perfil': project.gestor.perfil,
+            'origem': 'gestor',
+        })
+
+    # Cliente vinculado
+    if project.cliente:
+        membros.append({
+            'id': project.cliente.id,
+            'nome': project.cliente.nome,
+            'email': project.cliente.email,
+            'perfil': 'cliente',
+            'origem': 'cliente',
+        })
+
+    # Membros adicionados via convite (analistas, devs, gestores extras)
+    ids_ja_incluidos = {m['id'] for m in membros}
+    registros = MembroProjeto.query.filter_by(projeto_id=project_id).all()
+    for r in registros:
+        if r.usuario_id not in ids_ja_incluidos:
+            u = r.usuario
+            if u and u.ativo:
+                membros.append({
+                    'id': u.id,
+                    'nome': u.nome,
+                    'email': u.email,
+                    'perfil': u.perfil,
+                    'origem': 'convite',
+                })
+                ids_ja_incluidos.add(u.id)
+
+    return {'membros': membros}, 200
+
+
 @projects_bp.route('/<int:project_id>/ers.<string:formato>', methods=['POST'])
 @jwt_required()
 def download_ers(project_id, formato):

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { projectsApi, type ProjectData, type RequirementData } from "../../services/api";
+import { useState, useEffect } from "react";
+import { projectsApi, diagramasApi, type ProjectData, type RequirementData, type DiagramaData } from "../../services/api";
 import AppLayout from "../../components/AppLayout";
 import { REQUIREMENT_TOPICS as BASE_TOPICS, TOPIC_TYPE_MAP } from "../../utils/constants";
 import styles from './DownloadERS.module.css';
@@ -53,6 +53,22 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 	const [incluirTodos, setIncluirTodos] = useState(true);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
+	const [diagramas, setDiagramas] = useState<DiagramaData[]>([]);
+	const [diagramaUrls, setDiagramaUrls] = useState<Record<number, string>>({});
+
+	useEffect(() => {
+		diagramasApi.list(project.id).then(async (res) => {
+			setDiagramas(res.diagramas);
+			const urls: Record<number, string> = {};
+			await Promise.all(res.diagramas.map(async (d) => {
+				try {
+					const blob = await diagramasApi.getImageBlob(project.id, d.id);
+					urls[d.id] = URL.createObjectURL(blob);
+				} catch { /* ignora erros individuais */ }
+			}));
+			setDiagramaUrls(urls);
+		}).catch(() => {});
+	}, [project.id]);
 
 	const toggleTopic = (id: number) => {
 		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -61,12 +77,18 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 	const selectedTopics = topicsWithCount.filter((t) => selectedIds.includes(t.id));
 	const previewTopics = canFilterTopics ? selectedTopics : topicsWithCount;
 
+	const sortReqs = (reqs: RequirementData[]) =>
+		[...reqs].sort((a, b) => {
+			const num = (r: RequirementData) => { const m = (r.codigo || '').match(/(\d+)$/); return m ? parseInt(m[1]) : 1e9; };
+			return num(a) - num(b) || (a.id - b.id);
+		});
+
 	// ── Espelha exatamente o que o PDF gera: aplica o filtro "incluir não aprovados"
 	//    e mantém só seções com requisitos (igual a _group_by_topic no backend) ──
 	const previewGroups = previewTopics
 		.map((t) => ({
 			...t,
-			reqs: incluirTodos ? t.requirements : t.requirements.filter((r) => APPROVED.has(r.status)),
+			reqs: sortReqs(incluirTodos ? t.requirements : t.requirements.filter((r) => APPROVED.has(r.status))),
 		}))
 		.filter((g) => g.reqs.length > 0);
 
@@ -318,9 +340,24 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 									<div className={styles['doc-section']}>
 										<div className={styles['doc-h1']}>{diagNum}. Diagramas</div>
 										<div className={styles['doc-rule-light']} />
-										<p className={styles['doc-intro']}>
-											As imagens e diagramas anexados ao projeto são incluídos nesta seção do documento exportado.
-										</p>
+										{diagramas.length === 0 ? (
+											<p className={styles['doc-intro']}>Nenhum diagrama anexado ao projeto.</p>
+										) : (
+											diagramas.map((d, i) => (
+												<div key={d.id} style={{ marginBottom: 24 }}>
+													<div className={styles['doc-h2']}>{diagNum}.{i + 1}. {d.nome || `Diagrama ${i + 1}`}</div>
+													{diagramaUrls[d.id] ? (
+														<img
+															src={diagramaUrls[d.id]}
+															alt={d.nome || `Diagrama ${i + 1}`}
+															style={{ maxWidth: '100%', maxHeight: 400, objectFit: 'contain', borderRadius: 6, border: '1px solid #e2e8f0', marginTop: 8, display: 'block' }}
+														/>
+													) : (
+														<p className={styles['doc-intro']} style={{ color: '#9ca3af' }}>Carregando imagem...</p>
+													)}
+												</div>
+											))
+										)}
 									</div>
 								)}
 

@@ -94,13 +94,15 @@
   background: #fff; box-shadow: 0 2px 16px rgba(0,0,0,0.10);
   width: 210mm; min-height: 297mm; border-radius: 4px;
   font-family: Helvetica, Arial, sans-serif; color: #0f172a;
-  display: flex; flex-direction: column; overflow: hidden; position: relative;
+  display: grid; grid-template-rows: auto 1fr auto;
+  position: relative; flex-shrink: 0;
 }
 
 /* Capa — fundo escuro + barra verde lateral (igual _on_first_page) */
 .doc-cover {
-  background: #0f172a; color: #fff; flex: 1;
+  background: #0f172a; color: #fff;
   padding: 9cm 2.2cm 2.2cm 2.9cm; border-left: 0.7cm solid #1a6634;
+  grid-row: 1 / -1;
 }
 .doc-cover-label { font-size: 9pt; color: #22c55a; letter-spacing: .5px; margin-bottom: 6px; }
 .doc-cover-title { font-size: 30pt; font-weight: bold; line-height: 1.15; margin-bottom: 14px; }
@@ -117,7 +119,7 @@
   padding: 0 2.2cm; font-size: 8pt;
 }
 .doc-header b { font-weight: bold; }
-.doc-content { flex: 1; padding: 0.8cm 2.2cm 0.6cm; }
+.doc-content { padding: 0.8cm 2.2cm 0.6cm; }
 .doc-footer {
   flex-shrink: 0; margin: 0 2.2cm; padding: 6px 0 0.55cm;
   border-top: .5px solid #cbd5e1; display: flex; justify-content: space-between;
@@ -133,6 +135,7 @@
 
 .doc-section { margin-top: 18px; }
 .doc-h1 { font-size: 15pt; font-weight: bold; color: #1a6634; margin: 18px 0 8px; }
+.doc-h2 { font-size: 12pt; font-weight: 600; color: #1a6634; margin: 14px 0 6px; }
 .doc-desc { font-size: 10pt; line-height: 1.5; text-align: justify; }
 .doc-intro { font-size: 9.5pt; color: #64748b; margin-bottom: 10px; text-align: justify; }
 

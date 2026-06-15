@@ -62,6 +62,7 @@ class Project(db.Model):
             'gestor': self.gestor.to_dict() if self.gestor else None,
             'cliente_id': self.cliente_id,
             'nome_cliente': self.nome_cliente or (self.cliente.nome if self.cliente else None),
+            'cliente_email': self.cliente.email if self.cliente else None,
             'requisitos_count': total,
             'aprovados_count': aprovados,
             'ativo': self.ativo,

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { convitesApi, type ConviteData } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Props {
   projectId: number;
@@ -27,12 +28,13 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 // Perfis que podem ser convidados
-const PERFIS_CONVITE = ['desenvolvedor', 'cliente', 'gestor'] as const;
+const PERFIS_CONVITE = ['analista', 'desenvolvedor', 'cliente', 'gestor'] as const;
 type PerfilConvite = typeof PERFIS_CONVITE[number];
 
 type UsuarioEncontrado = { nome: string; perfil: string } | null;
 
 export default function ConvitesModal({ projectId, projectName, onClose }: Props) {
+  const { user: currentUser } = useAuth();
   const [convites, setConvites] = useState<ConviteData[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -80,7 +82,6 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
             setPerfil(pConvite);
             setPerfilBloqueado(true);
           } else {
-            // Perfil não convidável (analista, gestor) — será bloqueado no envio
             setPerfilBloqueado(false);
           }
         } else {
@@ -99,6 +100,12 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
     e.preventDefault();
     const trimmed = email.trim();
     if (!trimmed) return;
+
+    // Bloqueia auto-convite
+    if (currentUser?.email && trimmed.toLowerCase() === currentUser.email.toLowerCase()) {
+      setError('Você não pode convidar a si mesmo.');
+      return;
+    }
 
     // Bloqueia convite para perfis não permitidos
     if (usuarioEncontrado && !PERFIS_CONVITE.includes(usuarioEncontrado.perfil as PerfilConvite)) {

@@ -64,6 +64,16 @@ GRAY_BORDER= (203, 213, 225)
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
+def _sort_reqs(reqs):
+    """Sort requirements by numeric suffix in codigo (RF1 < RF2 < RF10), fallback to id."""
+    import re
+    def _key(r):
+        codigo = r.get('codigo') or ''
+        m = re.search(r'(\d+)$', codigo)
+        return (int(m.group(1)) if m else 10**9, r.get('id', 0))
+    return sorted(reqs, key=_key)
+
+
 def _group_by_topic(requirements):
     groups = {}
     for req in requirements:
@@ -72,10 +82,10 @@ def _group_by_topic(requirements):
     ordered = []
     for tipo in TOPIC_ORDER:
         if tipo in groups:
-            ordered.append((tipo, groups[tipo]))
+            ordered.append((tipo, _sort_reqs(groups[tipo])))
     for tipo in groups:
         if tipo not in TOPIC_ORDER:
-            ordered.append((tipo, groups[tipo]))
+            ordered.append((tipo, _sort_reqs(groups[tipo])))
     return ordered
 
 

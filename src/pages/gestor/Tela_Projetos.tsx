@@ -7,8 +7,10 @@ import ValidacaoRequisitos from '../shared/ValidacaoRequisitos';
 import Auditoria from '../shared/Auditoria';
 import DownloadERS from '../shared/DownloadERS';
 import GestaoDashboard from './GestaoDashboard';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function GestorProjetos() {
+  const { user } = useAuth();
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
   const [view, setView] = useState<View>('projetos');
   const [topicSelection, setTopicSelection] = useState<TopicSelection | null>(null);
@@ -61,6 +63,7 @@ export default function GestorProjetos() {
         topic={{ ...topicSelection.topic, requirements: topicSelection.requirements }}
         onBack={handleBack}
         perfil="gestor"
+        currentUser={user ? { id: user.id, nome: user.nome } : undefined}
       />
     );
   }

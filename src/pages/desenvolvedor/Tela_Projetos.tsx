@@ -6,8 +6,10 @@ import TelaItens from '../shared/TelaItens';
 import ValidacaoRequisitos from '../shared/ValidacaoRequisitos';
 import Auditoria from '../shared/Auditoria';
 import DownloadERS from '../shared/DownloadERS';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function DesenvolvedorProjetos() {
+  const { user } = useAuth();
   const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
   const [view, setView] = useState<View>('projetos');
   const [topicSelection, setTopicSelection] = useState<TopicSelection | null>(null);
@@ -60,6 +62,7 @@ export default function DesenvolvedorProjetos() {
         topic={{ ...topicSelection.topic, requirements: topicSelection.requirements }}
         onBack={handleBack}
         perfil="desenvolvedor"
+        currentUser={user ? { id: user.id, nome: user.nome } : undefined}
       />
     );
   }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { requirementsApi, blocosApi } from '../../services/api';
-import type { RequirementData, ProjectData, BlocoPersonalizadoData } from '../../services/api';
+import { requirementsApi, blocosApi, projectsApi } from '../../services/api';
+import type { RequirementData, ProjectData, BlocoPersonalizadoData, MembroData } from '../../services/api';
 import AppLayout from '../../components/AppLayout';
 import { REQUIREMENT_TOPICS, type RequirementTopic, type Perfil } from '../../utils/constants';
 import Dashboard from './Dashboard';
@@ -24,7 +24,87 @@ interface Props {
 
 const BASE_TOPICS = REQUIREMENT_TOPICS;
 
-type Tab = 'lista' | 'kanban' | 'painel' | 'diagramas';
+type Tab = 'lista' | 'kanban' | 'painel' | 'diagramas' | 'equipe';
+
+const PERFIL_LABEL: Record<string, string> = {
+	analista: 'Analista',
+	gestor: 'Gestor',
+	cliente: 'Cliente',
+	desenvolvedor: 'Desenvolvedor',
+};
+
+const PERFIL_COLOR: Record<string, { bg: string; text: string }> = {
+	analista:     { bg: '#eff6ff', text: '#1d4ed8' },
+	gestor:       { bg: '#f0fdf4', text: '#15803d' },
+	cliente:      { bg: '#fefce8', text: '#a16207' },
+	desenvolvedor:{ bg: '#faf5ff', text: '#7e22ce' },
+};
+
+function EquipeTab({ membros, loading }: { membros: MembroData[]; loading: boolean }) {
+	if (loading) {
+		return (
+			<div className="empty-state">
+				<div className="empty-title">Carregando equipe...</div>
+			</div>
+		);
+	}
+	if (!membros.length) {
+		return (
+			<div className="empty-state">
+				<div className="empty-icon">
+					<svg width="30" height="30" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+						<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+						<path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+					</svg>
+				</div>
+				<div className="empty-title">Nenhum membro encontrado</div>
+			</div>
+		);
+	}
+	return (
+		<div style={{ padding: '24px 0', maxWidth: 640 }}>
+			<div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+				{membros.map(m => {
+					const colors = PERFIL_COLOR[m.perfil] ?? { bg: '#f1f5f9', text: '#475569' };
+					return (
+						<div
+							key={m.id}
+							style={{
+								display: 'flex', alignItems: 'center', gap: 14,
+								padding: '14px 18px', borderRadius: 12,
+								border: '1px solid var(--card-border, #e2e8f0)',
+								background: 'var(--card-bg, #fff)',
+							}}
+						>
+							<div style={{
+								width: 40, height: 40, borderRadius: '50%', flexShrink: 0,
+								background: colors.bg, color: colors.text,
+								display: 'flex', alignItems: 'center', justifyContent: 'center',
+								fontWeight: 700, fontSize: 15, letterSpacing: '-0.5px',
+							}}>
+								{m.nome.split(' ').slice(0, 2).map(w => w[0]?.toUpperCase()).join('')}
+							</div>
+							<div style={{ flex: 1, minWidth: 0 }}>
+								<div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 2 }}>
+									{m.nome}
+								</div>
+								<div style={{ fontSize: 12.5, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+									{m.email}
+								</div>
+							</div>
+							<span style={{
+								padding: '3px 10px', borderRadius: 20, fontSize: 12, fontWeight: 600,
+								background: colors.bg, color: colors.text, flexShrink: 0,
+							}}>
+								{PERFIL_LABEL[m.perfil] ?? m.perfil}
+							</span>
+						</div>
+					);
+				})}
+			</div>
+		</div>
+	);
+}
 
 export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDownload, onAuditPage }: Props) {
 	const [requirements, setRequirements] = useState<RequirementData[]>([]);
@@ -32,6 +112,8 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 	const [error, setError] = useState<string | null>(null);
 	const [tab, setTab] = useState<Tab>('lista');
 	const [blocos, setBlocos] = useState<BlocoPersonalizadoData[]>([]);
+	const [membros, setMembros] = useState<MembroData[]>([]);
+	const [membrosLoading, setMembrosLoading] = useState(false);
 	const [showNewBlocoInput, setShowNewBlocoInput] = useState(false);
 	const [newBlocoNome, setNewBlocoNome] = useState('');
 	const [blocoLoading, setBlocoLoading] = useState(false);
@@ -61,6 +143,17 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 		load();
 		return () => controller.abort();
 	}, [project.id]);
+
+	useEffect(() => {
+		if (tab !== 'equipe') return;
+		const controller = new AbortController();
+		setMembrosLoading(true);
+		projectsApi.membros(project.id, { signal: controller.signal })
+			.then(r => { if (!controller.signal.aborted) setMembros(r.membros); })
+			.catch(() => {})
+			.finally(() => { if (!controller.signal.aborted) setMembrosLoading(false); });
+		return () => controller.abort();
+	}, [tab, project.id]);
 
 	useEffect(() => {
 		if (showNewBlocoInput) newBlocoInputRef.current?.focus();
@@ -142,9 +235,10 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 				<div style={{ display: 'flex', gap: 8 }}>
 					{canEdit && (
 						<button
-							className="btn-download"
+							className={`btn-download ${styles['topbar-btn']}`}
 							onClick={() => setShowConvites(true)}
 							style={{ background: 'transparent', color: 'var(--green-bright)', border: '1.5px solid var(--green-bright)' }}
+							title="Convidar membro"
 						>
 							<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 								<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2" />
@@ -152,63 +246,56 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 								<line x1="19" y1="8" x2="19" y2="14" />
 								<line x1="22" y1="11" x2="16" y2="11" />
 							</svg>
-							Convidar
+							<span className={styles['btn-label']}>Convidar</span>
 						</button>
 					)}
-					<button className="btn-download" onClick={onDownload}>
+					<button className={`btn-download ${styles['topbar-btn']}`} onClick={onDownload} title="Baixar ERS">
 						<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 							<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" />
 						</svg>
-						Baixar ERS
+						<span className={styles['btn-label']}>Baixar ERS</span>
 					</button>
 				</div>
 			}
 		>
-			<div className={styles['view-tabs']}>
-				<button
-					className={`${styles['view-tab']} ${tab === 'lista' ? styles['view-tab-active'] : ''}`}
-					onClick={() => setTab('lista')}
-				>
+			<nav className={styles['view-tabs']}>
+				<button className={`${styles['view-tab']} ${tab === 'lista' ? styles['view-tab-active'] : ''}`} onClick={() => setTab('lista')}>
 					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
 						<line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
 						<line x1="3" y1="6" x2="3.01" y2="6" /><line x1="3" y1="12" x2="3.01" y2="12" /><line x1="3" y1="18" x2="3.01" y2="18" />
 					</svg>
-					Requisitos
+					<span className={styles['tab-label']}>Requisitos</span>
 				</button>
-				<button
-					className={`${styles['view-tab']} ${tab === 'kanban' ? styles['view-tab-active'] : ''}`}
-					onClick={() => setTab('kanban')}
-				>
+				<button className={`${styles['view-tab']} ${tab === 'kanban' ? styles['view-tab-active'] : ''}`} onClick={() => setTab('kanban')}>
 					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
-						<rect x="3" y="3" width="5" height="18" rx="1.5" />
-						<rect x="10" y="3" width="5" height="12" rx="1.5" />
-						<rect x="17" y="3" width="5" height="15" rx="1.5" />
+						<rect x="3" y="3" width="5" height="18" rx="1.5" /><rect x="10" y="3" width="5" height="12" rx="1.5" /><rect x="17" y="3" width="5" height="15" rx="1.5" />
 					</svg>
-					Kanban
+					<span className={styles['tab-label']}>Kanban</span>
 				</button>
-				<button
-					className={`${styles['view-tab']} ${tab === 'painel' ? styles['view-tab-active'] : ''}`}
-					onClick={() => setTab('painel')}
-				>
+				<button className={`${styles['view-tab']} ${tab === 'painel' ? styles['view-tab-active'] : ''}`} onClick={() => setTab('painel')}>
 					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
 						<line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
 					</svg>
-					Painel
+					<span className={styles['tab-label']}>Painel</span>
 				</button>
-				<button
-					className={`${styles['view-tab']} ${tab === 'diagramas' ? styles['view-tab-active'] : ''}`}
-					onClick={() => setTab('diagramas')}
-				>
+				<button className={`${styles['view-tab']} ${tab === 'diagramas' ? styles['view-tab-active'] : ''}`} onClick={() => setTab('diagramas')}>
 					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
-						<rect x="3" y="3" width="18" height="18" rx="2" />
-						<circle cx="8.5" cy="8.5" r="1.5" />
-						<path d="M21 15l-5-5L5 21" />
+						<rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" />
 					</svg>
-					Diagramas
+					<span className={styles['tab-label']}>Diagramas</span>
 				</button>
-			</div>
+				<button className={`${styles['view-tab']} ${tab === 'equipe' ? styles['view-tab-active'] : ''}`} onClick={() => setTab('equipe')}>
+					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+						<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+						<path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+					</svg>
+					<span className={styles['tab-label']}>Equipe</span>
+				</button>
+			</nav>
 
-			{tab === 'painel' ? (
+			{tab === 'equipe' ? (
+				<EquipeTab membros={membros} loading={membrosLoading} />
+			) : tab === 'painel' ? (
 				<Dashboard projectId={project.id} />
 			) : tab === 'diagramas' ? (
 				<Diagramas projectId={project.id} canEdit={canEdit} />
@@ -330,6 +417,7 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 					)}
 				</div>
 			)}
+			<div className={styles['bottom-nav-spacer']} />
 		</AppLayout>
 
 		{showConvites && (

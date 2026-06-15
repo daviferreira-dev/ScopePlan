@@ -12,13 +12,12 @@ def get_user_project_ids(user):
     elif user.perfil in ('analista', 'gestor'):
         projects = Project.query.filter_by(gestor_id=user.id, ativo=True).with_entities(Project.id).all()
         ids = [p[0] for p in projects]
-        # Gestores convidados para um projeto acessam via vínculo de membro
-        if user.perfil == 'gestor':
-            from app.models.membro_projeto import MembroProjeto
-            membro_ids = [m[0] for m in db.session.query(MembroProjeto.projeto_id).filter_by(
-                usuario_id=user.id
-            ).all()]
-            ids = list(set(ids + membro_ids))
+        # Analistas e gestores convidados acessam via vínculo de membro
+        from app.models.membro_projeto import MembroProjeto
+        membro_ids = [m[0] for m in db.session.query(MembroProjeto.projeto_id).filter_by(
+            usuario_id=user.id
+        ).all()]
+        ids = list(set(ids + membro_ids))
         return ids
 
     elif user.perfil == 'desenvolvedor':
@@ -49,11 +48,10 @@ def check_user_project_access(user, projeto_id):
 
     elif user.perfil in ('analista', 'gestor'):
         if project.gestor_id != user.id:
-            # Gestor convidado: acesso via vínculo de membro do projeto
-            if user.perfil == 'gestor':
-                from app.models.membro_projeto import MembroProjeto
-                if MembroProjeto.query.filter_by(projeto_id=projeto_id, usuario_id=user.id).first():
-                    return project, None
+            # Analista ou gestor convidado: acesso via vínculo de membro
+            from app.models.membro_projeto import MembroProjeto
+            if MembroProjeto.query.filter_by(projeto_id=projeto_id, usuario_id=user.id).first():
+                return project, None
             return project, ({'message': 'Acesso não autorizado a este projeto'}, 403)
 
     elif user.perfil == 'desenvolvedor':

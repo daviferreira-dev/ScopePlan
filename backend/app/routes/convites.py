@@ -176,9 +176,6 @@ def criar_convite(project_id):
               </tr>
             </table>
 
-            <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Ou copie e cole o link no navegador:</p>
-            <p style="margin:0 0 24px;font-size:11px;color:#1a6634;word-break:break-all;">{link}</p>
-
             <hr style="border:none;border-top:1px solid #e2e8f0;margin-bottom:20px;">
 
             <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">

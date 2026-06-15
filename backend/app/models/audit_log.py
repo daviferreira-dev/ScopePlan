@@ -24,6 +24,7 @@ class AuditLog(db.Model):
     criado_em = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), index=True)
 
     usuario = db.relationship("User", backref="audit_logs", lazy="joined")
+    projeto = db.relationship("Project", lazy="joined", foreign_keys=[projeto_id])
 
     def to_dict(self):
         """Convert audit log to dictionary"""
@@ -37,6 +38,7 @@ class AuditLog(db.Model):
             'entidade_tipo': self.entidade_tipo,
             'entidade_id': self.entidade_id,
             'projeto_id': self.projeto_id,
+            'projeto_nome': self.projeto.nome if self.projeto else None,
             'detalhes': json.loads(self.detalhes) if self.detalhes else None,
             'ip': self.ip,
             'user_agent': self.user_agent,

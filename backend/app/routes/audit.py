@@ -51,7 +51,7 @@ def list_audit_logs():
     per_page = int(per_page)
 
     # Limit per_page
-    per_page = min(per_page, 100)
+    per_page = min(per_page, 1000)
 
     # A auditoria é EXCLUSIVAMENTE sobre projetos: logs sem projeto
     # (login, logout, reset de senha, criação/edição de usuário) nunca aparecem.

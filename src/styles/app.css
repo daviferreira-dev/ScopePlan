@@ -111,10 +111,13 @@ html, body {
 .sidebar-logo {
   padding: 28px 22px 22px;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .sidebar-logo img {
-  width: 140px;
+  width: 185px;
   filter: brightness(0) invert(1);
   opacity: 0.9;
 }

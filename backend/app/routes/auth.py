@@ -198,12 +198,71 @@ def logout():
 
 
 def _build_reset_email(code):
-    return (
+    """Retorna (texto, html) no mesmo padrão visual do e-mail de convite."""
+    body_text = (
         f'Seu código de recuperação de senha do ScopePlan é:\n\n'
         f'    {code}\n\n'
         f'Digite-o na tela de recuperação para definir uma nova senha.\n'
         f'O código expira em 15 minutos. Se não foi você, ignore este e-mail.'
     )
+
+    body_html = f"""<!DOCTYPE html>
+<html lang="pt-BR">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f0fdf4;font-family:'Segoe UI',Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;padding:40px 0;">
+    <tr><td align="center">
+      <table width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,102,52,0.10);border:1px solid #bbf7d0;">
+
+        <!-- Header -->
+        <tr>
+          <td style="background:#1a6634;padding:28px 36px;text-align:center;">
+            <span style="font-size:22px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;">ScopePlan</span>
+          </td>
+        </tr>
+
+        <!-- Body -->
+        <tr>
+          <td style="padding:36px 36px 28px;">
+            <p style="margin:0 0 8px;font-size:13px;color:#6b7280;">Recuperação de senha</p>
+            <h1 style="margin:0 0 24px;font-size:22px;font-weight:800;color:#0f172a;line-height:1.3;">Seu código de acesso</h1>
+
+            <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:10px;margin-bottom:28px;">
+              <tr>
+                <td style="padding:20px;text-align:center;">
+                  <p style="margin:0 0 8px;font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.08em;">Código de recuperação</p>
+                  <p style="margin:0;font-size:32px;font-weight:800;color:#166534;letter-spacing:0.3em;">{code}</p>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 24px;font-size:14px;color:#374151;line-height:1.6;">
+              Digite o código acima na tela de recuperação para definir uma nova senha.
+              O código expira em <strong>15 minutos</strong>.
+            </p>
+
+            <hr style="border:none;border-top:1px solid #e2e8f0;margin-bottom:20px;">
+
+            <p style="margin:0;font-size:12px;color:#9ca3af;line-height:1.6;">
+              Se você não solicitou a recuperação de senha, pode ignorar este e-mail com segurança.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td style="background:#f8fafc;padding:16px 36px;text-align:center;border-top:1px solid #e2e8f0;">
+            <p style="margin:0;font-size:11px;color:#9ca3af;">© 2026 ScopePlan · Todos os direitos reservados.</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>"""
+
+    return body_text, body_html
 
 
 @auth_bp.route('/forgot-password', methods=['POST'])
@@ -225,8 +284,9 @@ def forgot_password():
     db.session.commit()
 
     try:
+        reset_text, reset_html = _build_reset_email(code)
         get_mailer().send(user.email, 'Código de recuperação de senha — ScopePlan',
-                          _build_reset_email(code))
+                          reset_text, html=reset_html)
     except Exception:
         current_app.logger.exception('Falha ao enviar e-mail de reset')
         return {'message': 'Não foi possível enviar o e-mail de recuperação. Tente novamente.'}, 502

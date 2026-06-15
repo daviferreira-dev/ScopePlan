@@ -24,6 +24,10 @@ const formatEventTime = (dateString: string): string => {
 
 const getTypeLabel = (type: string): string => ACTION_LABELS[type] || type;
 
+// Rótulo do evento no formato "Projeto - Ação" (ex.: "ScopePlan - Requisito criado")
+const getEventLabel = (ev: AuditLogData): string =>
+	ev.projeto_nome ? `${ev.projeto_nome} - ${getTypeLabel(ev.acao)}` : getTypeLabel(ev.acao);
+
 // detalhes vem como objeto JSON do backend (ex.: {"titulo": "...", "tipo": "..."})
 const formatDetalhes = (detalhes: AuditLogData['detalhes']): string => {
 	if (!detalhes) return '';
@@ -97,7 +101,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 					if (filterDateFrom) filters.data_inicio = filterDateFrom;
 					if (filterDateTo) filters.data_fim = filterDateTo;
 					if (searchDebounced.trim()) filters.search = searchDebounced.trim();
-					const response = await auditApi.list(page, 20, filters, { signal: controller.signal });
+					const response = await auditApi.list(page, 1000, filters, { signal: controller.signal });
 					if (controller.signal.aborted) return;
 					setEvents(response.audit_logs);
 					setTotalPages(response.pages || 1);
@@ -490,7 +494,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 																	<div className={styles['aud-event-top']}>
 																		<span className={styles['aud-event-badge']} style={{ background: colors.bg, color: colors.text }}>
 																			{TYPE_ICONS[ev.acao] || TYPE_ICONS.criacao}
-																			{getTypeLabel(ev.acao)}
+																			{getEventLabel(ev)}
 																		</span>
 																		<span className={styles['aud-event-time']}>
 																			<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
@@ -555,7 +559,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 							<div className={styles['aud-modal-header']} style={{ borderLeftColor: colors.dot }}>
 								<span className={styles['aud-modal-badge']} style={{ background: colors.bg, color: colors.text }}>
 									{TYPE_ICONS[selectedEvent.acao] || TYPE_ICONS.criacao}
-									{getTypeLabel(selectedEvent.acao)}
+									{getEventLabel(selectedEvent)}
 								</span>
 								<button className={styles['aud-modal-close']} onClick={() => setSelectedEvent(null)}>
 									<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path d="M18 6L6 18M6 6l12 12" /></svg>

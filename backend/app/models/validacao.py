@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class Validacao(db.Model):
@@ -28,5 +29,5 @@ class Validacao(db.Model):
             'validador': self.validador.to_dict() if self.validador else None,
             'resultado': self.resultado,
             'comentario': self.comentario,
-            'validado_em': self.validado_em.isoformat() if self.validado_em else None
+            'validado_em': utc_iso(self.validado_em),
         }

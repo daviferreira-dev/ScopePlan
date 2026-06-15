@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class Diagrama(db.Model):
@@ -22,5 +23,5 @@ class Diagrama(db.Model):
             'nome': self.nome,
             'tipo_mime': self.tipo_mime,
             'tamanho': self.tamanho,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
+            'criado_em': utc_iso(self.criado_em),
         }

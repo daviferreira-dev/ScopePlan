@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import bcrypt
 from app import db
+from app.utils.time_utils import utc_iso
 from app.utils.crypto import EncryptedString, email_lookup_hash
 
 
@@ -60,6 +61,6 @@ class User(db.Model):
             'email': self.email, # auto-decrypted by EncryptedString
             'perfil': self.perfil,
             'ativo': self.ativo,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
-            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None,
+            'criado_em': utc_iso(self.criado_em),
+            'atualizado_em': utc_iso(self.atualizado_em),
         }

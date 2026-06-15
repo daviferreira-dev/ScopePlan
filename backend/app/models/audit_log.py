@@ -1,6 +1,7 @@
 import json
 from datetime import datetime, timezone
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class AuditLog(db.Model):
@@ -29,6 +30,8 @@ class AuditLog(db.Model):
         return {
             'id': self.id,
             'usuario_id': self.usuario_id,
+            'usuario_nome': self.usuario.nome if self.usuario else None,
+            'usuario_email': self.usuario.email if self.usuario else None,
             'usuario': self.usuario.to_dict() if self.usuario else None,
             'acao': self.acao,
             'entidade_tipo': self.entidade_tipo,
@@ -37,7 +40,7 @@ class AuditLog(db.Model):
             'detalhes': json.loads(self.detalhes) if self.detalhes else None,
             'ip': self.ip,
             'user_agent': self.user_agent,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
+            'criado_em': utc_iso(self.criado_em),
         }
 
     @staticmethod

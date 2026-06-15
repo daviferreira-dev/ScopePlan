@@ -13,5 +13,6 @@ from .bloco_personalizado import BlocoPersonalizado
 from .anexo import Anexo
 from .convite_projeto import ConviteProjeto
 from .membro_projeto import MembroProjeto
+from .visao_geral import ProjetoVisaoGeral
 
-__all__ = ['User', 'Project', 'Requirement', 'RequirementVersion', 'Validacao', 'Assinatura', 'Comentario', 'AuditLog', 'TokenBlocklist', 'PasswordResetToken', 'Diagrama', 'BlocoPersonalizado', 'Anexo', 'ConviteProjeto', 'MembroProjeto']
+__all__ = ['User', 'Project', 'Requirement', 'RequirementVersion', 'Validacao', 'Assinatura', 'Comentario', 'AuditLog', 'TokenBlocklist', 'PasswordResetToken', 'Diagrama', 'BlocoPersonalizado', 'Anexo', 'ConviteProjeto', 'MembroProjeto', 'ProjetoVisaoGeral']

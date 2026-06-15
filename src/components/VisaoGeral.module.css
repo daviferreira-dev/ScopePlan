@@ -1,0 +1,134 @@
+.container { display: flex; flex-direction: column; gap: 24px; padding: 4px 0 24px; }
+
+.header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0 0 4px;
+}
+.subtitle { font-size: 13px; color: var(--text-muted); margin: 0; line-height: 1.6; }
+
+/* Grid 7 cards — 2 cols + 1 col última linha centrada */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.card {
+  background: #fff;
+  border: 1.5px solid var(--card-border);
+  border-radius: 16px;
+  padding: 20px 22px 18px;
+  display: flex; flex-direction: column; gap: 10px;
+  position: relative; overflow: hidden;
+  transition: box-shadow 0.18s, border-color 0.18s, transform 0.15s;
+}
+.card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: var(--card-accent);
+  border-radius: 16px 16px 0 0;
+}
+
+.cardClickable { cursor: pointer; }
+.cardClickable:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  border-color: var(--card-accent);
+  transform: translateY(-1px);
+}
+.cardClickable:hover .editHint { opacity: 1; }
+
+.cardEditing {
+  border-color: var(--card-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent) 12%, transparent);
+}
+
+.cardTop {
+  display: flex; align-items: center; gap: 10px;
+}
+.sigla {
+  font-size: 9.5px; font-weight: 800; letter-spacing: 1px;
+  color: #fff; padding: 3px 8px; border-radius: 6px;
+  white-space: nowrap; flex-shrink: 0;
+}
+.cardTitle {
+  font-size: 15px; font-weight: 700; color: var(--text-primary); flex: 1;
+}
+.editHint {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; color: var(--text-muted); opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.descricao {
+  font-size: 12px; color: var(--text-muted); margin: 0; line-height: 1.55;
+  border-bottom: 1px solid var(--card-border); padding-bottom: 10px;
+}
+
+.content {
+  font-size: 14px; color: var(--text-primary); line-height: 1.7;
+  white-space: pre-wrap; min-height: 48px;
+}
+.contentEmpty {
+  color: var(--text-muted); font-style: italic; font-size: 13px;
+}
+
+/* Edit area */
+.editArea { display: flex; flex-direction: column; gap: 8px; }
+.textarea {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  border: 1.5px solid var(--card-accent);
+  font-family: 'Sora', sans-serif; font-size: 13.5px; color: var(--text-primary);
+  background: var(--surface); resize: vertical; outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--card-accent) 10%, transparent);
+  line-height: 1.6; box-sizing: border-box;
+  transition: box-shadow 0.15s;
+}
+.textarea:focus {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--card-accent) 16%, transparent);
+}
+
+.editActions {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.hint { font-size: 11px; color: var(--text-muted); flex: 1; }
+.btnCancel {
+  padding: 6px 14px; border-radius: 8px;
+  border: 1px solid var(--card-border); background: var(--surface);
+  font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 500;
+  color: var(--text-muted); cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btnCancel:hover { background: var(--progress-bg); border-color: rgba(34,136,63,0.2); }
+.btnSave {
+  padding: 6px 16px; border-radius: 8px;
+  border: none; background: var(--card-accent);
+  font-family: 'Sora', sans-serif; font-size: 12px; font-weight: 600;
+  color: #fff; cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.btnSave:hover { opacity: 0.88; transform: translateY(-1px); }
+.btnSave:disabled, .btnCancel:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.saveError {
+  font-size: 12px; color: #b91c1c; background: #fef2f2;
+  border: 1px solid #fecaca; border-radius: 8px; padding: 7px 11px;
+}
+
+/* Loading */
+.loading {
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+  padding: 60px 20px; color: var(--text-muted); font-size: 13px;
+}
+.spinner {
+  width: 22px; height: 22px;
+  border: 2.5px solid var(--progress-bg); border-top-color: var(--green-bright);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 768px) {
+  .grid { grid-template-columns: 1fr; }
+  .card { padding: 16px 16px 14px; }
+  .hint { display: none; }
+}

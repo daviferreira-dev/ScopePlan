@@ -657,7 +657,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 														<span className={styles['assinatura-nome']}>{a.signatario?.nome || 'Usuário'}</span>
 														{a.declaracao && <span className={styles['assinatura-decl']}>"{a.declaracao}"</span>}
 														<span className={styles['assinatura-data']}>
-															{new Date(a.assinado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+															{new Date(a.assinado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
 														</span>
 													</div>
 												</li>
@@ -671,7 +671,7 @@ export default function ValidacaoRequisitos({ project, topic, onBack, perfil, cu
 								<span>Modificado por: <strong>{req.autor?.nome || "Sistema"}</strong></span>
 								<span>
 									{new Date(req.atualizado_em || req.criado_em || Date.now()).toLocaleString('pt-BR', {
-										hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
+										timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'
 									})}
 								</span>
 							</div>

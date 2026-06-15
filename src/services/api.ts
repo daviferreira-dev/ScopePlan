@@ -762,5 +762,32 @@ export const convitesApi = {
   },
 };
 
+export interface VisaoGeralData {
+  id?: number;
+  projeto_id?: number;
+  o_que?: string | null;
+  por_que?: string | null;
+  quem?: string | null;
+  onde?: string | null;
+  quando?: string | null;
+  como?: string | null;
+  quanto?: string | null;
+  atualizado_em?: string | null;
+}
+
+export const visaoGeralApi = {
+  get(projectId: number, options?: { signal?: AbortSignal }) {
+    const init: RequestInit = {};
+    if (options?.signal) init.signal = options.signal;
+    return apiFetch<{ visao_geral: VisaoGeralData | null }>(`/projetos/${projectId}/visao-geral`, init);
+  },
+  save(projectId: number, data: Partial<VisaoGeralData>) {
+    return apiFetch<{ visao_geral: VisaoGeralData }>(`/projetos/${projectId}/visao-geral`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  },
+};
+
 // Legacy aliases (pages may import these names)
 export { projectsApi as projectApi, requirementsApi as requirementApi };

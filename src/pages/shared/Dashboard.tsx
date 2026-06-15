@@ -34,7 +34,7 @@ const POLL_MS = 10000; // RF07: atualização em tempo real (máx. 10s)
 
 function fmtWeek(iso: string): string {
   const d = new Date(iso + 'T00:00:00');
-  return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+  return d.toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' });
 }
 
 /** Donut chart (SVG puro) a partir de pares [label, valor, cor]. */
@@ -141,7 +141,7 @@ export default function Dashboard({ projectId }: Props) {
         <span className={styles.liveDot} />
         <span className={styles.liveText}>
           Atualização automática a cada 10s
-          {updatedAt && ` · ${updatedAt.toLocaleTimeString('pt-BR')}`}
+          {updatedAt && ` · ${updatedAt.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' })}`}
         </span>
       </div>
 

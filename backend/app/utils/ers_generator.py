@@ -5,6 +5,10 @@ Generates PDF and DOCX files from project requirements.
 
 import io
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+
+BRT = ZoneInfo('America/Sao_Paulo')
+def now_brt(): return datetime.now(BRT)
 
 from docx import Document
 from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -159,7 +163,7 @@ def _build_pdf(project, requirements, topic_ids=None, requirement_ids=None,
         canvas.setFont('Helvetica', 7.5)
         canvas.setFillColor(_rgb(100, 116, 139))
         canvas.drawString(ML, MB - 0.55*cm,
-                          f'Gerado em {datetime.now(timezone.utc).strftime("%d/%m/%Y às %H:%M")} UTC  ·  ScopePlan')
+                          f'Gerado em {now_brt().strftime("%d/%m/%Y às %H:%M")} (Horário de Brasília)  ·  ScopePlan')
         canvas.drawRightString(PAGE_W - MR, MB - 0.55*cm, f'Página {doc.page}')
         canvas.restoreState()
 
@@ -218,7 +222,7 @@ def _build_pdf(project, requirements, topic_ids=None, requirement_ids=None,
     gestor      = project.get('gestor') or {}
     nome_gestor = gestor.get('nome', 'N/A')
     nome_cliente= project.get('nome_cliente') or '—'
-    data_hoje   = datetime.now(timezone.utc).strftime('%d/%m/%Y')
+    data_hoje   = now_brt().strftime('%d/%m/%Y')
 
     # Empurra conteúdo para o meio da página
     elements.append(Spacer(1, 5.5*cm))
@@ -491,7 +495,7 @@ def _build_docx(project, requirements, topic_ids=None, requirement_ids=None,
     for line in [
         f'Gestor: {gestor.get("nome", "N/A")}',
         f'Cliente: {project.get("nome_cliente") or "N/A"}',
-        f'Data: {datetime.now(timezone.utc).strftime("%d/%m/%Y")}',
+        f'Data: {now_brt().strftime("%d/%m/%Y")}',
         f'Total de requisitos: {len(filtered)}',
     ]:
         run = info.add_run(line + '\n')

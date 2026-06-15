@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class Requirement(db.Model):
@@ -61,8 +62,8 @@ class Requirement(db.Model):
             'status': self.status,
             'numero_versao': self.numero_versao,
             'ativo': self.ativo,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
-            'atualizado_em': self.atualizado_em.isoformat() if self.atualizado_em else None,
+            'criado_em': utc_iso(self.criado_em),
+            'atualizado_em': utc_iso(self.atualizado_em),
         }
         if include_validacoes:
             data['validacoes'] = [v.to_dict() for v in self.validacoes]

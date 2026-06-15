@@ -1,6 +1,7 @@
 from datetime import datetime, timezone, timedelta
 from uuid import uuid4
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class ConviteProjeto(db.Model):
@@ -51,6 +52,6 @@ class ConviteProjeto(db.Model):
             'expirado': self.expirado,
             'convidado_por': self.convidado_por.to_dict() if self.convidado_por else None,
             'aceito_por': self.aceito_por.to_dict() if self.aceito_por else None,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
-            'expira_em': self.expira_em.isoformat() if self.expira_em else None,
+            'criado_em': utc_iso(self.criado_em),
+            'expira_em': utc_iso(self.expira_em),
         }

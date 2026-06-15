@@ -14,6 +14,7 @@ interface Props {
   onProjectSelect: (project: ProjectData) => void;
   auditoriaContent?: React.ReactNode;
   gestaoContent?: React.ReactNode;
+  onAuditoriaSidebarNav?: () => void;
 }
 
 export default function TelaProjetos({
@@ -24,6 +25,7 @@ export default function TelaProjetos({
   onProjectSelect,
   auditoriaContent,
   gestaoContent,
+  onAuditoriaSidebarNav,
 }: Props) {
   const [activePage, setActivePage] = useState<Page>('projetos');
   const [projects, setProjects] = useState<ProjectData[]>([]);
@@ -206,7 +208,13 @@ export default function TelaProjetos({
       <AppLayout
         perfil={perfil}
         activePage={activePage}
-        onPageChange={(p) => setActivePage(p as Page)}
+        onPageChange={(p) => {
+          if (p === 'auditoria' && onAuditoriaSidebarNav) {
+            onAuditoriaSidebarNav();
+          } else {
+            setActivePage(p as Page);
+          }
+        }}
         topbarTitle={topbarTitle}
         topbarSubtitle={topbarSubtitle}
         topbarActions={activePage === 'projetos' && showCreateButton ? (

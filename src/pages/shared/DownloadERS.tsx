@@ -116,8 +116,9 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 	const resumoNum = ++n;
 
 	const now = new Date();
-	const dataHoje = now.toLocaleDateString("pt-BR");
-	const geradoEm = `${dataHoje} às ${now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+	const BRT_OPT = { timeZone: 'America/Sao_Paulo' } as const;
+	const dataHoje = now.toLocaleDateString("pt-BR", BRT_OPT);
+	const geradoEm = `${dataHoje} às ${now.toLocaleTimeString("pt-BR", { ...BRT_OPT, hour: "2-digit", minute: "2-digit" })}`;
 
 	const handleDownload = async () => {
 		if (selectedIds.length === 0) {

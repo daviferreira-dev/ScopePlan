@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { requirementsApi, blocosApi, projectsApi } from '../../services/api';
+import VisaoGeral from '../../components/VisaoGeral';
 import type { RequirementData, ProjectData, BlocoPersonalizadoData, MembroData } from '../../services/api';
 import AppLayout from '../../components/AppLayout';
 import { REQUIREMENT_TOPICS, type RequirementTopic, type Perfil } from '../../utils/constants';
@@ -24,7 +25,7 @@ interface Props {
 
 const BASE_TOPICS = REQUIREMENT_TOPICS;
 
-type Tab = 'lista' | 'kanban' | 'painel' | 'diagramas' | 'equipe';
+type Tab = 'visao_geral' | 'lista' | 'kanban' | 'painel' | 'diagramas' | 'equipe';
 
 const PERFIL_LABEL: Record<string, string> = {
 	analista: 'Analista',
@@ -110,7 +111,7 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 	const [requirements, setRequirements] = useState<RequirementData[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
-	const [tab, setTab] = useState<Tab>('lista');
+	const [tab, setTab] = useState<Tab>('visao_geral');
 	const [blocos, setBlocos] = useState<BlocoPersonalizadoData[]>([]);
 	const [membros, setMembros] = useState<MembroData[]>([]);
 	const [membrosLoading, setMembrosLoading] = useState(false);
@@ -259,6 +260,12 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 			}
 		>
 			<nav className={styles['view-tabs']}>
+				<button className={`${styles['view-tab']} ${tab === 'visao_geral' ? styles['view-tab-active'] : ''}`} onClick={() => setTab('visao_geral')}>
+					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
+						<circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/>
+					</svg>
+					<span className={styles['tab-label']}>Visão Geral</span>
+				</button>
 				<button className={`${styles['view-tab']} ${tab === 'lista' ? styles['view-tab-active'] : ''}`} onClick={() => setTab('lista')}>
 					<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9}>
 						<line x1="8" y1="6" x2="21" y2="6" /><line x1="8" y1="12" x2="21" y2="12" /><line x1="8" y1="18" x2="21" y2="18" />
@@ -293,7 +300,9 @@ export default function TelaItens({ project, onBack, perfil, onTopicSelect, onDo
 				</button>
 			</nav>
 
-			{tab === 'equipe' ? (
+			{tab === 'visao_geral' ? (
+				<VisaoGeral projectId={project.id} perfil={perfil} />
+			) : tab === 'equipe' ? (
 				<EquipeTab membros={membros} loading={membrosLoading} />
 			) : tab === 'painel' ? (
 				<Dashboard projectId={project.id} />

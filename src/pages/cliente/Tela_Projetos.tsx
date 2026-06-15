@@ -88,7 +88,7 @@ export default function ClienteProjetos() {
       topbarTitle="Painel do Cliente"
       topbarSubtitle="Acompanhe projetos e requisitos."
       onProjectSelect={handleProjectSelect}
-      auditoriaContent={<Auditoria perfil="cliente" />}
+      onAuditoriaSidebarNav={() => setView('auditoria')}
     />
   );
 }

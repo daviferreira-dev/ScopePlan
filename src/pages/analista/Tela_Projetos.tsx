@@ -89,7 +89,7 @@ export default function AnalistaProjetos() {
       topbarSubtitle="Gerencie seus projetos e requisitos."
       showCreateButton
       onProjectSelect={handleProjectSelect}
-      auditoriaContent={<Auditoria perfil="analista" />}
+      onAuditoriaSidebarNav={() => setView('auditoria')}
     />
   );
 }

@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class Assinatura(db.Model):
@@ -23,5 +24,5 @@ class Assinatura(db.Model):
             'signatario_id': self.signatario_id,
             'signatario': self.signatario.to_dict() if self.signatario else None,
             'declaracao': self.declaracao,
-            'assinado_em': self.assinado_em.isoformat() if self.assinado_em else None,
+            'assinado_em': utc_iso(self.assinado_em),
         }

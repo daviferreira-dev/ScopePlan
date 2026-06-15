@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { auditApi, projectsApi, type AuditLogData, type ProjectData } from "../../services/api";
 import { TYPE_COLORS, ACTION_LABELS, ENTITY_LABELS, TYPE_ICONS } from "../../utils/constants";
 import AppLayout from "../../components/AppLayout";
@@ -10,14 +10,16 @@ interface Props {
 	onBack?: () => void;
 }
 
+const BRT = { timeZone: 'America/Sao_Paulo' };
+
 const formatEventTime = (dateString: string): string => {
 	const date = new Date(dateString);
 	const now = new Date();
 	const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
-	const time = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+	const time = date.toLocaleTimeString('pt-BR', { ...BRT, hour: '2-digit', minute: '2-digit' });
 	if (diffDays === 0) return `${time} · Hoje`;
 	if (diffDays === 1) return `${time} · Ontem`;
-	return `${time} · ${date.toLocaleDateString('pt-BR')}`;
+	return `${time} · ${date.toLocaleDateString('pt-BR', BRT)}`;
 };
 
 const getTypeLabel = (type: string): string => ACTION_LABELS[type] || type;
@@ -124,18 +126,20 @@ export default function Auditoria({ perfil, onBack }: Props) {
 	);
 
 	// ── Client-side filtered events ──
+	const norm = (s: string) => (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 	const filteredEvents = useServerPagination
 		? events
 		: events.filter((ev) => {
 			if (filterProjectLabel !== "Todos os Projetos" && ev.entidade_tipo !== filterProjectLabel) return false;
 			if (filterTypeLabel !== "Todos os Tipos" && getTypeLabel(ev.acao) !== filterTypeLabel) return false;
 			if (searchDebounced.trim()) {
-				const q = searchDebounced.toLowerCase();
+				const q = norm(searchDebounced);
 				const match =
-					formatDetalhes(ev.detalhes).toLowerCase().includes(q) ||
-					ev.acao.toLowerCase().includes(q) ||
-					ev.usuario?.nome.toLowerCase().includes(q) ||
-					ev.entidade_tipo.toLowerCase().includes(q);
+					norm(formatDetalhes(ev.detalhes)).includes(q) ||
+					norm(ev.acao).includes(q) ||
+					norm(getTypeLabel(ev.acao)).includes(q) ||
+					norm(ev.usuario_nome || ev.usuario?.nome || '').includes(q) ||
+					norm(ev.entidade_tipo).includes(q);
 				if (!match) return false;
 			}
 			return true;
@@ -145,23 +149,106 @@ export default function Auditoria({ perfil, onBack }: Props) {
 
 	const getTypeColor = (type: string) => TYPE_COLORS[type] || TYPE_COLORS.criacao;
 
-	// Agrupa eventos por data para separadores na timeline
-	const groupedEvents = displayEvents.reduce<{ label: string; events: AuditLogData[] }[]>((groups, ev) => {
-		const date = new Date(ev.criado_em);
-		const now = new Date();
+	const now = new Date();
+
+	const getDayLabel = (date: Date): string => {
 		const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
-		const label = diffDays === 0 ? 'Hoje' : diffDays === 1 ? 'Ontem' : date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
-		const last = groups[groups.length - 1];
-		if (last && last.label === label) { last.events.push(ev); }
-		else { groups.push({ label, events: [ev] }); }
-		return groups;
+		if (diffDays === 0) return 'Hoje';
+		if (diffDays === 1) return 'Ontem';
+		return date.toLocaleDateString('pt-BR', { ...BRT, weekday: 'short', day: '2-digit', month: 'short' });
+	};
+
+	const getDayKey = (date: Date): string =>
+		date.toLocaleDateString('pt-BR', BRT);
+
+	const getWeekOfMonth = (date: Date): number =>
+		Math.ceil(date.getDate() / 7);
+
+	const getWeekRange = (date: Date): string => {
+		const week = getWeekOfMonth(date);
+		const starts = (week - 1) * 7 + 1;
+		const ends = Math.min(week * 7, new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate());
+		return `${String(starts).padStart(2, '0')}–${String(ends).padStart(2, '0')}`;
+	};
+
+	const getWeekKey = (date: Date): string =>
+		`${date.getFullYear()}-${date.getMonth()}-w${getWeekOfMonth(date)}`;
+
+	const getMonthKey = (date: Date): string =>
+		`${date.getFullYear()}-${date.getMonth()}`;
+
+	const getMonthLabel = (date: Date): string =>
+		date.toLocaleDateString('pt-BR', { ...BRT, month: 'long', year: 'numeric' })
+			.replace(/^\w/, c => c.toUpperCase());
+
+	// Estrutura: Mês → Semana → Dia
+	type DayGroup   = { dayLabel: string; dayKey: string; events: AuditLogData[] };
+	type WeekGroup  = { weekKey: string; weekNum: number; weekRange: string; days: DayGroup[] };
+	type MonthGroup = { monthKey: string; monthLabel: string; weeks: WeekGroup[] };
+
+	const schedule = displayEvents.reduce<MonthGroup[]>((months, ev) => {
+		const date = new Date(ev.criado_em);
+		const monthKey = getMonthKey(date);
+		const weekKey  = getWeekKey(date);
+		const dayKey   = getDayKey(date);
+
+		let month = months.find(m => m.monthKey === monthKey);
+		if (!month) {
+			month = { monthKey, monthLabel: getMonthLabel(date), weeks: [] };
+			months.push(month);
+		}
+
+		let week = month.weeks.find(w => w.weekKey === weekKey);
+		if (!week) {
+			week = { weekKey, weekNum: getWeekOfMonth(date), weekRange: getWeekRange(date), days: [] };
+			month.weeks.push(week);
+		}
+
+		let day = week.days.find(d => d.dayKey === dayKey);
+		if (!day) {
+			day = { dayLabel: getDayLabel(date), dayKey, events: [] };
+			week.days.push(day);
+		}
+
+		day.events.push(ev);
+		return months;
 	}, []);
 
-	const todayCount = displayEvents.filter(ev => {
-		const d = new Date(ev.criado_em);
-		const now = new Date();
-		return d.toDateString() === now.toDateString();
-	}).length;
+	const todayCount = displayEvents.filter(ev =>
+		new Date(ev.criado_em).toDateString() === now.toDateString()
+	).length;
+
+	// ── Nav panel state ──
+	const [navOpen, setNavOpen] = useState(true);
+	const [openMonths, setOpenMonths] = useState<Set<string>>(() => {
+		const currentMonthKey = `${now.getFullYear()}-${now.getMonth()}`;
+		return new Set([currentMonthKey]);
+	});
+	const [activeSection, setActiveSection] = useState<string>('');
+	const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+
+	const toggleMonth = (key: string) =>
+		setOpenMonths(prev => { const s = new Set(prev); s.has(key) ? s.delete(key) : s.add(key); return s; });
+
+	const scrollTo = (key: string) => {
+		const el = sectionRefs.current[key];
+		if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		setActiveSection(key);
+	};
+
+	// Intersection observer para destacar seção visível
+	useEffect(() => {
+		const obs = new IntersectionObserver(
+			(entries) => {
+				for (const entry of entries) {
+					if (entry.isIntersecting) { setActiveSection(entry.target.id); break; }
+				}
+			},
+			{ threshold: 0.2, rootMargin: '-60px 0px -60% 0px' }
+		);
+		Object.values(sectionRefs.current).forEach(el => { if (el) obs.observe(el); });
+		return () => obs.disconnect();
+	}, [schedule.length]);
 
 	return (
 		<AppLayout
@@ -174,42 +261,77 @@ export default function Auditoria({ perfil, onBack }: Props) {
 		>
 			{/* Filters */}
 			<div className={styles['aud-filters']}>
-				{useServerPagination ? (
-					<select className={styles['aud-filter-select']} value={filterProject} onChange={(e) => { setFilterProject(e.target.value ? Number(e.target.value) : ''); setPage(1); }}>
-						<option value="">Todos os Projetos</option>
-						{projects.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
-					</select>
-				) : (
-					<select className={styles['aud-filter-select']} value={filterProjectLabel} onChange={(e) => setFilterProjectLabel(e.target.value)}>
-						{clientProjects.map((name) => <option key={name} value={name}>{name}</option>)}
-					</select>
-				)}
-
-				{useServerPagination ? (
-					<select className={styles['aud-filter-select']} value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}>
-						<option value="">Todos os Tipos</option>
-						{Object.entries(ACTION_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
-					</select>
-				) : (
-					<select className={styles['aud-filter-select']} value={filterTypeLabel} onChange={(e) => setFilterTypeLabel(e.target.value)}>
-						{clientTypes.map((label) => <option key={label} value={label}>{label}</option>)}
-					</select>
-				)}
-
-				{useServerPagination && (
-					<>
-						<input type="date" className={styles['aud-filter-date']} value={filterDateFrom} onChange={(e) => { setFilterDateFrom(e.target.value); setPage(1); }} />
-						<input type="date" className={styles['aud-filter-date']} value={filterDateTo} onChange={(e) => { setFilterDateTo(e.target.value); setPage(1); }} />
-					</>
-				)}
-
-				<div className={styles['aud-search-wrap']}>
-					<span className={styles['aud-search-icon']}>
-						<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-							<circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
-						</svg>
+				{/* Projeto */}
+				<div className={styles['aud-filter-item']}>
+					<span className={styles['aud-filter-label']}>
+						<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+						Projeto
 					</span>
-					<input type="text" className={styles['aud-search']} placeholder="Buscar por ação, autor ou descrição..." value={searchText} onChange={(e) => { setSearchText(e.target.value); if (useServerPagination) setPage(1); }} />
+					{useServerPagination ? (
+						<select className={styles['aud-filter-select']} value={filterProject} onChange={(e) => { setFilterProject(e.target.value ? Number(e.target.value) : ''); setPage(1); }}>
+							<option value="">Todos os Projetos</option>
+							{projects.map((p) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+						</select>
+					) : (
+						<select className={styles['aud-filter-select']} value={filterProjectLabel} onChange={(e) => setFilterProjectLabel(e.target.value)}>
+							{clientProjects.map((name) => <option key={name} value={name}>{name}</option>)}
+						</select>
+					)}
+				</div>
+
+				{/* Tipo */}
+				<div className={styles['aud-filter-item']}>
+					<span className={styles['aud-filter-label']}>
+						<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+						Tipo de ação
+					</span>
+					{useServerPagination ? (
+						<select className={styles['aud-filter-select']} value={filterType} onChange={(e) => { setFilterType(e.target.value); setPage(1); }}>
+							<option value="">Todos os Tipos</option>
+							{Object.entries(ACTION_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}
+						</select>
+					) : (
+						<select className={styles['aud-filter-select']} value={filterTypeLabel} onChange={(e) => setFilterTypeLabel(e.target.value)}>
+							{clientTypes.map((label) => <option key={label} value={label}>{label}</option>)}
+						</select>
+					)}
+				</div>
+
+				{/* Datas */}
+				{useServerPagination && (
+					<div className={styles['aud-filter-dates']}>
+						<div className={styles['aud-filter-date-item']}>
+							<span className={styles['aud-filter-label']}>
+								<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+								De
+							</span>
+							<input type="date" className={styles['aud-filter-date']} value={filterDateFrom} onChange={(e) => { setFilterDateFrom(e.target.value); setPage(1); }} />
+						</div>
+						<span className={styles['aud-filter-date-sep']}>→</span>
+						<div className={styles['aud-filter-date-item']}>
+							<span className={styles['aud-filter-label']}>
+								<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+								Até
+							</span>
+							<input type="date" className={styles['aud-filter-date']} value={filterDateTo} onChange={(e) => { setFilterDateTo(e.target.value); setPage(1); }} />
+						</div>
+					</div>
+				)}
+
+				{/* Busca */}
+				<div className={styles['aud-search-wrap']}>
+					<span className={styles['aud-search-label']}>
+						<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.2}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+						Busca
+					</span>
+					<div className={styles['aud-search-inner']}>
+						<span className={styles['aud-search-icon']}>
+							<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+								<circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" />
+							</svg>
+						</span>
+						<input type="text" className={styles['aud-search']} placeholder="Ação, autor ou descrição..." value={searchText} onChange={(e) => { setSearchText(e.target.value); if (useServerPagination) setPage(1); }} />
+					</div>
 				</div>
 			</div>
 
@@ -255,63 +377,152 @@ export default function Auditoria({ perfil, onBack }: Props) {
 					<div className={styles['aud-empty-sub']}>Tente ajustar os filtros ou a busca para encontrar registros.</div>
 				</div>
 			) : (
-				<div className={styles['aud-timeline']}>
-					{groupedEvents.map((group) => (
-						<div key={group.label}>
-							{/* Date separator */}
-							<div className={styles['aud-date-sep']}>
-								<span className={styles['aud-date-sep-line']} />
-								<span className={styles['aud-date-sep-label']}>{group.label}</span>
-								<span className={styles['aud-date-sep-line']} />
-							</div>
+				<div className={styles['aud-body']}>
 
-							{group.events.map((ev, i) => {
-								const colors = getTypeColor(ev.acao);
-								const entityLabel = ENTITY_LABELS[ev.entidade_tipo] || ev.entidade_tipo;
+					{/* ── Painel de navegação ── */}
+					<aside className={`${styles['aud-nav']}${navOpen ? '' : ` ${styles['aud-nav--closed']}`}`}>
+						<div className={styles['aud-nav-header']}>
+							<span className={styles['aud-nav-title']}>
+								<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" /></svg>
+								Navegação
+							</span>
+							<button className={styles['aud-nav-toggle']} onClick={() => setNavOpen(o => !o)}>
+								<svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+									{navOpen ? <path d="M15 18l-6-6 6-6" /> : <path d="M9 18l6-6-6-6" />}
+								</svg>
+							</button>
+						</div>
+
+						<nav className={styles['aud-nav-tree']}>
+							{schedule.map((month) => {
+								const monthTotal = month.weeks.reduce((s, w) => s + w.days.reduce((ds, d) => ds + d.events.length, 0), 0);
+								const isMonthOpen = openMonths.has(month.monthKey);
 								return (
-									<div className={styles['aud-event']} key={ev.id} style={{ animationDelay: `${i * 0.04}s` }}>
-										<div className={styles['aud-event-dot']} style={{ background: colors.dot }}>
-											{TYPE_ICONS[ev.acao] || TYPE_ICONS.criacao}
-										</div>
-										<div
-											className={styles['aud-event-card']}
-											style={{ borderLeftColor: colors.dot }}
-											onClick={() => setSelectedEvent(ev)}
+									<div key={month.monthKey} className={styles['aud-nav-month']}>
+										<button
+											className={`${styles['aud-nav-month-btn']}${activeSection === month.monthKey ? ` ${styles.active}` : ''}`}
+											onClick={() => { toggleMonth(month.monthKey); scrollTo(month.monthKey); }}
 										>
-											<div className={styles['aud-event-top']}>
-												<span className={styles['aud-event-badge']} style={{ background: colors.bg, color: colors.text }}>
-													{TYPE_ICONS[ev.acao] || TYPE_ICONS.criacao}
-													{getTypeLabel(ev.acao)}
-												</span>
-												<span className={styles['aud-event-time']}>
-													<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
-													{formatEventTime(ev.criado_em)}
-												</span>
-											</div>
+											<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} className={`${styles['aud-nav-chevron']}${isMonthOpen ? ` ${styles.open}` : ''}`}>
+												<path d="M9 18l6-6-6-6" />
+											</svg>
+											<span className={styles['aud-nav-month-label']}>{month.monthLabel}</span>
+											<span className={styles['aud-nav-badge']}>{monthTotal}</span>
+										</button>
 
-											<div className={styles['aud-event-desc']}>
-												{formatDetalhes(ev.detalhes) || getTypeLabel(ev.acao)}
+										{isMonthOpen && (
+											<div className={styles['aud-nav-weeks']}>
+												{month.weeks.map((week) => {
+													const weekTotal = week.days.reduce((s, d) => s + d.events.length, 0);
+													return (
+														<button
+															key={week.weekKey}
+															className={`${styles['aud-nav-week-btn']}${activeSection === week.weekKey ? ` ${styles.active}` : ''}`}
+															onClick={() => scrollTo(week.weekKey)}
+														>
+															<span className={styles['aud-nav-week-dot']} />
+															<span className={styles['aud-nav-week-label']}>Sem. {week.weekNum} · {week.weekRange}</span>
+															<span className={styles['aud-nav-badge']}>{weekTotal}</span>
+														</button>
+													);
+												})}
 											</div>
-
-											<div className={styles['aud-event-bottom']}>
-												<span className={styles['aud-event-author']}>
-													<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-														<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
-													</svg>
-													{ev.usuario?.nome || 'Sistema'}
-												</span>
-												{ev.entidade_id && (
-													<span className={styles['aud-event-entity']}>
-														{entityLabel} #{ev.entidade_id}
-													</span>
-												)}
-											</div>
-										</div>
+										)}
 									</div>
 								);
 							})}
-						</div>
-					))}
+						</nav>
+					</aside>
+
+					{/* ── Conteúdo da timeline ── */}
+					<div className={styles['aud-content']}>
+						{schedule.map((month) => (
+							<div
+								key={month.monthKey}
+								id={month.monthKey}
+								ref={el => { sectionRefs.current[month.monthKey] = el; }}
+								className={styles['aud-month']}
+							>
+								<div className={styles['aud-month-header']}>
+									<svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+										<rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" />
+									</svg>
+									{month.monthLabel}
+									<span className={styles['aud-month-count']}>
+										{month.weeks.reduce((s, w) => s + w.days.reduce((ds, d) => ds + d.events.length, 0), 0)} eventos
+									</span>
+								</div>
+
+								{month.weeks.map((week) => (
+									<div
+										key={week.weekKey}
+										id={week.weekKey}
+										ref={el => { sectionRefs.current[week.weekKey] = el; }}
+										className={styles['aud-week']}
+									>
+										<div className={styles['aud-week-header']}>
+											<span className={styles['aud-week-label']}>Semana {week.weekNum}</span>
+											<span className={styles['aud-week-range']}>{week.weekRange}</span>
+											<span className={styles['aud-week-count']}>
+												{week.days.reduce((s, d) => s + d.events.length, 0)} eventos
+											</span>
+										</div>
+
+										{week.days.map((day) => (
+											<div key={day.dayKey} className={styles['aud-day']}>
+												<div className={styles['aud-day-sep']}>
+													<span className={styles['aud-day-sep-dot']} />
+													<span className={styles['aud-day-sep-label']}>{day.dayLabel}</span>
+													<span className={styles['aud-day-sep-line']} />
+													<span className={styles['aud-day-sep-count']}>{day.events.length}</span>
+												</div>
+
+												<div className={styles['aud-timeline']}>
+													{day.events.map((ev, i) => {
+														const colors = getTypeColor(ev.acao);
+														const entityLabel = ENTITY_LABELS[ev.entidade_tipo] || ev.entidade_tipo;
+														return (
+															<div className={styles['aud-event']} key={ev.id} style={{ animationDelay: `${i * 0.04}s` }}>
+																<div className={styles['aud-event-dot']} style={{ background: colors.dot }}>
+																	{TYPE_ICONS[ev.acao] || TYPE_ICONS.criacao}
+																</div>
+																<div className={styles['aud-event-card']} style={{ borderLeftColor: colors.dot }} onClick={() => setSelectedEvent(ev)}>
+																	<div className={styles['aud-event-top']}>
+																		<span className={styles['aud-event-badge']} style={{ background: colors.bg, color: colors.text }}>
+																			{TYPE_ICONS[ev.acao] || TYPE_ICONS.criacao}
+																			{getTypeLabel(ev.acao)}
+																		</span>
+																		<span className={styles['aud-event-time']}>
+																			<svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+																			{new Date(ev.criado_em).toLocaleTimeString('pt-BR', { ...BRT, hour: '2-digit', minute: '2-digit' })}
+																		</span>
+																	</div>
+																	<div className={styles['aud-event-desc']}>
+																		{formatDetalhes(ev.detalhes) || getTypeLabel(ev.acao)}
+																	</div>
+																	<div className={styles['aud-event-bottom']}>
+																		<span className={styles['aud-event-author']}>
+																			<svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+																				<path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+																			</svg>
+																			{ev.usuario?.nome || 'Sistema'}
+																		</span>
+																		{ev.entidade_id && (
+																			<span className={styles['aud-event-entity']}>{entityLabel} #{ev.entidade_id}</span>
+																		)}
+																	</div>
+																</div>
+															</div>
+														);
+													})}
+												</div>
+											</div>
+										))}
+									</div>
+								))}
+							</div>
+						))}
+					</div>
 				</div>
 			)}
 
@@ -370,7 +581,7 @@ export default function Auditoria({ perfil, onBack }: Props) {
 								</div>
 								<div className={styles['aud-detail-row']}>
 									<span className={styles['aud-detail-label']}>Data e Horário</span>
-									<span className={styles['aud-detail-value']}>{new Date(selectedEvent.criado_em).toLocaleString('pt-BR')}</span>
+									<span className={styles['aud-detail-value']}>{new Date(selectedEvent.criado_em).toLocaleString('pt-BR', { ...BRT, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
 								</div>
 							</div>
 

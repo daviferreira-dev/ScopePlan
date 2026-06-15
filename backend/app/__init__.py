@@ -143,6 +143,7 @@ def create_app(config_name=None):
     from app.routes.blocos import blocos_bp
     from app.routes.anexos import anexos_bp
     from app.routes.convites import convites_bp
+    from app.routes.visao_geral import visao_geral_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(projects_bp)
@@ -155,6 +156,7 @@ def create_app(config_name=None):
     app.register_blueprint(blocos_bp)
     app.register_blueprint(anexos_bp)
     app.register_blueprint(convites_bp)
+    app.register_blueprint(visao_geral_bp)
 
     # Health check endpoint — no auth required
     @app.route('/api/health')

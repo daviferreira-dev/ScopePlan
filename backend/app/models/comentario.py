@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class Comentario(db.Model):
@@ -30,6 +31,6 @@ class Comentario(db.Model):
             'parent_id': self.parent_id,
             'texto': '[comentário ocultado]' if self.oculto else self.texto,
             'oculto': self.oculto,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
-            'editado_em': self.editado_em.isoformat() if self.editado_em else None,
+            'criado_em': utc_iso(self.criado_em),
+            'editado_em': utc_iso(self.editado_em),
         }

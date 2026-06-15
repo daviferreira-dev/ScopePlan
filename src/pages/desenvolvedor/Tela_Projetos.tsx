@@ -88,7 +88,7 @@ export default function DesenvolvedorProjetos() {
       topbarTitle="Painel do Desenvolvedor"
       topbarSubtitle="Acompanhe requisitos e validações."
       onProjectSelect={handleProjectSelect}
-      auditoriaContent={<Auditoria perfil="desenvolvedor" />}
+      onAuditoriaSidebarNav={() => setView('auditoria')}
     />
   );
 }

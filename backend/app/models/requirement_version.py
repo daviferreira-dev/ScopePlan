@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app import db
+from app.utils.time_utils import utc_iso
 
 
 class RequirementVersion(db.Model):
@@ -38,7 +39,7 @@ class RequirementVersion(db.Model):
             'codigo': self.codigo,
             'status': self.status,
             'alterado_por': self.alterado_por,
-            'criado_em': self.criado_em.isoformat() if self.criado_em else None,
+            'criado_em': utc_iso(self.criado_em),
         }
 
     @staticmethod

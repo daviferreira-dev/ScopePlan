@@ -90,7 +90,7 @@ export default function GestorProjetos() {
       topbarSubtitle="Gerencie projetos e requisitos."
       showCreateButton
       onProjectSelect={handleProjectSelect}
-      auditoriaContent={<Auditoria perfil="gestor" />}
+      onAuditoriaSidebarNav={() => setView('auditoria')}
       gestaoContent={<GestaoDashboard onOpenProject={handleProjectSelect} />}
     />
   );

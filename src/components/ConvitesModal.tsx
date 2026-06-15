@@ -279,7 +279,7 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
-                        {PERFIL_LABELS[c.perfil] ?? c.perfil} · expira {new Date(c.expira_em).toLocaleDateString('pt-BR')}
+                        {PERFIL_LABELS[c.perfil] ?? c.perfil} · expira {new Date(c.expira_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                       </div>
                     </div>
                     <button onClick={() => handleCopiarLink(c)} title="Copiar link" style={{ background: copied === c.id ? '#f0fdf4' : 'transparent', border: '1px solid var(--card-border, #e2e8f0)', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', fontSize: 11, color: copied === c.id ? '#16a34a' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
@@ -302,7 +302,7 @@ export default function ConvitesModal({ projectId, projectName, onClose }: Props
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 1 }}>
-                        {PERFIL_LABELS[c.perfil] ?? c.perfil} · {new Date(c.criado_em).toLocaleDateString('pt-BR')}
+                        {PERFIL_LABELS[c.perfil] ?? c.perfil} · {new Date(c.criado_em).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })}
                       </div>
                     </div>
                     <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 999, background: `${STATUS_COLORS[c.expirado ? 'cancelado' : c.status]}18`, color: STATUS_COLORS[c.expirado ? 'cancelado' : c.status] }}>

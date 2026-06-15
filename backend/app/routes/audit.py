@@ -7,6 +7,25 @@ from app.utils.access import get_user_project_ids
 
 audit_bp = Blueprint('audit', __name__, url_prefix='/api/audit')
 
+# Espelha ACTION_LABELS do frontend para permitir busca pelo label traduzido
+ACTION_LABELS = {
+    'criacao': 'requisito criado',
+    'edicao': 'requisito editado',
+    'atualizacao': 'registro atualizado',
+    'aprovacao': 'requisito aprovado',
+    'reprovacao': 'requisito reprovado',
+    'comentario': 'comentário adicionado',
+    'anexo': 'documento anexado',
+    'autenticacao': 'novo utilizador autenticado',
+    'permissao': 'permissão alterada',
+    'exclusao': 'exclusão realizada',
+    'status': 'status atualizado',
+    'validacao': 'requisito validado',
+    'submissao_revisao': 'submetido para revisão',
+    'upload_diagrama': 'diagrama adicionado',
+    'exclusao_diagrama': 'diagrama excluído',
+}
+
 
 @audit_bp.route('', methods=['GET'])
 @jwt_required()
@@ -28,7 +47,8 @@ def list_audit_logs():
     data_fim = request.args.get('data_fim', type=str)
     search = request.args.get('search', type=str)
     page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
+    per_page = request.args.get('per_page') or request.args.get('size', 20, type=int)
+    per_page = int(per_page)
 
     # Limit per_page
     per_page = min(per_page, 100)
@@ -66,35 +86,34 @@ def list_audit_logs():
     if ip:
         query = query.filter(AuditLog.ip == ip)
     if search:
-        # Escape LIKE wildcards to prevent pattern injection
-        escaped = search.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-        search_term = f'%{escaped}%'
+        import unicodedata
+        def _norm(s):
+            return unicodedata.normalize('NFD', (s or '').lower()).encode('ascii', 'ignore').decode()
 
-        # For client users, also search in project name (nome_cliente)
-        from app.models import Project
-        client_project_ids = []
-        if user.perfil == 'cliente':
-            client_projects = Project.query.filter_by(cliente_id=current_user_id, ativo=True).all()
-            client_project_ids = [p.id for p in client_projects]
+        q = search.strip().lower()
+        q_norm = _norm(q)
+        search_term = f'%{q}%'
 
-        if client_project_ids:
-            # Client searching - include project name in search
-            query = query.filter(
-                db.or_(
-                    AuditLog.acao.ilike(search_term, escape='\\'),
-                    AuditLog.entidade_tipo.ilike(search_term, escape='\\'),
-                    AuditLog.detalhes.ilike(search_term, escape='\\'),
-                    AuditLog.projeto_id.in_(client_project_ids)
-                )
-            )
-        else:
-            query = query.filter(
-                db.or_(
-                    AuditLog.acao.ilike(search_term, escape='\\'),
-                    AuditLog.entidade_tipo.ilike(search_term, escape='\\'),
-                    AuditLog.detalhes.ilike(search_term, escape='\\'),
-                )
-            )
+        # 1. Busca por label de ação traduzido (ex: "Requisito criado" → "criacao"), sem acento
+        matched_acoes = [key for key, label in ACTION_LABELS.items() if q_norm in _norm(label)]
+
+        # 2. Busca por nome de autor (nome é criptografado — compara em memória), sem acento
+        matched_user_ids = [
+            u.id for u in db.session.query(User).all()
+            if u.nome and q_norm in _norm(str(u.nome))
+        ]
+
+        conditions = [
+            AuditLog.acao.ilike(search_term),
+            AuditLog.entidade_tipo.ilike(search_term),
+            AuditLog.detalhes.ilike(search_term),
+        ]
+        if matched_acoes:
+            conditions.append(AuditLog.acao.in_(matched_acoes))
+        if matched_user_ids:
+            conditions.append(AuditLog.usuario_id.in_(matched_user_ids))
+
+        query = query.filter(db.or_(*conditions))
     if usuario_id:
         # Security: only allow filtering by usuario_id within accessible projects
         # This prevents enumerating other users' activity across inaccessible projects

@@ -1,36 +1,80 @@
 /* ── Filters ── */
-.aud-filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.aud-filters {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: stretch;
+}
+
+/* Wrapper genérico para um filtro com label + controle */
+.aud-filter-item {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.aud-filter-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--green-muted); padding-left: 2px; white-space: nowrap;
+}
+
+/* Select estilizado */
 .aud-filter-select {
-  padding: 9px 32px 9px 12px;
-  border: 1.5px solid rgba(34,136,63,0.15);
-  border-radius: 10px;
+  padding: 9px 34px 9px 13px;
+  border: 1.5px solid rgba(34,136,63,0.18);
+  border-radius: 11px;
   font-family: 'Sora', sans-serif; font-size: 12.5px; font-weight: 500;
   color: var(--text-primary);
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a9882'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background: #f8fbf9 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2322883f'/%3E%3C/svg%3E") no-repeat right 13px center;
   -webkit-appearance: none; appearance: none;
-  cursor: pointer; outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s; min-width: 148px;
+  cursor: pointer; outline: none; min-width: 152px;
+  box-shadow: 0 1px 3px rgba(34,136,63,0.06);
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
 }
-.aud-filter-select:focus { border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(34,136,63,0.09); }
+.aud-filter-select:hover { background-color: #f0f7f2; border-color: rgba(34,136,63,0.35); }
+.aud-filter-select:focus { border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(34,136,63,0.12); background-color: #fff; }
+
+/* Grupo de datas lado a lado */
+.aud-filter-dates {
+  display: flex; align-items: flex-end; gap: 6px;
+}
+.aud-filter-date-item {
+  display: flex; flex-direction: column; gap: 4px;
+}
+.aud-filter-date-sep {
+  font-size: 11px; color: var(--text-muted); padding-bottom: 10px; font-weight: 500;
+}
+
+/* Input de data */
 .aud-filter-date {
-  padding: 9px 12px;
-  border: 1.5px solid rgba(34,136,63,0.15); border-radius: 10px;
+  padding: 9px 11px;
+  border: 1.5px solid rgba(34,136,63,0.18); border-radius: 11px;
   font-family: 'Sora', sans-serif; font-size: 12.5px; font-weight: 500;
-  color: var(--text-primary); background: #fff; outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--text-primary); background: #f8fbf9; outline: none;
+  box-shadow: 0 1px 3px rgba(34,136,63,0.06);
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  width: 148px;
 }
-.aud-filter-date:focus { border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(34,136,63,0.09); }
-.aud-search-wrap { position: relative; flex: 1; min-width: 180px; }
-.aud-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #b0c4b6; pointer-events: none; }
+.aud-filter-date:hover { background-color: #f0f7f2; border-color: rgba(34,136,63,0.35); }
+.aud-filter-date:focus { border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(34,136,63,0.12); background-color: #fff; }
+.aud-filter-date::-webkit-calendar-picker-indicator { opacity: 0.5; cursor: pointer; }
+
+/* Barra de busca */
+.aud-search-wrap { position: relative; flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+.aud-search-label {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 10px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--green-muted); padding-left: 2px;
+}
+.aud-search-inner { position: relative; }
+.aud-search-icon { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); color: #9ab8a2; pointer-events: none; }
 .aud-search {
-  width: 100%; padding: 9px 12px 9px 38px;
-  border: 1.5px solid rgba(34,136,63,0.15); border-radius: 10px;
+  width: 100%; padding: 9px 13px 9px 38px;
+  border: 1.5px solid rgba(34,136,63,0.18); border-radius: 11px;
   font-family: 'Sora', sans-serif; font-size: 12.5px;
-  color: var(--text-primary); background: #fff; outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  color: var(--text-primary); background: #f8fbf9; outline: none;
+  box-shadow: 0 1px 3px rgba(34,136,63,0.06);
+  transition: border-color 0.18s, box-shadow 0.18s, background 0.18s;
+  box-sizing: border-box;
 }
-.aud-search::placeholder { color: #b0c4b6; }
-.aud-search:focus { border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(34,136,63,0.09); }
+.aud-search::placeholder { color: #aec4b4; }
+.aud-search:hover { background-color: #f0f7f2; border-color: rgba(34,136,63,0.35); }
+.aud-search:focus { border-color: var(--green-bright); box-shadow: 0 0 0 3px rgba(34,136,63,0.12); background-color: #fff; }
 
 /* ── Stats strip ── */
 .aud-stats {
@@ -45,26 +89,165 @@
 .aud-stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
 .aud-stat-divider { width: 1px; height: 28px; background: var(--card-border); flex-shrink: 0; }
 
-/* ── Timeline ── */
-.aud-timeline { position: relative; padding-left: 48px; }
+/* ── Layout body (nav + content) ── */
+.aud-body { display: flex; gap: 20px; align-items: flex-start; }
+
+/* ── Nav panel ── */
+.aud-nav {
+  width: 220px; min-width: 220px; flex-shrink: 0;
+  background: #fff; border: 1px solid var(--card-border);
+  border-radius: 14px; position: sticky; top: 16px;
+  max-height: calc(100vh - 180px);
+  transition: width 0.2s, min-width 0.2s;
+  display: flex; flex-direction: column;
+}
+.aud-nav-tree { overflow-y: auto; flex: 1; }
+.aud-nav--closed { width: 44px; min-width: 44px; overflow: visible; }
+.aud-nav--closed .aud-nav-tree { display: none; }
+.aud-nav--closed .aud-nav-header { padding: 10px; justify-content: center; border-radius: 14px; }
+.aud-nav--closed .aud-nav-title { display: none; }
+
+.aud-nav-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 14px; border-bottom: 1px solid var(--card-border);
+  position: sticky; top: 0; background: #fff; z-index: 1;
+  border-radius: 14px 14px 0 0;
+}
+.aud-nav-title {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--green-muted);
+  white-space: nowrap;
+}
+.aud-nav-toggle {
+  width: 26px; height: 26px; border-radius: 7px; border: 1px solid var(--card-border);
+  background: var(--surface); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text-muted); transition: background 0.15s; flex-shrink: 0;
+}
+.aud-nav-toggle:hover { background: var(--progress-bg); color: var(--text-primary); }
+
+.aud-nav-tree { padding: 8px 0; }
+
+/* Mês no nav */
+.aud-nav-month { }
+.aud-nav-month-btn {
+  width: 100%; display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; background: none; border: none; cursor: pointer;
+  text-align: left; transition: background 0.15s; border-radius: 0;
+}
+.aud-nav-month-btn:hover { background: var(--progress-bg); }
+.aud-nav-month-btn.active { background: var(--progress-bg); }
+.aud-nav-month-label {
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+.aud-nav-chevron {
+  color: var(--text-muted); flex-shrink: 0;
+  transition: transform 0.2s;
+}
+.aud-nav-chevron.open { transform: rotate(90deg); }
+
+/* Semanas no nav */
+.aud-nav-weeks { padding: 2px 0 4px 22px; }
+.aud-nav-week-btn {
+  width: 100%; display: flex; align-items: center; gap: 7px;
+  padding: 6px 14px 6px 6px; background: none; border: none; cursor: pointer;
+  text-align: left; border-radius: 8px; transition: background 0.15s;
+  margin-bottom: 1px;
+}
+.aud-nav-week-btn:hover { background: var(--progress-bg); }
+.aud-nav-week-btn.active {
+  background: var(--progress-bg);
+  box-shadow: inset 2px 0 0 var(--green-bright);
+}
+.aud-nav-week-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(34,136,63,0.3); flex-shrink: 0;
+}
+.aud-nav-week-btn.active .aud-nav-week-dot { background: var(--green-bright); }
+.aud-nav-week-label {
+  font-size: 11px; font-weight: 500; color: var(--text-muted);
+  flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.aud-nav-week-btn.active .aud-nav-week-label { color: var(--text-primary); font-weight: 600; }
+.aud-nav-badge {
+  font-size: 10px; font-weight: 700; color: var(--green-muted);
+  background: var(--progress-bg); border-radius: 10px; padding: 1px 6px;
+  flex-shrink: 0;
+}
+
+/* ── Content area ── */
+.aud-content { flex: 1; min-width: 0; }
+
+/* ── Mês ── */
+.aud-month { margin-bottom: 8px; }
+.aud-month-header {
+  display: flex; align-items: center; gap: 8px;
+  font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700;
+  color: var(--text-primary); padding: 14px 0 10px;
+  border-bottom: 2px solid rgba(34,136,63,0.18);
+  margin-bottom: 6px; text-transform: capitalize;
+}
+.aud-month-header svg { color: var(--green-mid); flex-shrink: 0; }
+.aud-month-count {
+  margin-left: auto; font-family: 'Sora', sans-serif;
+  font-size: 11px; font-weight: 600; color: var(--green-muted);
+  background: var(--progress-bg); padding: 2px 10px; border-radius: 20px;
+}
+
+/* ── Semana ── */
+.aud-week { margin-bottom: 4px; }
+.aud-week-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 14px; margin: 8px 0 6px;
+  background: #fff; border: 1px solid var(--card-border);
+  border-radius: 10px; border-left: 3px solid rgba(34,136,63,0.35);
+}
+.aud-week-label {
+  font-size: 11.5px; font-weight: 700; color: var(--text-primary);
+  font-family: 'Sora', sans-serif;
+}
+.aud-week-range {
+  font-size: 11px; color: var(--text-muted); font-weight: 500;
+  background: var(--surface); padding: 1px 8px; border-radius: 6px;
+  border: 1px solid var(--card-border);
+}
+.aud-week-count {
+  margin-left: auto; font-size: 10.5px; font-weight: 600;
+  color: var(--green-muted);
+}
+
+/* ── Dia ── */
+.aud-day { margin-bottom: 4px; }
+.aud-day-sep {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0 8px 14px;
+}
+.aud-day-sep-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green-bright); flex-shrink: 0;
+}
+.aud-day-sep-label {
+  font-size: 11px; font-weight: 600; color: var(--text-muted);
+  white-space: nowrap; text-transform: capitalize;
+}
+.aud-day-sep-line { flex: 1; height: 1px; background: var(--card-border); }
+.aud-day-sep-count {
+  font-size: 10px; font-weight: 700; color: #fff;
+  background: var(--green-muted); border-radius: 10px;
+  padding: 1px 7px; flex-shrink: 0;
+}
+
+/* ── Timeline (dentro de cada dia) ── */
+.aud-timeline { position: relative; padding-left: 48px; margin-bottom: 8px; }
 .aud-timeline::before {
   content: '';
   position: absolute; left: 19px; top: 0; bottom: 0;
   width: 2px;
-  background: linear-gradient(to bottom, rgba(34,136,63,0.30) 0%, rgba(34,136,63,0.08) 100%);
+  background: linear-gradient(to bottom, rgba(34,136,63,0.28) 0%, rgba(34,136,63,0.06) 100%);
   border-radius: 2px;
-}
-
-/* ── Date separator ── */
-.aud-date-sep {
-  display: flex; align-items: center; gap: 10px;
-  margin: 24px 0 16px -48px; padding-left: 0;
-}
-.aud-date-sep-line { flex: 1; height: 1px; background: var(--card-border); }
-.aud-date-sep-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-  color: var(--green-muted); white-space: nowrap;
-  background: var(--surface); padding: 0 6px;
 }
 
 /* ── Event row ── */
@@ -191,23 +374,39 @@
 .aud-loading-text { font-size: 13px; color: var(--text-muted); }
 
 /* ── Responsive ── */
+@media (max-width: 900px) {
+  .aud-nav { width: 180px; min-width: 180px; }
+  .aud-nav--closed { width: 40px; min-width: 40px; }
+}
 @media (max-width: 768px) {
+  .aud-body { flex-direction: column; gap: 12px; }
+  .aud-nav { width: 100% !important; min-width: 0 !important; position: static; max-height: none; }
+  .aud-nav--closed { width: 100% !important; min-width: 0 !important; }
+  .aud-nav--closed .aud-nav-header { padding: 10px 14px !important; justify-content: space-between !important; }
+  .aud-nav--closed .aud-nav-title { display: flex !important; }
   .aud-filters { gap: 8px; }
-  .aud-filter-select { min-width: 110px; font-size: 12px; }
-  .aud-search-wrap { min-width: 120px; flex: 1 1 100%; }
+  .aud-filter-select { min-width: 120px; font-size: 12px; }
+  .aud-filter-date { width: 130px; font-size: 12px; }
+  .aud-search-wrap { min-width: 140px; flex: 1 1 100%; }
   .aud-stats { padding: 10px 14px; }
   .aud-stat { padding: 0 10px; }
   .aud-stat-value { font-size: 18px; }
+  .aud-month-header { font-size: 15px; }
   .aud-timeline { padding-left: 36px; }
   .aud-timeline::before { left: 14px; }
   .aud-event-dot { left: -36px; width: 26px; height: 26px; }
   .aud-event-card { padding: 12px 14px; }
   .aud-event-time { margin-left: 0; width: 100%; }
   .aud-modal-grid { grid-template-columns: 1fr; }
+  .aud-day-sep { padding-left: 4px; }
 }
 @media (max-width: 480px) {
   .aud-filters { flex-direction: column; }
-  .aud-filter-select, .aud-search-wrap { width: 100%; }
+  .aud-filter-item, .aud-filter-dates, .aud-search-wrap { width: 100%; }
+  .aud-filter-select { width: 100%; min-width: 0; }
+  .aud-filter-dates { flex-direction: row; align-items: flex-end; gap: 6px; }
+  .aud-filter-date-item { flex: 1; }
+  .aud-filter-date { width: 100%; min-width: 0; }
   .aud-stats { flex-wrap: wrap; gap: 12px; }
   .aud-stat-divider { display: none; }
 }

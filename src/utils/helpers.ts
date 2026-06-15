@@ -28,6 +28,8 @@ export function getRoleLabel(perfil?: string): string {
  return labels[perfil || ''] || perfil || '';
 }
 
+export const BRT: Intl.DateTimeFormatOptions = { timeZone: 'America/Sao_Paulo' };
+
 /**
  * Format a date string as relative time in Portuguese.
  */
@@ -53,13 +55,33 @@ export function formatRelativeTime(dateString: string): string {
 }
 
 /**
- * Format a date string as time only (HH:MM).
+ * Format a date string as time only (HH:MM) in Brasília time.
  */
 export function formatTime(dateString: string): string {
  if (!dateString) return '';
  const date = new Date(dateString);
  if (isNaN(date.getTime())) return '';
- return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+ return date.toLocaleTimeString('pt-BR', { ...BRT, hour: '2-digit', minute: '2-digit' });
+}
+
+/**
+ * Format a date string as full date+time (dd/mm/yyyy HH:MM) in Brasília time.
+ */
+export function formatDateTime(dateString: string): string {
+ if (!dateString) return '';
+ const date = new Date(dateString);
+ if (isNaN(date.getTime())) return '';
+ return date.toLocaleString('pt-BR', { ...BRT, day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+/**
+ * Format a date string as date only (dd/mm/yyyy) in Brasília time.
+ */
+export function formatDate(dateString: string): string {
+ if (!dateString) return '';
+ const date = new Date(dateString);
+ if (isNaN(date.getTime())) return '';
+ return date.toLocaleDateString('pt-BR', { ...BRT, day: '2-digit', month: '2-digit', year: 'numeric' });
 }
 
 export function calculateProgress(project: { requisitos_count: number; aprovados_count: number }): number {

@@ -354,9 +354,8 @@ def _build_pdf(project, requirements, topic_ids=None, requirement_ids=None,
             meta_data = [[
                 Paragraph(f'<b>Prioridade:</b> {PRIORITY_LABELS.get(prio, prio)}', meta_label),
                 Paragraph(f'<b>Status:</b> {STATUS_LABELS.get(status, status)}', meta_label),
-                Paragraph(f'<b>Categoria:</b> {xe(categ)}', meta_label),
             ]]
-            meta_table = Table(meta_data, colWidths=[5*cm, 5.5*cm, 5.5*cm])
+            meta_table = Table(meta_data, colWidths=[5*cm, 5.5*cm])
             meta_table.setStyle(TableStyle([
                 ('BACKGROUND',   (0,0),(-1,-1), _rgb(241,245,249)),
                 ('LEFTPADDING',  (0,0),(-1,-1), 10),
@@ -519,14 +518,12 @@ def _build_docx(project, requirements, topic_ids=None, requirement_ids=None,
             h2 = doc.add_heading(f'{section_num}.{idx}  {codigo} — {req.get("titulo", "")}', level=2)
             if req.get('descricao'):
                 doc.add_paragraph(req['descricao'])
-            table = doc.add_table(rows=3, cols=2)
+            table = doc.add_table(rows=2, cols=2)
             table.style = 'Light Grid Accent 1'
             table.cell(0, 0).text = 'Prioridade'
             table.cell(0, 1).text = PRIORITY_LABELS.get(req.get('prioridade') or 'media', '')
             table.cell(1, 0).text = 'Status'
             table.cell(1, 1).text = STATUS_LABELS.get(req.get('status') or '', '')
-            table.cell(2, 0).text = 'Categoria'
-            table.cell(2, 1).text = req.get('categoria') or '—'
             doc.add_paragraph()
         section_num += 1
 

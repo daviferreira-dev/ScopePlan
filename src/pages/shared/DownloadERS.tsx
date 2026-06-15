@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { projectsApi, diagramasApi, type ProjectData, type RequirementData, type DiagramaData } from "../../services/api";
+import { projectsApi, diagramasApi, getAccessToken, type ProjectData, type RequirementData, type DiagramaData } from "../../services/api";
 import AppLayout from "../../components/AppLayout";
 import { REQUIREMENT_TOPICS as BASE_TOPICS, TOPIC_TYPE_MAP } from "../../utils/constants";
 import styles from './DownloadERS.module.css';
@@ -41,13 +41,14 @@ const APPROVED = new Set(['aprovado', 'aprovado_com_ressalvas']);
 export default function DownloadERS({ project, requirements, onBack, perfil }: Props) {
 	const canFilterTopics = perfil === 'analista' || perfil === 'gestor';
 
+	const [allRequirements, setAllRequirements] = useState<RequirementData[]>(requirements);
+	const [selectedIds, setSelectedIds] = useState<number[]>(BASE_TOPICS.map(t => t.id));
+
 	const topicsWithCount: TopicInfo[] = BASE_TOPICS.map(t => ({
 		...t,
-		count: requirements.filter(r => r.tipo === t.type).length,
-		requirements: requirements.filter(r => r.tipo === t.type),
+		count: allRequirements.filter(r => r.tipo === t.type).length,
+		requirements: allRequirements.filter(r => r.tipo === t.type),
 	}));
-
-	const [selectedIds, setSelectedIds] = useState<number[]>(BASE_TOPICS.map(t => t.id));
 	const [format, setFormat] = useState<Format>("pdf");
 	const [incluirDiagramas, setIncluirDiagramas] = useState(true);
 	const [incluirTodos, setIncluirTodos] = useState(true);
@@ -55,6 +56,18 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 	const [error, setError] = useState("");
 	const [diagramas, setDiagramas] = useState<DiagramaData[]>([]);
 	const [diagramaUrls, setDiagramaUrls] = useState<Record<number, string>>({});
+
+	useEffect(() => {
+		if (requirements.length !== 0) return;
+		const API_BASE = import.meta.env.VITE_API_URL || '/api';
+		const token = getAccessToken();
+		const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+		if (token) headers['Authorization'] = `Bearer ${token}`;
+		fetch(`${API_BASE}/projetos/${project.id}/requisitos?page=1&size=500`, { headers, credentials: 'include' })
+			.then(r => r.ok ? r.json() : null)
+			.then(data => { if (data?.requisitos) setAllRequirements(data.requisitos); })
+			.catch(() => {});
+	}, [project.id, requirements.length]);
 
 	useEffect(() => {
 		diagramasApi.list(project.id).then(async (res) => {
@@ -327,7 +340,6 @@ export default function DownloadERS({ project, requirements, onBack, perfil }: P
 														<span style={{ color: STATUS_COLORS[status] }}>
 															<strong>Status:</strong> {STATUS_LABELS[status] || status}
 														</span>
-														<span><strong>Categoria:</strong> {req.categoria || '—'}</span>
 													</div>
 												</div>
 											);

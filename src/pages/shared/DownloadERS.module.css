@@ -153,9 +153,8 @@
   display: flex; background: #f1f5f9; border-bottom: .5px solid #cbd5e1; font-size: 8.5pt;
 }
 .doc-card-meta > span { padding: 5px 10px; }
-.doc-card-meta > span:nth-child(1) { flex: 0 0 31%; }
-.doc-card-meta > span:nth-child(2) { flex: 0 0 34%; }
-.doc-card-meta > span:nth-child(3) { flex: 1; }
+.doc-card-meta > span:nth-child(1) { flex: 0 0 40%; }
+.doc-card-meta > span:nth-child(2) { flex: 1; }
 
 .doc-summary { width: 100%; border-collapse: collapse; margin-top: 6px; }
 .doc-summary th { background: #1a6634; color: #fff; font-size: 10pt; font-weight: bold; text-align: left; padding: 7px 12px; border: .5px solid #cbd5e1; }

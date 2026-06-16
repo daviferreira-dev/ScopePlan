@@ -17,7 +17,7 @@ from app.utils.crypto import email_lookup_hash
 
 app = create_app('development')
 
-GESTOR_EMAIL = 'cassiano.soares156@gmail.com'
+GESTOR_EMAIL = 'fdavi07@gmail.com'
 
 # (nome, descricao, status, custo, data_inicio do projeto)
 PROJECTS = [

@@ -40,6 +40,7 @@ __pycache__/
 venv/
 .venv-prod/
 .venv/
+env/
 
 # Database files
 instance/
@@ -56,6 +57,11 @@ dist/
 
 # Stale test scripts
 backend/test_api.sh
+
+# Demo/presentation seed scripts
+backend/seed_*.py
+backend/cleanup_seed_*.py
+backend/delete_user.py
 
 # Test credentials
 public/Docs/Perfis de Teste.txt

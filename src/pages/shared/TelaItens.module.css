@@ -70,7 +70,7 @@
 
 /* ─── View tabs (desktop: pill bar / mobile: bottom nav) ─── */
 .view-tabs {
-  display: flex;
+  display: inline-flex;
   gap: 4px;
   background: var(--progress-bg);
   border: 1px solid var(--card-border);
@@ -78,7 +78,11 @@
   padding: 4px;
   margin-bottom: 18px;
   flex-shrink: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.view-tabs::-webkit-scrollbar { display: none; }
 .view-tab {
   display: inline-flex;
   align-items: center;
@@ -94,6 +98,7 @@
   cursor: pointer;
   transition: background 0.18s, color 0.18s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .view-tab:hover { color: var(--green-mid); }
 .view-tab-active {

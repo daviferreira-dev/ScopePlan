@@ -33,6 +33,8 @@ _WEAK_SECRETS = {
     'CHANGE-ME-GENERATE-A-SECURE-RANDOM-KEY',
     'scopeplan-dev-secret-2024',
     'scopeplan-jwt-secret-2024',
+    'dev-docker-secret-key-change-in-prod',
+    'dev-docker-jwt-key-change-in-prod',
 }
 
 
@@ -56,6 +58,7 @@ class Config:
     JWT_TOKEN_LOCATION = ['headers', 'cookies']
     JWT_REFRESH_COOKIE_NAME = 'refresh_token_cookie'
     JWT_COOKIE_CSRF_PROTECT = False  # Using SameSite instead
+    JWT_COOKIE_SAMESITE = 'Lax'
 
     # Rate limiting
     RATE_LIMIT_AUTH = os.environ.get('RATE_LIMIT_AUTH', '5/minute')
@@ -117,6 +120,10 @@ class ProductionConfig(Config):
             raise RuntimeError('SECRET_KEY is too weak — use a secure random value')
         if cls.JWT_SECRET_KEY in _WEAK_SECRETS:
             raise RuntimeError('JWT_SECRET_KEY is too weak — use a secure random value')
+        if not os.environ.get('FERNET_KEY'):
+            raise RuntimeError('FERNET_KEY is required in production')
+        if not os.environ.get('HMAC_KEY'):
+            raise RuntimeError('HMAC_KEY is required in production')
 
     @classmethod
     def get_sqlalchemy_database_uri(cls):

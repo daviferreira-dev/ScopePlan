@@ -25,7 +25,12 @@ def _fernet_key() -> bytes | None:
 
 def _hmac_key() -> bytes:
     val = os.environ.get('HMAC_KEY', '').strip()
-    return val.encode() if val else b'scopeplan-dev-hmac-insecure-change-in-prod'
+    if not val:
+        import os as _os
+        if _os.environ.get('FLASK_ENV') == 'production':
+            raise RuntimeError('HMAC_KEY is required in production')
+        return b'scopeplan-dev-hmac-insecure-change-in-prod'
+    return val.encode()
 
 
 def encrypt_str(value: str) -> str:

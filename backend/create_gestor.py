@@ -15,6 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from app import create_app, db
 from app.models.user import User
+from app.utils.crypto import email_lookup_hash
 
 
 def main():
@@ -27,7 +28,7 @@ def main():
 
     app = create_app()
     with app.app_context():
-        existing = User.query.filter_by(email=email).first()
+        existing = User.query.filter_by(email_lookup=email_lookup_hash(email)).first()
         if existing:
             if existing.perfil == 'gestor':
                 print(f"Usuario gestor ja existe: {existing.email} (id={existing.id})")

@@ -6,7 +6,7 @@ def _make_requirement(client, analista_headers, cliente_id=None):
     if cliente_id:
         payload['cliente_id'] = cliente_id
     resp = client.post('/api/projetos', json=payload, headers=analista_headers)
-    project_id = resp.get_json()['project']['id']
+    project_id = resp.get_json()['projeto']['id']
     resp = client.post(f'/api/projetos/{project_id}/requisitos', json={
         'titulo': 'Req com comentarios', 'tipo': 'funcional'
     }, headers=analista_headers)

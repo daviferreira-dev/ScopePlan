@@ -42,7 +42,7 @@ class TestProjectAccess:
             'nome': 'Cascade Project',
             'descricao': 'Testing cascade'
         }, headers=analista_user['headers'])
-        project_id = resp.get_json()['project']['id']
+        project_id = resp.get_json()['projeto']['id']
 
         resp2 = client.post(f'/api/projetos/{project_id}/requisitos', json={
             'titulo': 'Req Test',
@@ -69,7 +69,7 @@ class TestProjectAccess:
         headers_b = {'Authorization': f"Bearer {r2.get_json()['access_token']}"}
 
         resp = client.post('/api/projetos', json={'nome': 'A Project'}, headers=headers_a)
-        project_id = resp.get_json()['project']['id']
+        project_id = resp.get_json()['projeto']['id']
 
         resp2 = client.get(f'/api/projetos/{project_id}', headers=headers_b)
         assert resp2.status_code == 403

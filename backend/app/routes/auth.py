@@ -49,7 +49,8 @@ def _set_refresh_cookie(response, refresh_token):
         value=refresh_token,
         httponly=True,
         secure=is_prod,
-        samesite='Strict' if is_prod else 'Lax',
+        # None em prod: front e API ficam em dominios diferentes (cross-site)
+        samesite='None' if is_prod else 'Lax',
         max_age=30 * 24 * 60 * 60,  # 30 days in seconds (matches JWT_REFRESH_TOKEN_EXPIRES)
         path='/api/auth',  # Covers both /refresh and /logout
     )
@@ -58,7 +59,14 @@ def _set_refresh_cookie(response, refresh_token):
 
 def _clear_refresh_cookie(response):
     """Clear the refresh token cookie on the response."""
-    response.delete_cookie('refresh_token_cookie', path='/api/auth')
+    is_prod = current_app.config.get('ENV') == 'production' or os.environ.get('FLASK_ENV') == 'production'
+    response.delete_cookie(
+        'refresh_token_cookie',
+        path='/api/auth',
+        secure=is_prod,
+        httponly=True,
+        samesite='None' if is_prod else 'Lax',
+    )
     return response
 
 

@@ -5,7 +5,7 @@ from app import db
 class TestRequirementStateMachine:
     def test_create_requirement_starts_as_rascunho(self, client, analista_user):
         resp = client.post('/api/projetos', json={'nome': 'State Project'}, headers=analista_user['headers'])
-        project_id = resp.get_json()['project']['id']
+        project_id = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{project_id}/requisitos', json={
             'titulo': 'Req Rascunho', 'tipo': 'funcional'
@@ -17,7 +17,7 @@ class TestRequirementStateMachine:
         """P0 fix: status field removed from RequirementUpdateSchema.
         Sending status via PUT must cause a validation error (unknown field)."""
         resp = client.post('/api/projetos', json={'nome': 'Schema Project'}, headers=analista_user['headers'])
-        project_id = resp.get_json()['project']['id']
+        project_id = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{project_id}/requisitos', json={
             'titulo': 'Req Schema'
@@ -35,7 +35,7 @@ class TestRequirementStateMachine:
     def test_valid_transition_rascunho_to_em_revisao(self, client, analista_user):
         """Valid: rascunho -> em_revisao via submit_review."""
         resp = client.post('/api/projetos', json={'nome': 'Valid Trans'}, headers=analista_user['headers'])
-        project_id = resp.get_json()['project']['id']
+        project_id = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{project_id}/requisitos', json={
             'titulo': 'Req Valid'
@@ -56,7 +56,7 @@ class TestRequirementStateMachine:
         c_id = r_c.get_json()['user']['id']
 
         resp = client.post('/api/projetos', json={'nome': 'Block Sub', 'cliente_id': c_id}, headers=analista_user['headers'])
-        project_id = resp.get_json()['project']['id']
+        project_id = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{project_id}/requisitos', json={
             'titulo': 'Req Block'
@@ -86,7 +86,7 @@ class TestRequirementStateMachine:
         c_id = r_c.get_json()['user']['id']
 
         resp = client.post('/api/projetos', json={'nome': 'Rascunho Val', 'cliente_id': c_id}, headers=analista_user['headers'])
-        project_id = resp.get_json()['project']['id']
+        project_id = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{project_id}/requisitos', json={
             'titulo': 'Req Rascunho Val'
@@ -100,237 +100,59 @@ class TestRequirementStateMachine:
 
 
 class TestValidationConsensus:
-    def test_single_approval_stays_em_revisao_with_quorum(self, client, analista_user):
-        """With quorum=2, a single approval keeps requirement in em_revisao."""
+    """O voto do cliente define o status do requisito diretamente."""
+
+    def _setup(self, client, analista_user, tag):
         r_c = client.post('/api/auth/register', json={
-            'nome': 'Cliente App', 'email': 'cli_app@test.com',
+            'nome': f'Cliente {tag}', 'email': f'cli_{tag}@test.com',
             'senha': 'Senha@123', 'perfil': 'cliente'
         })
         headers_c = {'Authorization': f"Bearer {r_c.get_json()['access_token']}"}
         c_id = r_c.get_json()['user']['id']
 
         resp = client.post('/api/projetos', json={
-            'nome': 'Approval Project', 'cliente_id': c_id
+            'nome': f'{tag} Project', 'cliente_id': c_id
         }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
+        pid = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{pid}/requisitos', json={
-            'titulo': 'Approval Req'
+            'titulo': f'{tag} Req'
         }, headers=analista_user['headers'])
         req_id = resp.get_json()['requisito']['id']
         client.post(f'/api/requisitos/{req_id}/submit-review', headers=analista_user['headers'])
+        return req_id, headers_c
 
+    def test_client_approval_sets_aprovado(self, client, analista_user):
+        req_id, headers_c = self._setup(client, analista_user, 'approv')
         resp = client.post(f'/api/requisitos/{req_id}/validacoes', json={
             'resultado': 'aprovado'
         }, headers=headers_c)
         assert resp.status_code == 201
-        assert resp.get_json()['requirement_status'] == 'em_revisao'
+        assert resp.get_json()['requirement_status'] == 'aprovado'
 
-    def test_tie_one_approval_one_rejection_stays_em_revisao(self, client, analista_user):
-        """Tie scenario: 1 approved + 1 rejected = stays in em_revisao (no majority)."""
-        r_c1 = client.post('/api/auth/register', json={
-            'nome': 'Cli Tie1', 'email': 'cli_tie1@test.com',
-            'senha': 'Senha@123', 'perfil': 'cliente'
-        })
-        headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
-        c_id = r_c1.get_json()['user']['id']
-
-        r_a2 = client.post('/api/auth/register', json={
-            'nome': 'Analista Tie2', 'email': 'analista_tie2@test.com',
-            'senha': 'Senha@123', 'perfil': 'analista'
-        })
-        headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
-
-        resp = client.post('/api/projetos', json={
-            'nome': 'Tie Project', 'cliente_id': c_id
-        }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
-
-        resp = client.post(f'/api/projetos/{pid}/requisitos', json={
-            'titulo': 'Tie Req'
-        }, headers=analista_user['headers'])
-        req_id = resp.get_json()['requisito']['id']
-        client.post(f'/api/requisitos/{req_id}/submit-review', headers=analista_user['headers'])
-
-        client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'aprovado'
-        }, headers=headers_c1)
-
-        resp2 = client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'rejeitado', 'comentario': 'Não atende'
-        }, headers=headers_a2)
-        assert resp2.status_code == 201
-        assert resp2.get_json()['requirement_status'] == 'em_revisao'
-
-    def test_single_rejection_stays_em_revisao_with_quorum(self, client, analista_user):
-        """With quorum=2, a single rejection keeps requirement in em_revisao."""
-        r_c = client.post('/api/auth/register', json={
-            'nome': 'Cliente Rej', 'email': 'cli_rej@test.com',
-            'senha': 'Senha@123', 'perfil': 'cliente'
-        })
-        headers_c = {'Authorization': f"Bearer {r_c.get_json()['access_token']}"}
-        c_id = r_c.get_json()['user']['id']
-
-        resp = client.post('/api/projetos', json={
-            'nome': 'Rejection Project', 'cliente_id': c_id
-        }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
-
-        resp = client.post(f'/api/projetos/{pid}/requisitos', json={
-            'titulo': 'Rejection Req'
-        }, headers=analista_user['headers'])
-        req_id = resp.get_json()['requisito']['id']
-        client.post(f'/api/requisitos/{req_id}/submit-review', headers=analista_user['headers'])
-
+    def test_client_rejection_sets_rejeitado(self, client, analista_user):
+        req_id, headers_c = self._setup(client, analista_user, 'rej')
         resp = client.post(f'/api/requisitos/{req_id}/validacoes', json={
             'resultado': 'rejeitado', 'comentario': 'Não atende'
         }, headers=headers_c)
         assert resp.status_code == 201
-        assert resp.get_json()['requirement_status'] == 'em_revisao'
+        assert resp.get_json()['requirement_status'] == 'rejeitado'
 
-    def test_quorum_all_approvals_sets_aprovado(self, client, analista_user):
-        """Two approvals with quorum=2 should set status to aprovado."""
-        r_c1 = client.post('/api/auth/register', json={
-            'nome': 'Cli Approv1', 'email': 'cli_approv1@test.com',
-            'senha': 'Senha@123', 'perfil': 'cliente'
-        })
-        headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
-        c_id = r_c1.get_json()['user']['id']
-
-        r_a2 = client.post('/api/auth/register', json={
-            'nome': 'Analista Approv2', 'email': 'analista_approv2@test.com',
-            'senha': 'Senha@123', 'perfil': 'analista'
-        })
-        headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
-
-        resp = client.post('/api/projetos', json={
-            'nome': 'QApprov Project', 'cliente_id': c_id
-        }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
-
-        resp = client.post(f'/api/projetos/{pid}/requisitos', json={
-            'titulo': 'QApprov Req'
-        }, headers=analista_user['headers'])
-        req_id = resp.get_json()['requisito']['id']
-        client.post(f'/api/requisitos/{req_id}/submit-review', headers=analista_user['headers'])
-
-        client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'aprovado'
-        }, headers=headers_c1)
-
-        resp2 = client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'aprovado'
-        }, headers=headers_a2)
-        assert resp2.status_code == 201
-        assert resp2.get_json()['requirement_status'] == 'aprovado'
-
-    def test_quorum_any_rejection_sets_rejeitado(self, client, analista_user):
-        """With majority-rules, majority rejections outvote approvals."""
-        r_c1 = client.post('/api/auth/register', json={
-            'nome': 'Cli Mix1', 'email': 'cli_mix1@test.com',
-            'senha': 'Senha@123', 'perfil': 'cliente'
-        })
-        headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
-        c_id = r_c1.get_json()['user']['id']
-
-        r_a2 = client.post('/api/auth/register', json={
-            'nome': 'Analista Mix2', 'email': 'analista_mix2@test.com',
-            'senha': 'Senha@123', 'perfil': 'analista'
-        })
-        headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
-
-        resp = client.post('/api/projetos', json={
-            'nome': 'Mixed Project', 'cliente_id': c_id
-        }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
-
-        resp = client.post(f'/api/projetos/{pid}/requisitos', json={
-            'titulo': 'Mixed Req'
-        }, headers=analista_user['headers'])
-        req_id = resp.get_json()['requisito']['id']
-        client.post(f'/api/requisitos/{req_id}/submit-review', headers=analista_user['headers'])
-
-        client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'rejeitado', 'comentario': 'Não atende'
-        }, headers=headers_c1)
-
-        resp2 = client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'rejeitado', 'comentario': 'Também reprova'
-        }, headers=headers_a2)
-        assert resp2.status_code == 201
-        assert resp2.get_json()['requirement_status'] == 'rejeitado'
-
-    def test_quorum_ressalvas_sets_aprovado_com_ressalvas(self, client, analista_user):
-        """Two aprovado_com_ressalvas with quorum=2 = aprovado_com_ressalvas."""
-        r_c1 = client.post('/api/auth/register', json={
-            'nome': 'Cli Res1', 'email': 'cli_res1q@test.com',
-            'senha': 'Senha@123', 'perfil': 'cliente'
-        })
-        headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
-        c_id = r_c1.get_json()['user']['id']
-
-        r_a2 = client.post('/api/auth/register', json={
-            'nome': 'Analista Res2', 'email': 'analista_res2q@test.com',
-            'senha': 'Senha@123', 'perfil': 'analista'
-        })
-        headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
-
-        resp = client.post('/api/projetos', json={
-            'nome': 'Ressalvas Project', 'cliente_id': c_id
-        }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
-
-        resp = client.post(f'/api/projetos/{pid}/requisitos', json={
-            'titulo': 'Ressalvas Req'
-        }, headers=analista_user['headers'])
-        req_id = resp.get_json()['requisito']['id']
-        client.post(f'/api/requisitos/{req_id}/submit-review', headers=analista_user['headers'])
-
-        client.post(f'/api/requisitos/{req_id}/validacoes', json={
+    def test_client_ressalvas_sets_aprovado_com_ressalvas(self, client, analista_user):
+        req_id, headers_c = self._setup(client, analista_user, 'res')
+        resp = client.post(f'/api/requisitos/{req_id}/validacoes', json={
             'resultado': 'aprovado_com_ressalvas', 'comentario': 'Quase lá'
-        }, headers=headers_c1)
+        }, headers=headers_c)
+        assert resp.status_code == 201
+        assert resp.get_json()['requirement_status'] == 'aprovado_com_ressalvas'
 
-        resp2 = client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'aprovado_com_ressalvas', 'comentario': 'Quase lá'
-        }, headers=headers_a2)
-        assert resp2.status_code == 201
-        assert resp2.get_json()['requirement_status'] == 'aprovado_com_ressalvas'
-
-    def test_quorum_one_ressalva_one_approval(self, client, analista_user):
-        """One aprovado + one aprovado_com_ressalvas = aprovado_com_ressalvas."""
-        r_c1 = client.post('/api/auth/register', json={
-            'nome': 'Cli MixR1', 'email': 'cli_mixr1@test.com',
-            'senha': 'Senha@123', 'perfil': 'cliente'
-        })
-        headers_c1 = {'Authorization': f"Bearer {r_c1.get_json()['access_token']}"}
-        c_id = r_c1.get_json()['user']['id']
-
-        r_a2 = client.post('/api/auth/register', json={
-            'nome': 'Analista MixR2', 'email': 'analista_mixr2@test.com',
-            'senha': 'Senha@123', 'perfil': 'analista'
-        })
-        headers_a2 = {'Authorization': f"Bearer {r_a2.get_json()['access_token']}"}
-
-        resp = client.post('/api/projetos', json={
-            'nome': 'MixR Project', 'cliente_id': c_id
-        }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
-
-        resp = client.post(f'/api/projetos/{pid}/requisitos', json={
-            'titulo': 'MixR Req'
-        }, headers=analista_user['headers'])
-        req_id = resp.get_json()['requisito']['id']
-        client.post(f'/api/requisitos/{req_id}/submit-review', headers=analista_user['headers'])
-
-        client.post(f'/api/requisitos/{req_id}/validacoes', json={
+    def test_analista_cannot_validate(self, client, analista_user):
+        req_id, _ = self._setup(client, analista_user, 'anval')
+        resp = client.post(f'/api/requisitos/{req_id}/validacoes', json={
             'resultado': 'aprovado'
-        }, headers=headers_c1)
+        }, headers=analista_user['headers'])
+        assert resp.status_code == 403
 
-        resp2 = client.post(f'/api/requisitos/{req_id}/validacoes', json={
-            'resultado': 'aprovado_com_ressalvas', 'comentario': 'Minor issues'
-        }, headers=headers_a2)
-        assert resp2.status_code == 201
-        assert resp2.get_json()['requirement_status'] == 'aprovado_com_ressalvas'
 
     def test_duplicate_validation_blocked(self, client, analista_user):
         """Same user cannot validate the same requirement twice."""
@@ -344,7 +166,7 @@ class TestValidationConsensus:
         resp = client.post('/api/projetos', json={
             'nome': 'Dup Val Project', 'cliente_id': c_id
         }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
+        pid = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{pid}/requisitos', json={
             'titulo': 'Dup Val Req'
@@ -383,7 +205,7 @@ class TestRN003Versioning:
         resp = client.post('/api/projetos', json={
             'nome': 'RN003 Project', 'cliente_id': c_id
         }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
+        pid = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{pid}/requisitos', json={
             'titulo': 'RN003 Req', 'descricao': 'Original desc'
@@ -424,7 +246,7 @@ class TestRN003Versioning:
         resp = client.post('/api/projetos', json={
             'nome': 'RN003R Project', 'cliente_id': c_id
         }, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
+        pid = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{pid}/requisitos', json={
             'titulo': 'RN003R Req', 'descricao': 'Original'
@@ -453,7 +275,7 @@ class TestRN003Versioning:
     def test_edit_rascunho_does_not_create_version(self, client, analista_user):
         """Editing a rascunho requirement should NOT create version snapshots."""
         resp = client.post('/api/projetos', json={'nome': 'NoVer Project'}, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
+        pid = resp.get_json()['projeto']['id']
 
         resp = client.post(f'/api/projetos/{pid}/requisitos', json={
             'titulo': 'NoVer Req'
@@ -473,7 +295,7 @@ class TestPerPageBound:
     def test_per_page_capped_at_100(self, client, analista_user):
         """per_page > 100 should be capped."""
         resp = client.post('/api/projetos', json={'nome': 'PerPage Project'}, headers=analista_user['headers'])
-        pid = resp.get_json()['project']['id']
+        pid = resp.get_json()['projeto']['id']
         resp = client.get(f'/api/projetos/{pid}/requisitos?per_page=999', headers=analista_user['headers'])
         assert resp.status_code == 200
         assert resp.get_json()['per_page'] <= 100

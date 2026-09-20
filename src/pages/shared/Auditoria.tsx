@@ -12,16 +12,6 @@ interface Props {
 
 const BRT = { timeZone: 'America/Sao_Paulo' };
 
-const formatEventTime = (dateString: string): string => {
-	const date = new Date(dateString);
-	const now = new Date();
-	const diffDays = Math.floor((now.getTime() - date.getTime()) / 86400000);
-	const time = date.toLocaleTimeString('pt-BR', { ...BRT, hour: '2-digit', minute: '2-digit' });
-	if (diffDays === 0) return `${time} · Hoje`;
-	if (diffDays === 1) return `${time} · Ontem`;
-	return `${time} · ${date.toLocaleDateString('pt-BR', BRT)}`;
-};
-
 const getTypeLabel = (type: string): string => ACTION_LABELS[type] || type;
 
 // Rótulo do evento no formato "Projeto - Ação" (ex.: "ScopePlan - Requisito criado")

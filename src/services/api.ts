@@ -736,7 +736,7 @@ export const convitesApi = {
     return apiFetch<{ convites: ConviteData[] }>(`/projetos/${projectId}/convites`);
   },
 
-  criar(projectId: number, email: string, perfil: 'cliente' | 'desenvolvedor' | 'gestor') {
+  criar(projectId: number, email: string, perfil: 'cliente' | 'desenvolvedor' | 'gestor' | 'analista') {
     return apiFetch<{ message: string; convite: ConviteData }>(`/projetos/${projectId}/convites`, {
       method: 'POST',
       body: JSON.stringify({ email, perfil }),

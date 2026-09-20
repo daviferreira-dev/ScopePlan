@@ -40,7 +40,7 @@ def upgrade():
         sa.Column('email', sa.String(180), nullable=False, unique=True),
         sa.Column('senha_hash', sa.String(255), nullable=False),
         sa.Column('perfil', sa.String(20), nullable=False, server_default='analista'),
-        sa.Column('ativo', sa.Boolean(), nullable=False, server_default=sa.text('1')),
+        sa.Column('ativo', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('criado_em', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('atualizado_em', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
     )
@@ -58,7 +58,7 @@ def upgrade():
         sa.Column('gestor_id', sa.Integer(), sa.ForeignKey('usuarios.id'), nullable=False),
         sa.Column('cliente_id', sa.Integer(), sa.ForeignKey('usuarios.id'), nullable=True),
         sa.Column('nome_cliente', sa.String(200), nullable=True),
-        sa.Column('ativo', sa.Boolean(), nullable=False, server_default=sa.text('1')),
+        sa.Column('ativo', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('criado_em', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('atualizado_em', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
     )
@@ -81,7 +81,7 @@ def upgrade():
         sa.Column('prioridade', sa.String(20), nullable=True),
         sa.Column('status', sa.String(30), nullable=False, server_default='rascunho'),
         sa.Column('numero_versao', sa.SmallInteger(), nullable=False, server_default=sa.text('1')),
-        sa.Column('ativo', sa.Boolean(), nullable=False, server_default=sa.text('1')),
+        sa.Column('ativo', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('criado_em', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
         sa.Column('atualizado_em', sa.DateTime(), nullable=False, server_default=sa.text('CURRENT_TIMESTAMP')),
     )

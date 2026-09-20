@@ -12,7 +12,7 @@ marshmallow==4.3.0
 dnspython==2.8.0
 python-dotenv==1.2.1
 werkzeug==3.1.8
-gunicorn==26.0.0
+gunicorn==23.0.0
 bcrypt==5.0.0
 python-docx==1.2.0
 reportlab==4.5.1
